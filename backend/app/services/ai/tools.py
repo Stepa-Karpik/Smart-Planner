@@ -11,12 +11,17 @@ from app.services.events import EventService
 
 AIIntent = Literal[
     "create_event",
+    "update_event",
+    "merge_events",
     "list_tomorrow",
     "weekly_overview",
     "free_slots",
     "optimize_schedule",
     "travel_time",
     "schedule_query",
+    "greet",
+    "thanks",
+    "help",
     "general",
 ]
 
@@ -130,6 +135,49 @@ class AITools:
         ):
             return "optimize_schedule"
 
+        if any(token in lower for token in ("объедини", "объедин", "слей", "совмести", "merge")) and any(
+            token in lower for token in ("событ", "встреч", "задач", "дел", "event", "meeting", "task")
+        ):
+            return "merge_events"
+
+        update_verbs = (
+            "измени",
+            "поменя",
+            "перенес",
+            "перенёс",
+            "перенеси",
+            "сдвин",
+            "подвин",
+            "обнов",
+            "переимен",
+            "укажи",
+            "поставь",
+            "change",
+            "update",
+            "move",
+            "reschedule",
+            "rename",
+        )
+        update_subjects = (
+            "время",
+            "дат",
+            "мест",
+            "адрес",
+            "локац",
+            "назван",
+            "когда",
+            "во сколько",
+            "позже",
+            "раньше",
+        )
+        has_update_verb = any(verb in lower for verb in update_verbs)
+        has_update_subject = any(token in lower for token in update_subjects)
+        has_time_pattern = bool(re.search(r"\b\d{1,2}(:\d{2})?\b", lower) or re.search(r"\bс\s+.+\s+до\s+.+\b", lower))
+        if has_update_verb and (has_update_subject or has_time_pattern):
+            return "update_event"
+        if any(token in lower for token in ("на час позже", "на час раньше", "перенеси на", "измени время", "поставь адрес")):
+            return "update_event"
+
         create_verbs = (
             "добав",
             "созда",
@@ -192,6 +240,15 @@ class AITools:
         if has_question and any(marker in lower for marker in schedule_question_markers):
             return "schedule_query"
 
+        if any(token in lower for token in ("привет", "здравств", "доброе утро", "добрый день", "добрый вечер", "hello", "hi", "hey")):
+            return "greet"
+
+        if any(token in lower for token in ("спасибо", "благодар", "thanks", "thank you", "thx")):
+            return "thanks"
+
+        if any(token in lower for token in ("помоги", "помощь", "что ты умеешь", "help", "what can you do", "commands")):
+            return "help"
+
         return "general"
 
     @staticmethod
@@ -232,11 +289,29 @@ class AITools:
             return True
 
         domain_markers = (
+            "измени",
+            "поменя",
+            "перенеси",
+            "перенес",
+            "сдвин",
+            "обнови",
+            "поставь",
+            "укажи",
+            "удали",
+            "отмени",
+            "объедини",
             "календар",
             "расписан",
             "план",
             "задач",
             "событи",
+            "дата",
+            "время",
+            "место",
+            "адрес",
+            "локац",
+            "когда",
+            "во сколько",
             "напомин",
             "встреч",
             "свобод",
@@ -254,7 +329,16 @@ class AITools:
             "travel time",
             "route",
         )
-        return any(marker in lower for marker in domain_markers)
+        if any(marker in lower for marker in domain_markers):
+            return True
+
+        if re.search(r"\b\d{1,2}(:\d{2})?\b", lower):
+            return True
+        if re.search(r"\bс\s+\d{1,2}(:\d{2})?\s+до\s+\d{1,2}(:\d{2})?\b", lower):
+            return True
+        if any(marker in lower for marker in ("утра", "дня", "вечера", "ночи")):
+            return True
+        return False
 
     @staticmethod
     def _extract_date(lower: str, now_local: datetime) -> tuple[date, bool]:
@@ -536,6 +620,10 @@ class AITools:
         cleaned = re.sub(r"\s+", " ", cleaned).strip()
 
         location_match = re.search(r"(?:возле|около|рядом с|по адресу)\s+(.+)$", cleaned, flags=re.IGNORECASE)
+        if location_match:
+            return self._normalize_location(location_match.group(1))
+
+        location_match = re.search(r"(?:адрес|локация|локацию|место)\s*(?::|-|\s)\s*(.+)$", cleaned, flags=re.IGNORECASE)
         if location_match:
             return self._normalize_location(location_match.group(1))
 

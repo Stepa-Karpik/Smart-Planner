@@ -1,93 +1,228 @@
-﻿# Smart Planner Monorepo
+﻿# 🚀 Smart Planner
 
-Project layout:
+**Smart Planner** — это AI-ассистент планирования нового поколения, который помогает управлять задачами, событиями и временем, автоматически оптимизируя расписание с учётом реального мира.
 
-- `frontend` - Next.js client
-- `backend` - FastAPI API, DB models, migrations, workers
-- `bot` - standalone Telegram bot docker runtime (uses backend code)
+Проект объединяет:
 
-## Run everything
+* 🧠 AI-ассистента планирования
+* 📅 интеллектуальный календарь
+* 🤖 Telegram-бота
+* 🌍 маршруты и геолокацию
+* 🔔 систему напоминаний
+* ⚡ real-time оптимизацию расписания
+
+---
+
+## ✨ Возможности
+
+### 🧠 AI Planner
+
+* понимание естественного языка
+* создание событий через диалог
+* оптимизация расписания
+* анализ конфликтов
+* рекомендации по планированию
+
+### 📅 Календарь
+
+* управление событиями
+* повторяющиеся события
+* напоминания
+* перенос задач
+* проверка выполнимости
+
+### 🌍 Маршруты и гео
+
+* расчет времени в пути
+* учет перемещений между событиями
+* домашняя локация пользователя
+* геосаджест
+
+### 🔔 Уведомления
+
+* Telegram-уведомления
+* фоновые воркеры
+* отложенные напоминания
+
+### 🤖 Telegram бот
+
+* deep-link авторизация
+* быстрые команды
+* уведомления
+* взаимодействие с AI
+
+---
+
+## 🏗 Архитектура
+
+```
+Frontend (Next.js)
+        │
+        ▼
+FastAPI Backend  ─── PostgreSQL
+        │
+        ├── Redis
+        │
+        ├── AI Worker
+        │
+        ├── Notification Worker
+        │
+        └── Telegram Bot
+```
+
+---
+
+## 🧰 Технологии
+
+### Backend
+
+* FastAPI (async)
+* PostgreSQL
+* Redis
+* SQLAlchemy 2
+* Alembic
+* aiogram 3
+* OpenAI / LLM providers
+* Docker
+
+### Frontend
+
+* Next.js (App Router)
+* React
+* TypeScript
+* Leaflet
+* shadcn/ui
+
+### Инфраструктура
+
+* Docker Compose
+* Worker-based архитектура
+* Redis очереди
+* Background processing
+
+---
+
+## 📦 Запуск проекта
+
+### 1️⃣ Клонирование
+
+```bash
+git clone <repo>
+cd helper
+```
+
+---
+
+### 2️⃣ Настройка переменных окружения
+
+```bash
+cp .env.example .env
+```
+
+Заполни:
+
+* БД
+* Redis
+* Telegram bot token
+* AI provider ключи
+* гео API ключи
+
+---
+
+### 3️⃣ Запуск
 
 ```bash
 docker compose up --build
 ```
 
-Services:
+---
 
-- `frontend` - Next.js (`http://localhost:3000`)
-- `api` - FastAPI (`http://localhost:8000`, docs: `http://localhost:8000/docs`)
-- `bot` - Telegram bot
-- `worker` - notification worker
-- `ai-worker` - AI queue worker
-- `migrator` - one-shot Alembic migrations
-- `postgres`
-- `redis`
+### 4️⃣ Миграции
 
-Key URLs:
+```bash
+docker compose run migrator alembic upgrade head
+```
 
-- Frontend: `http://localhost:3000`
-- API docs: `http://localhost:8000/docs`
-- OpenAPI: `http://localhost:8000/openapi.json`
+---
 
-## Repository structure
+## 🌐 Сервисы
 
-```text
-frontend/
+| сервис    | описание           |
+| --------- | ------------------ |
+| API       | основной backend   |
+| AI worker | обработка AI задач |
+| worker    | уведомления        |
+| bot       | Telegram бот       |
+| redis     | брокер             |
+| postgres  | база               |
+
+---
+
+## 🤖 Telegram авторизация
+
+Используется deep-link:
+
+```
+https://t.me/<BOT_USERNAME>?start=<code>
+```
+
+Пользователь связывает аккаунт через Telegram.
+
+---
+
+## 🧪 Тесты
+
+```bash
+pytest
+```
+
+Включают:
+
+* unit тесты логики
+* интеграционные тесты
+* тесты AI инструментов
+* тесты уведомлений
+
+---
+
+## 📁 Структура проекта
+
+```
 backend/
   app/
-  alembic/
-  scripts/
-  tests/
-bot/
+    api/
+    services/
+    models/
+    repositories/
+    workers/
+    bot/
+
+frontend/
+docker-compose.yml
 ```
 
-## Local backend run (without Docker)
+---
 
-```bash
-cd backend
-python -m pip install -r requirements.txt
-alembic upgrade head
-hypercorn app.main:app --bind 0.0.0.0:8000
-```
+## 🎯 Roadmap
 
-In separate terminals:
+* голосовой ассистент
+* realtime AI планирование
+* mobile приложение
+* multi-calendar синхронизация
+* совместное планирование
 
-```bash
-cd backend && python -m app.bot.main
-cd backend && python -m app.workers.notification_worker
-cd backend && python -m app.workers.ai_worker
-```
+---
 
-## Integration tests in Docker
+## 🧑‍💻 Автор
 
-```bash
-docker compose -f docker-compose.test.yml up --build --abort-on-container-exit
-```
+Разрабатывается как полноценный AI-продукт планирования.
 
-## Frontend env
+---
 
-`frontend` reads:
+## ⭐ Почему проект сильный
 
-- `NEXT_PUBLIC_API_BASE_URL` (default `http://localhost:8000`)
-- `NEXT_PUBLIC_YANDEX_MAPS_API_KEY` (for map picker and map widgets)
-
-## Added UX features
-
-- RU/EN language toggle
-- Telegram link returns both web deep-link and desktop app link (`tg://resolve?...`)
-- Location input with autocomplete + map picker + reverse geocoding
-- Events page supports `list` / `calendar` / `gantt` views
-- Gantt view shows yellow travel-time strip
-- Profile page:
-  - display name / username update
-  - default transport mode
-  - password change
-  - Telegram link card
-
-## Notes
-
-- API prefix: `/api/v1`
-- API uses unified envelope (`data`, `meta`, `error`)
-- Telegram link flow uses deep-link `/start <code>`
-- All dates stored as UTC in backend
-- Required/optional key details: `need_api.txt`
+* продуманная архитектура
+* разделение AI и API
+* воркер-подход
+* реальная ценность продукта
+* масштабируемость
