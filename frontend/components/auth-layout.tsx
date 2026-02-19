@@ -1,6 +1,5 @@
 "use client"
 
-import Image from "next/image"
 import Link from "next/link"
 import { CalendarDays } from "lucide-react"
 import { useI18n } from "@/lib/i18n"
@@ -30,14 +29,13 @@ export function AuthLayout({ children }: AuthLayoutProps) {
             </button>
           </div>
           <div className="flex flex-1 items-center justify-center px-8 pb-8">
-            <Image
-              src="/images/auth-promo.jpg"
-              alt="Smart Planner"
-              width={340}
-              height={340}
-              className="rounded-lg object-cover"
-              priority
-            />
+            <div className="relative h-[340px] w-[340px] overflow-hidden rounded-lg border border-border/40 bg-gradient-to-br from-slate-100 via-white to-amber-100">
+              <div className="absolute -left-10 -top-8 h-48 w-48 rounded-full bg-amber-300/35 blur-2xl" />
+              <div className="absolute -bottom-10 -right-8 h-48 w-48 rounded-full bg-sky-300/30 blur-2xl" />
+              <div className="absolute inset-0 grid place-items-center text-sm font-medium text-slate-600">
+                Smart Planner
+              </div>
+            </div>
           </div>
         </div>
 

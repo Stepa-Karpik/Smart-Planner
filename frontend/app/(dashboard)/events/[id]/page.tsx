@@ -35,10 +35,10 @@ function formatDateTime(value: string) {
 
 function buildMapUrl(locationText?: string, lat?: number, lon?: number) {
   if (typeof lat === "number" && typeof lon === "number") {
-    return `https://yandex.ru/maps/?ll=${lon},${lat}&z=16&pt=${lon},${lat},pm2rdm`
+    return `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lon}#map=16/${lat}/${lon}`
   }
   if (locationText) {
-    return `https://yandex.ru/maps/?text=${encodeURIComponent(locationText)}`
+    return `https://www.openstreetmap.org/search?query=${encodeURIComponent(locationText)}`
   }
   return null
 }

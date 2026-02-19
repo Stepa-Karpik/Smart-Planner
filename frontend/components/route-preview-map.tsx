@@ -1,9 +1,20 @@
-﻿"use client"
+"use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Loader2 } from "lucide-react"
 import { useI18n } from "@/lib/i18n"
-import { useRouteConfig } from "@/lib/hooks"
+import {
+  invalidateMapSize,
+  isValidLatLon,
+  loadLeaflet,
+  mapLogError,
+  mapLogInfo,
+  mapLogWarn,
+  waitForContainerSize,
+  type LeafletCircleMarker,
+  type LeafletMap,
+  type LeafletPolyline,
+} from "@/lib/leaflet-map"
 
 interface RoutePoint {
   lat: number
@@ -16,88 +27,9 @@ interface RoutePreviewMapProps {
   geometry?: unknown
 }
 
-interface YMapLike {
-  geoObjects: {
-    add: (geoObject: unknown) => void
-  }
-  setCenter?: (coords: number[], zoom?: number) => void
-  destroy: () => void
-}
-
-interface YPlacemarkLike {
-  geometry: {
-    setCoordinates: (coords: number[]) => void
-  }
-}
-
-interface YPolylineLike {
-  geometry: {
-    setCoordinates: (coords: number[][]) => void
-  }
-}
-
-let yandexScriptPromise: Promise<void> | null = null
-const YANDEX_SCRIPT_ID = "yandex-maps-script"
-
-function loadYandexMaps(apiKey?: string | null) {
-  if (typeof window === "undefined") {
-    return Promise.resolve()
-  }
-  if (window.ymaps) {
-    return Promise.resolve()
-  }
-  if (yandexScriptPromise) {
-    return yandexScriptPromise
-  }
-
-  const resolvedApiKey = (apiKey || process.env.NEXT_PUBLIC_YANDEX_MAPS_API_KEY || "").trim()
-  const keyPart = resolvedApiKey ? `apikey=${encodeURIComponent(resolvedApiKey)}&` : ""
-  const src = `https://api-maps.yandex.ru/2.1/?${keyPart}lang=ru_RU`
-
-  yandexScriptPromise = new Promise<void>((resolve, reject) => {
-    const existing = document.getElementById(YANDEX_SCRIPT_ID) as HTMLScriptElement | null
-    if (existing) {
-      const existingStatus = existing.dataset.status
-      if (window.ymaps && existingStatus !== "error") {
-        resolve()
-        return
-      }
-      if (existingStatus === "loading" || existingStatus === "loaded") {
-        existing.addEventListener("load", () => resolve(), { once: true })
-        existing.addEventListener(
-          "error",
-          () => {
-            yandexScriptPromise = null
-            reject(new Error("Failed to load Yandex Maps script"))
-          },
-          { once: true },
-        )
-        return
-      }
-      if (existingStatus === "error") {
-        existing.remove()
-      }
-    }
-
-    const script = document.createElement("script")
-    script.id = YANDEX_SCRIPT_ID
-    script.src = src
-    script.async = true
-    script.defer = true
-    script.dataset.status = "loading"
-    script.onload = () => {
-      script.dataset.status = "loaded"
-      resolve()
-    }
-    script.onerror = () => {
-      script.dataset.status = "error"
-      yandexScriptPromise = null
-      reject(new Error("Failed to load Yandex Maps script"))
-    }
-    document.head.appendChild(script)
-  })
-
-  return yandexScriptPromise
+function normalizePoint(point: RoutePoint): RoutePoint {
+  if (isValidLatLon(point.lat, point.lon)) return point
+  return { lat: 55.751244, lon: 37.618423 }
 }
 
 function toMapCoords(pair: unknown): [number, number] | null {
@@ -105,208 +37,202 @@ function toMapCoords(pair: unknown): [number, number] | null {
   const a = Number(pair[0])
   const b = Number(pair[1])
   if (!Number.isFinite(a) || !Number.isFinite(b)) return null
-
-  // Routing APIs usually return [lon, lat]. Yandex map expects [lat, lon].
-  if (Math.abs(a) > 90 && Math.abs(b) <= 90) {
-    return [b, a]
-  }
-  if (Math.abs(b) > 90 && Math.abs(a) <= 90) {
-    return [a, b]
-  }
+  if (Math.abs(a) > 90 && Math.abs(b) <= 90) return [b, a]
+  if (Math.abs(b) > 90 && Math.abs(a) <= 90) return [a, b]
   return [b, a]
 }
 
 function parseWktLineString(value: string): [number, number][] {
   const match = value.match(/LINESTRING\s*\((.+)\)/i)
   if (!match) return []
-
   const pairs = match[1].split(",")
-  const result: [number, number][] = []
+  const parsed: [number, number][] = []
   for (const pair of pairs) {
     const [lonRaw, latRaw] = pair.trim().split(/\s+/)
     const lon = Number(lonRaw)
     const lat = Number(latRaw)
-    if (!Number.isFinite(lon) || !Number.isFinite(lat)) {
-      continue
-    }
-    result.push([lat, lon])
+    if (!isValidLatLon(lat, lon)) continue
+    parsed.push([lat, lon])
   }
-  return result
+  return parsed
 }
 
-function normalizeGeometry(geometry: unknown, fromPoint: RoutePoint, toPoint: RoutePoint): [number, number][] {
+function normalizeLineGeometry(geometry: unknown, fromPoint: RoutePoint, toPoint: RoutePoint): [number, number][] {
   const fallback: [number, number][] = [
     [fromPoint.lat, fromPoint.lon],
     [toPoint.lat, toPoint.lon],
   ]
-
-  if (!geometry) {
-    return fallback
-  }
-
+  if (!geometry) return fallback
   if (typeof geometry === "string") {
     const parsed = parseWktLineString(geometry)
     return parsed.length >= 2 ? parsed : fallback
   }
 
   const rawCoords =
-    Array.isArray(geometry) ? geometry :
-      typeof geometry === "object" && geometry !== null && "coordinates" in geometry
+    Array.isArray(geometry)
+      ? geometry
+      : typeof geometry === "object" && geometry !== null && "coordinates" in geometry
         ? (geometry as { coordinates?: unknown }).coordinates
         : null
-
-  if (!Array.isArray(rawCoords)) {
-    return fallback
-  }
+  if (!Array.isArray(rawCoords)) return fallback
 
   const parsed: [number, number][] = []
   for (const point of rawCoords) {
     const coords = toMapCoords(point)
-    if (coords) {
-      parsed.push(coords)
-    }
+    if (!coords || !isValidLatLon(coords[0], coords[1])) continue
+    parsed.push(coords)
   }
-
   return parsed.length >= 2 ? parsed : fallback
 }
 
 export function RoutePreviewMap({ fromPoint, toPoint, geometry }: RoutePreviewMapProps) {
   const { tr } = useI18n()
-  const { data: routeConfig, isLoading: routeConfigLoading } = useRouteConfig()
-  const staticApiKey = (process.env.NEXT_PUBLIC_YANDEX_MAPS_API_KEY || "").trim()
-  const runtimeApiKey = (staticApiKey || routeConfig?.api_key || "").trim()
-  const shouldWaitForRuntimeConfig = !staticApiKey && routeConfigLoading
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const containerRef = useRef<HTMLDivElement | null>(null)
-  const mapRef = useRef<YMapLike | null>(null)
-  const fromPlacemarkRef = useRef<YPlacemarkLike | null>(null)
-  const toPlacemarkRef = useRef<YPlacemarkLike | null>(null)
-  const polylineRef = useRef<YPolylineLike | null>(null)
+  const [containerEl, setContainerEl] = useState<HTMLDivElement | null>(null)
 
+  const mapRef = useRef<LeafletMap | null>(null)
+  const fromMarkerRef = useRef<LeafletCircleMarker | null>(null)
+  const toMarkerRef = useRef<LeafletCircleMarker | null>(null)
+  const lineRef = useRef<LeafletPolyline | null>(null)
+  const resizeObserverRef = useRef<ResizeObserver | null>(null)
+  const trRef = useRef(tr)
+
+  useEffect(() => {
+    trRef.current = tr
+  }, [tr])
+
+  const safeFrom = useMemo(() => normalizePoint(fromPoint), [fromPoint.lat, fromPoint.lon])
+  const safeTo = useMemo(() => normalizePoint(toPoint), [toPoint.lat, toPoint.lon])
   const lineCoords = useMemo(
-    () => normalizeGeometry(geometry, fromPoint, toPoint),
-    [geometry, fromPoint.lat, fromPoint.lon, toPoint.lat, toPoint.lon],
+    () => normalizeLineGeometry(geometry, safeFrom, safeTo),
+    [geometry, safeFrom.lat, safeFrom.lon, safeTo.lat, safeTo.lon],
   )
 
   useEffect(() => {
-    if (!containerRef.current || mapRef.current || shouldWaitForRuntimeConfig) return
+    if (!containerEl || mapRef.current) return
     let cancelled = false
 
-    const init = async () => {
+    const initMap = async () => {
       setLoading(true)
       setError(null)
+      mapLogInfo("RoutePreview init started", { hasContainer: true })
+
       try {
-        await loadYandexMaps(runtimeApiKey || null)
-        if (cancelled || !window.ymaps || !containerRef.current || mapRef.current) return
+        await waitForContainerSize(containerEl)
 
-        window.ymaps.ready(() => {
-          if (cancelled || !containerRef.current || !window.ymaps || mapRef.current) return
+        const L = await loadLeaflet()
+        if (cancelled || mapRef.current) return
 
-          const center: [number, number] = [
-            (fromPoint.lat + toPoint.lat) / 2,
-            (fromPoint.lon + toPoint.lon) / 2,
-          ]
+        const map = L.map(containerEl, { zoomControl: true }).setView([safeFrom.lat, safeFrom.lon], 12)
+        mapRef.current = map
 
-          const map = new window.ymaps.Map(containerRef.current, {
-            center,
-            zoom: 12,
-            controls: ["zoomControl", "fullscreenControl"],
-          }) as unknown as YMapLike
-          mapRef.current = map
-
-          const fromPlacemark = new window.ymaps.Placemark([fromPoint.lat, fromPoint.lon], { iconCaption: "A" }, {}) as unknown as YPlacemarkLike
-          const toPlacemark = new window.ymaps.Placemark([toPoint.lat, toPoint.lon], { iconCaption: "B" }, {}) as unknown as YPlacemarkLike
-          fromPlacemarkRef.current = fromPlacemark
-          toPlacemarkRef.current = toPlacemark
-
-          if (window.ymaps.Polyline) {
-            const polyline = new window.ymaps.Polyline(
-              lineCoords,
-              {},
-              {
-                strokeColor: "#f5b400",
-                strokeWidth: 4,
-                strokeOpacity: 0.9,
-              },
-            ) as unknown as YPolylineLike
-            polylineRef.current = polyline
-            map.geoObjects.add(polyline)
-          }
-
-          map.geoObjects.add(fromPlacemark)
-          map.geoObjects.add(toPlacemark)
-          setLoading(false)
+        const tileLayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          maxZoom: 19,
+          attribution: "&copy; OpenStreetMap contributors",
         })
-      } catch {
-        if (!cancelled) {
-          setError(tr("Unable to load map preview", "Не удалось загрузить карту маршрута"))
+        tileLayer.on?.("load", () => mapLogInfo("RoutePreview tile layer loaded"))
+        tileLayer.on?.("tileerror", (event) => mapLogWarn("RoutePreview tile error", { event }))
+        tileLayer.addTo(map)
+
+        fromMarkerRef.current = L.circleMarker([safeFrom.lat, safeFrom.lon], {
+          radius: 6,
+          color: "#10b981",
+          fillColor: "#10b981",
+          fillOpacity: 0.95,
+          weight: 2,
+        }).addTo(map)
+        toMarkerRef.current = L.circleMarker([safeTo.lat, safeTo.lon], {
+          radius: 6,
+          color: "#3b82f6",
+          fillColor: "#3b82f6",
+          fillOpacity: 0.95,
+          weight: 2,
+        }).addTo(map)
+        lineRef.current = L.polyline(lineCoords, {
+          color: "#f5b400",
+          weight: 4,
+          opacity: 0.9,
+        }).addTo(map)
+
+        if (typeof ResizeObserver !== "undefined") {
+          const ro = new ResizeObserver(() => invalidateMapSize(mapRef.current))
+          ro.observe(containerEl)
+          resizeObserverRef.current = ro
         }
+
+        invalidateMapSize(map)
+        mapLogInfo("RoutePreview map ready", {
+          width: containerEl.clientWidth,
+          height: containerEl.clientHeight,
+        })
+      } catch (err) {
+        if (!cancelled) {
+          setError(trRef.current("Unable to load map preview", "Unable to load map preview"))
+        }
+        mapLogError("RoutePreview init failed", err)
       } finally {
-        if (!cancelled) {
-          setLoading(false)
-        }
+        if (!cancelled) setLoading(false)
       }
     }
 
-    init()
+    initMap()
 
     return () => {
       cancelled = true
+      resizeObserverRef.current?.disconnect()
+      resizeObserverRef.current = null
+
       const map = mapRef.current
       mapRef.current = null
-      fromPlacemarkRef.current = null
-      toPlacemarkRef.current = null
-      polylineRef.current = null
-
+      fromMarkerRef.current = null
+      toMarkerRef.current = null
+      lineRef.current = null
       if (!map) return
+
       try {
-        map.destroy()
-      } catch {
-        // Ignore map destroy races during tab switches/unmount.
+        map.remove()
+      } catch (err) {
+        mapLogWarn("RoutePreview map remove failed", { error: String(err) })
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [runtimeApiKey, shouldWaitForRuntimeConfig])
+  }, [containerEl])
 
   useEffect(() => {
     const map = mapRef.current
-    if (!map) return
+    const fromMarker = fromMarkerRef.current
+    const toMarker = toMarkerRef.current
+    const line = lineRef.current
+    if (!map || !fromMarker || !toMarker || !line) return
 
-    fromPlacemarkRef.current?.geometry.setCoordinates([fromPoint.lat, fromPoint.lon])
-    toPlacemarkRef.current?.geometry.setCoordinates([toPoint.lat, toPoint.lon])
+    fromMarker.setLatLng([safeFrom.lat, safeFrom.lon])
+    toMarker.setLatLng([safeTo.lat, safeTo.lon])
+    line.setLatLngs(lineCoords)
 
-    if (polylineRef.current) {
-      polylineRef.current.geometry.setCoordinates(lineCoords)
-    } else if (window.ymaps?.Polyline) {
-      const polyline = new window.ymaps.Polyline(
-        lineCoords,
-        {},
-        {
-          strokeColor: "#f5b400",
-          strokeWidth: 4,
-          strokeOpacity: 0.9,
-        },
-      ) as unknown as YPolylineLike
-      polylineRef.current = polyline
-      map.geoObjects.add(polyline)
+    const bounds = line.getBounds()
+    if (bounds.isValid()) {
+      map.fitBounds(bounds, { padding: [24, 24], maxZoom: 15 })
+    } else {
+      map.setView([safeFrom.lat, safeFrom.lon], 12)
     }
-
-    map.setCenter?.([
-      (fromPoint.lat + toPoint.lat) / 2,
-      (fromPoint.lon + toPoint.lon) / 2,
-    ])
-  }, [fromPoint.lat, fromPoint.lon, toPoint.lat, toPoint.lon, lineCoords])
+    invalidateMapSize(map)
+  }, [safeFrom.lat, safeFrom.lon, safeTo.lat, safeTo.lon, lineCoords])
 
   return (
     <div className="relative rounded-lg border bg-card">
-      <div ref={containerRef} className="h-[320px] w-full rounded-lg" />
+      <div ref={setContainerEl} className="h-[320px] w-full rounded-lg" />
+
       {loading && (
         <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/70">
           <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
         </div>
       )}
-      {error && <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/80 p-4 text-sm text-muted-foreground">{error}</div>}
+
+      {error && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/80 p-4 text-sm text-muted-foreground">
+          {error}
+        </div>
+      )}
     </div>
   )
 }

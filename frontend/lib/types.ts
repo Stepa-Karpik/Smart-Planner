@@ -147,11 +147,6 @@ export interface TelegramStartPayload {
 
 export type RouteMode = "walking" | "driving" | "public_transport" | "bicycle"
 
-export interface RouteConfig {
-  api_key?: string | null
-  layers?: string[]
-}
-
 export interface LocationSuggestion {
   title: string
   subtitle?: string | null

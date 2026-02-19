@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import { Loader2, Navigation } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { MapPickerDialog } from "@/components/map-picker-dialog"
-import { fetchLocationSuggestions, reverseGeocode, useProfile } from "@/lib/hooks"
+import { fetchLocationSuggestions, reverseGeocode } from "@/lib/hooks"
 import type { LocationSuggestion } from "@/lib/types"
 import { useI18n } from "@/lib/i18n"
 
@@ -28,15 +28,10 @@ interface LocationInputProps {
 
 export function LocationInput({ id, value, lat, lon, placeholder, onChange }: LocationInputProps) {
   const { tr } = useI18n()
-  const { data: profile } = useProfile()
   const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([])
   const [loading, setLoading] = useState(false)
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement | null>(null)
-  const preferredCenter =
-    typeof profile?.home_location_lat === "number" && typeof profile?.home_location_lon === "number"
-      ? { lat: profile.home_location_lat, lon: profile.home_location_lon }
-      : null
 
   useEffect(() => {
     const controller = new AbortController()
@@ -141,7 +136,6 @@ export function LocationInput({ id, value, lat, lon, placeholder, onChange }: Lo
         <div className="absolute right-1 top-1/2 -translate-y-1/2">
           <MapPickerDialog
             value={lat !== null && lon !== null ? { lat, lon } : null}
-            preferredCenter={preferredCenter}
             onSelect={handleMapSelect}
           />
         </div>

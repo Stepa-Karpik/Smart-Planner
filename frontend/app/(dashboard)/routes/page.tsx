@@ -2,18 +2,17 @@
 
 import { useEffect, useState } from "react"
 import { useSearchParams } from "next/navigation"
-import { CheckCircle2, Clock, Loader2, Navigation, Ruler, XCircle } from "lucide-react"
+import { Clock, Loader2, Navigation, Ruler } from "lucide-react"
 import { toast } from "sonner"
 import { RoutePreviewMap } from "@/components/route-preview-map"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Skeleton } from "@/components/ui/skeleton"
 import { LocationInput } from "@/components/location-input"
-import { fetchRoutePreview, fetchRouteRecommendations, updateProfile, useProfile, useRouteConfig } from "@/lib/hooks"
+import { fetchRoutePreview, fetchRouteRecommendations, updateProfile, useProfile } from "@/lib/hooks"
 import type { RouteMode, RoutePreview, RouteRecommendation } from "@/lib/types"
 import { useI18n } from "@/lib/i18n"
 
@@ -64,7 +63,6 @@ function parseLatLon(raw: string): { lat: number; lon: number } | null {
 export default function RoutesPage() {
   const { tr } = useI18n()
   const searchParams = useSearchParams()
-  const { data: config, isLoading: configLoading } = useRouteConfig()
   const { data: profile, mutate: mutateProfile } = useProfile()
 
   const initialToRaw = searchParams.get("to") || ""
@@ -166,28 +164,6 @@ export default function RoutesPage() {
           {tr("Build route previews and compare optimal options", "Стройте маршрут и сравнивайте оптимальные варианты")}
         </p>
       </div>
-
-      <Card className="border-border/50">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-medium">{tr("Map configuration", "Конфигурация карты")}</CardTitle>
-          <CardDescription className="text-xs">{tr("Yandex Maps key status", "Статус ключа Yandex Maps")}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {configLoading ? (
-            <Skeleton className="h-6 w-44" />
-          ) : config?.api_key ? (
-            <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20">
-              <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
-              {tr("Key is configured", "Ключ настроен")}
-            </Badge>
-          ) : (
-            <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20">
-              <XCircle className="mr-1.5 h-3.5 w-3.5" />
-              {tr("Key is missing", "Ключ не задан")}
-            </Badge>
-          )}
-        </CardContent>
-      </Card>
 
       <Card className="border-border/50">
         <CardContent className="pt-6">

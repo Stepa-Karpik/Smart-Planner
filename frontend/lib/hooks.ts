@@ -19,7 +19,6 @@ import type {
   ProfileUpdate,
   Reminder,
   ReminderCreate,
-  RouteConfig,
   RouteMode,
   RoutePreview,
   RouteRecommendation,
@@ -156,10 +155,6 @@ export async function unlinkTelegram() {
     globalMutate("/api/v1/integrations/telegram/status")
   }
   return res
-}
-
-export function useRouteConfig() {
-  return useSWR<RouteConfig>("/api/v1/routes/config", fetcher)
 }
 
 export async function fetchLocationSuggestions(query: string, limit = 8, signal?: AbortSignal) {

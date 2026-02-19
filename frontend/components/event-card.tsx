@@ -27,10 +27,10 @@ const statusColors: Record<string, string> = {
 
 function locationMapLink(event: CalendarEvent) {
   if (typeof event.location_lat === "number" && typeof event.location_lon === "number") {
-    return `https://yandex.ru/maps/?ll=${event.location_lon},${event.location_lat}&z=16&pt=${event.location_lon},${event.location_lat},pm2rdm`
+    return `https://www.openstreetmap.org/?mlat=${event.location_lat}&mlon=${event.location_lon}#map=16/${event.location_lat}/${event.location_lon}`
   }
   if (event.location_text) {
-    return `https://yandex.ru/maps/?text=${encodeURIComponent(event.location_text)}`
+    return `https://www.openstreetmap.org/search?query=${encodeURIComponent(event.location_text)}`
   }
   return null
 }
