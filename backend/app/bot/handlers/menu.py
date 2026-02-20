@@ -298,9 +298,9 @@ async def voice_to_ai(message: Message) -> None:
             await message.answer("Не удалось распознать голосовое.")
             return
 
-        resolved_session_id, answer = await ai_service.chat(user_id=user_id, message=text, session_id=chat_session_id)
-        await store_chat_ai_session(message.chat.id, resolved_session_id)
-        await message.answer(f"🎤 {text}\n\n{answer}")
+        chat_result = await ai_service.chat(user_id=user_id, message=text, session_id=chat_session_id)
+        await store_chat_ai_session(message.chat.id, chat_result.session_id)
+        await message.answer(f"🎤 {text}\n\n{chat_result.answer}")
 
 
 @router.message(F.text)
@@ -321,6 +321,6 @@ async def free_text_ai(message: Message) -> None:
         route_service = RouteService(redis)
         feasibility_service = TravelFeasibilityService(route_service)
         ai_service = AIService(session, redis, event_service, feasibility_service)
-        resolved_session_id, answer = await ai_service.chat(user_id=user_id, message=message.text, session_id=chat_session_id)
-        await store_chat_ai_session(message.chat.id, resolved_session_id)
-        await message.answer(answer, reply_markup=main_keyboard())
+        chat_result = await ai_service.chat(user_id=user_id, message=message.text, session_id=chat_session_id)
+        await store_chat_ai_session(message.chat.id, chat_result.session_id)
+        await message.answer(chat_result.answer, reply_markup=main_keyboard())

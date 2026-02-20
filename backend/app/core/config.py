@@ -26,6 +26,7 @@ class Settings(BaseSettings):
 
     app_base_url: str = "http://localhost:3000"
     frontend_origins: list[str] = Field(default_factory=lambda: ["http://localhost:3000"])
+    admin_usernames: list[str] = Field(default_factory=list)
 
     worker_poll_interval_sec: int = 10
     notif_lock_ttl_sec: int = 600
@@ -46,6 +47,14 @@ class Settings(BaseSettings):
     deepseek_api_key: str = ""
     ai_timeout_ms: int = 20000
     ai_max_concurrency: int = 8
+    ai_assistant_base_url: str = "http://ai-assistant:8100"
+    ai_assistant_timeout_ms: int = 10000
+    ai_assistant_retries: int = 2
+    ai_assistant_circuit_breaker_failures: int = 5
+    ai_assistant_circuit_breaker_reset_sec: int = 30
+    ai_assistant_internal_api_key: str = ""
+    ai_context_window_messages: int = 16
+    ai_context_summary_max_chars: int = 1200
 
     routes_cache_ttl_sec: int = 900
     geocode_cache_ttl_sec: int = 1800
@@ -72,6 +81,24 @@ class Settings(BaseSettings):
             return [origin.strip() for origin in value.split(",") if origin.strip()]
         if isinstance(value, list):
             return [str(item).strip() for item in value if str(item).strip()]
+        return []
+
+    @field_validator("admin_usernames", mode="before")
+    @classmethod
+    def parse_admin_usernames(cls, value: object) -> list[str]:
+        if isinstance(value, str):
+            if not value.strip():
+                return []
+            if value.strip().startswith("["):
+                try:
+                    parsed = json.loads(value)
+                    if isinstance(parsed, list):
+                        return [str(item).strip().lower() for item in parsed if str(item).strip()]
+                except json.JSONDecodeError:
+                    pass
+            return [item.strip().lower() for item in value.split(",") if item.strip()]
+        if isinstance(value, list):
+            return [str(item).strip().lower() for item in value if str(item).strip()]
         return []
 
 

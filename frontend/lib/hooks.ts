@@ -3,6 +3,8 @@
 import useSWR, { mutate as globalMutate } from "swr"
 import { apiRequest } from "./api-client"
 import type {
+  AssistantMode,
+  AssistantModeState,
   AiChatResponse,
   AiMessage,
   AiSession,
@@ -241,11 +243,61 @@ export function useAiMessages(sessionId: string | undefined) {
   return useSWR<AiMessage[]>(sessionId ? `/api/v1/ai/sessions/${sessionId}/messages` : null, fetcher)
 }
 
-export async function sendAiChat(message: string, sessionId?: string) {
+export async function sendAiChat(message: string, sessionId?: string, selectedOptionId?: string) {
   return apiRequest<AiChatResponse>("/api/v1/ai/chat", {
     method: "POST",
-    body: JSON.stringify({ message, session_id: sessionId }),
+    body: JSON.stringify({
+      message,
+      session_id: sessionId,
+      selected_option_id: selectedOptionId,
+    }),
   })
+}
+
+export function useAssistantMode() {
+  return useSWR<AssistantModeState>("/api/v1/ai/mode", fetcher)
+}
+
+export async function updateAssistantMode(params: {
+  defaultMode: AssistantMode
+  sessionId?: string
+  createNewChat?: boolean
+}) {
+  const res = await apiRequest<AssistantModeState>("/api/v1/ai/mode", {
+    method: "PATCH",
+    body: JSON.stringify({
+      default_mode: params.defaultMode,
+      session_id: params.sessionId,
+      create_new_chat: !!params.createNewChat,
+    }),
+  })
+  if (!res.error) {
+    globalMutate("/api/v1/ai/mode")
+  }
+  return res
+}
+
+export async function createAiSession(chatType?: "planner" | "companion") {
+  const res = await apiRequest<AiSession>("/api/v1/ai/sessions", {
+    method: "POST",
+    body: JSON.stringify({
+      chat_type: chatType ?? null,
+    }),
+  })
+  if (!res.error) {
+    globalMutate("/api/v1/ai/sessions")
+  }
+  return res
+}
+
+export async function deleteAiSession(sessionId: string) {
+  const res = await apiRequest<AiSession>(`/api/v1/ai/sessions/${sessionId}`, {
+    method: "DELETE",
+  })
+  if (!res.error) {
+    globalMutate("/api/v1/ai/sessions")
+  }
+  return res
 }
 
 export async function ingestTask(text: string) {

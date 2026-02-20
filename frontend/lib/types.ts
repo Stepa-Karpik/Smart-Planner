@@ -206,6 +206,8 @@ export interface FeasibilityResult {
 
 export interface AiSession {
   id: string
+  chat_type: "planner" | "companion"
+  display_index: number
   title?: string
   created_at: string
   last_used_at?: string
@@ -223,7 +225,25 @@ export interface AiMessage {
 
 export interface AiChatResponse {
   session_id: string
+  chat_type?: "planner" | "companion" | null
+  display_index?: number | null
   answer: string
+  mode?: "AUTO" | "PLANNER" | "COMPANION" | null
+  intent?: string | null
+  fallback_reason_code?: "provider_error" | "timeout" | "rate_limit" | "backend_unavailable" | "unknown" | null
+  requires_user_input?: boolean
+  clarifying_question?: string | null
+  options?: Array<Record<string, unknown>>
+  memory_suggestions?: Array<Record<string, unknown>>
+  planner_summary?: Record<string, unknown>
+}
+
+export type AssistantMode = "AUTO" | "PLANNER" | "COMPANION"
+
+export interface AssistantModeState {
+  default_mode: AssistantMode
+  active_session_id?: string | null
+  active_chat_type?: "planner" | "companion" | null
 }
 
 export interface Profile {

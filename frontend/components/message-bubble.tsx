@@ -34,8 +34,17 @@ function actionMetaView(meta: ActionMeta, tr: (en: string, ru: string) => string
 export function MessageBubble({ role, content, isStreaming, inputType = "text" }: MessageBubbleProps) {
   const { tr } = useI18n()
   const isUser = role === "user"
+  const isSystem = role === "system"
   const { cleaned, meta } = isUser ? { cleaned: content, meta: null as ActionMeta } : parseAssistantContent(content)
   const metaView = actionMetaView(meta, tr)
+
+  if (isSystem) {
+    return (
+      <div className="mx-auto max-w-[80%] rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-900 dark:text-amber-200">
+        <p className="whitespace-pre-wrap break-words">{cleaned}</p>
+      </div>
+    )
+  }
 
   return (
     <div className={cn("flex gap-3", isUser ? "flex-row-reverse" : "flex-row")}>

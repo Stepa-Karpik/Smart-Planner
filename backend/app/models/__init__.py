@@ -1,3 +1,11 @@
+from app.models.assistant import (
+    AdminKbPatch,
+    ConversationSummary,
+    KnowledgeBaseEntry,
+    Observation,
+    SemanticMemoryItem,
+    UserProfileMemory,
+)
 from app.models.ai import AIMessage, AISession, AITaskIngestionJob
 from app.models.calendar import Calendar
 from app.models.event import Event
@@ -17,4 +25,10 @@ __all__ = [
     "AISession",
     "AIMessage",
     "AITaskIngestionJob",
+    "UserProfileMemory",
+    "ConversationSummary",
+    "SemanticMemoryItem",
+    "KnowledgeBaseEntry",
+    "Observation",
+    "AdminKbPatch",
 ]

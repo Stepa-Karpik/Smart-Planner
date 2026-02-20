@@ -3,11 +3,11 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, func
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, func
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.core.enums import AIRole, AITaskSource, AITaskStatus
+from app.core.enums import AIChatType, AIRole, AITaskSource, AITaskStatus
 from app.db.base import Base
 from app.db.types import db_enum
 
@@ -17,6 +17,13 @@ class AISession(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False)
+    chat_type: Mapped[AIChatType] = mapped_column(
+        db_enum(AIChatType, "ai_chat_type"),
+        default=AIChatType.COMPANION,
+        nullable=False,
+    )
+    display_index: Mapped[int] = mapped_column(Integer, nullable=False)
+    is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     last_used_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 

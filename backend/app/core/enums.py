@@ -36,6 +36,56 @@ class MapProvider(str, Enum):
     YANDEX = "yandex"
 
 
+class AssistantMode(str, Enum):
+    AUTO = "AUTO"
+    PLANNER = "PLANNER"
+    COMPANION = "COMPANION"
+
+
+class AIChatType(str, Enum):
+    PLANNER = "planner"
+    COMPANION = "companion"
+
+
+class MemorySource(str, Enum):
+    EXPLICIT = "explicit"
+    INFERRED = "inferred"
+
+
+class MemoryItemType(str, Enum):
+    PREFERENCE = "preference"
+    STYLE = "style"
+    ROUTINE = "routine"
+    PLACE = "place"
+    MODE = "mode"
+
+
+class KnowledgeStatus(str, Enum):
+    DRAFT = "draft"
+    APPROVED = "approved"
+    DEPRECATED = "deprecated"
+
+
+class ObservationType(str, Enum):
+    GAP_REQUEST = "gap_request"
+    FAILURE_CASE = "failure_case"
+    FEATURE_DEMAND = "feature_demand"
+    MISUNDERSTANDING = "misunderstanding"
+    NEW_INTENT = "new_intent"
+
+
+class ImpactLevel(str, Enum):
+    LOW = "low"
+    MED = "med"
+    HIGH = "high"
+
+
+class KBPatchStatus(str, Enum):
+    PENDING = "pending"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+
+
 class AIRole(str, Enum):
     SYSTEM = "system"
     USER = "user"
