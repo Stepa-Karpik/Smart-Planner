@@ -31,6 +31,11 @@ class RouteMode(str, Enum):
     BICYCLE = "bicycle"
 
 
+class MapProvider(str, Enum):
+    LEAFLET = "leaflet"
+    YANDEX = "yandex"
+
+
 class AIRole(str, Enum):
     SYSTEM = "system"
     USER = "user"

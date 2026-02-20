@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { changePassword, updateProfile, useProfile } from "@/lib/hooks"
-import type { RouteMode } from "@/lib/types"
+import type { MapProvider, RouteMode } from "@/lib/types"
 import { useI18n } from "@/lib/i18n"
 
 type LocationSource = "manual_text" | "geocoded" | "map_pick"
@@ -19,6 +19,7 @@ type LocationSource = "manual_text" | "geocoded" | "map_pick"
 export default function ProfilePage() {
   const { tr } = useI18n()
   const { data: profile, isLoading, mutate } = useProfile()
+  const mapProvider: MapProvider = profile?.map_provider || "leaflet"
 
   const [displayName, setDisplayName] = useState("")
   const [username, setUsername] = useState("")
@@ -137,6 +138,7 @@ export default function ProfilePage() {
                   value={homeLocationText}
                   lat={homeLocationLat}
                   lon={homeLocationLon}
+                  mapProvider={mapProvider}
                   placeholder={tr("Type address or pick from map", "Введите адрес или выберите на карте")}
                   onChange={(next) => {
                     setHomeLocationText(next.text)

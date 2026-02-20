@@ -4,8 +4,8 @@ import { useEffect, useRef, useState } from "react"
 import { Loader2, Navigation } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { MapPickerDialog } from "@/components/map-picker-dialog"
-import { fetchLocationSuggestions, reverseGeocode } from "@/lib/hooks"
-import type { LocationSuggestion } from "@/lib/types"
+import { fetchLocationSuggestions, reverseGeocode, useProfile } from "@/lib/hooks"
+import type { LocationSuggestion, MapProvider } from "@/lib/types"
 import { useI18n } from "@/lib/i18n"
 
 type LocationSource = "manual_text" | "geocoded" | "map_pick"
@@ -23,15 +23,18 @@ interface LocationInputProps {
   lat: number | null
   lon: number | null
   placeholder?: string
+  mapProvider?: MapProvider
   onChange: (next: LocationInputChange) => void
 }
 
-export function LocationInput({ id, value, lat, lon, placeholder, onChange }: LocationInputProps) {
+export function LocationInput({ id, value, lat, lon, placeholder, mapProvider, onChange }: LocationInputProps) {
   const { tr } = useI18n()
+  const { data: profile } = useProfile()
   const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([])
   const [loading, setLoading] = useState(false)
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement | null>(null)
+  const resolvedMapProvider: MapProvider = mapProvider || profile?.map_provider || "leaflet"
 
   useEffect(() => {
     const controller = new AbortController()
@@ -137,6 +140,7 @@ export function LocationInput({ id, value, lat, lon, placeholder, onChange }: Lo
           <MapPickerDialog
             value={lat !== null && lon !== null ? { lat, lon } : null}
             onSelect={handleMapSelect}
+            provider={resolvedMapProvider}
           />
         </div>
 

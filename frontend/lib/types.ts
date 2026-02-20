@@ -30,6 +30,7 @@ export interface AuthPayload {
   username: string
   display_name?: string | null
   default_route_mode?: RouteMode
+  map_provider?: MapProvider
   tokens: AuthTokens
 }
 
@@ -145,6 +146,7 @@ export interface TelegramStartPayload {
   instruction: string
 }
 
+export type MapProvider = "leaflet" | "yandex"
 export type RouteMode = "walking" | "driving" | "public_transport" | "bicycle"
 
 export interface LocationSuggestion {
@@ -177,6 +179,11 @@ export interface RouteRecommendation {
   estimated_cost: number
   score: number
   reason: string
+}
+
+export interface RoutesConfig {
+  api_key: string
+  layers: string[]
 }
 
 export interface FeasibilityConflict {
@@ -225,6 +232,7 @@ export interface Profile {
   username: string
   display_name?: string | null
   default_route_mode: RouteMode
+  map_provider: MapProvider
   home_location_text?: string | null
   home_location_lat?: number | null
   home_location_lon?: number | null
@@ -235,6 +243,7 @@ export interface ProfileUpdate {
   username?: string
   display_name?: string | null
   default_route_mode?: RouteMode
+  map_provider?: MapProvider
   home_location_text?: string | null
   home_location_lat?: number | null
   home_location_lon?: number | null

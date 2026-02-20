@@ -5,7 +5,7 @@ from uuid import UUID
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.enums import EventLocationSource, RouteMode
+from app.core.enums import EventLocationSource, MapProvider, RouteMode
 from app.models import User
 
 
@@ -51,6 +51,10 @@ class UserRepository:
             user.username = str(fields["username"]).strip().lower()
         if "default_route_mode" in fields and fields["default_route_mode"] is not None:
             user.default_route_mode = fields["default_route_mode"]
+        if "map_provider" in fields and fields["map_provider"] is not None:
+            provider = fields["map_provider"]
+            if isinstance(provider, MapProvider):
+                user.map_provider = provider
         if "home_location_text" in fields:
             value = fields["home_location_text"]
             user.home_location_text = (value.strip() or None) if isinstance(value, str) else None

@@ -3,7 +3,7 @@ from __future__ import annotations
 from sqlalchemy import Boolean, Float, DateTime, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.core.enums import EventLocationSource, RouteMode
+from app.core.enums import EventLocationSource, MapProvider, RouteMode
 from app.db.base import Base
 from app.db.types import db_enum
 from app.models.mixins import TimestampMixin, UUIDPrimaryKeyMixin
@@ -20,6 +20,11 @@ class User(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     default_route_mode: Mapped[RouteMode] = mapped_column(
         db_enum(RouteMode, "route_mode"),
         default=RouteMode.PUBLIC_TRANSPORT,
+        nullable=False,
+    )
+    map_provider: Mapped[MapProvider] = mapped_column(
+        db_enum(MapProvider, "map_provider"),
+        default=MapProvider.LEAFLET,
         nullable=False,
     )
     home_location_text: Mapped[str | None] = mapped_column(String(255), nullable=True)

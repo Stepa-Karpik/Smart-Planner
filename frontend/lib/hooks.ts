@@ -19,6 +19,7 @@ import type {
   ProfileUpdate,
   Reminder,
   ReminderCreate,
+  RoutesConfig,
   RouteMode,
   RoutePreview,
   RouteRecommendation,
@@ -196,6 +197,10 @@ export async function fetchRouteRecommendations(params: {
   }
 
   return apiRequest<RouteRecommendation[]>(`/api/v1/routes/recommendations?${qs.toString()}`)
+}
+
+export function useRoutesConfig() {
+  return useSWR<RoutesConfig>("/api/v1/routes/config", fetcher)
 }
 
 export async function fetchFeasibility(from: string, to: string, mode: RouteMode) {

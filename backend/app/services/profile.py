@@ -34,6 +34,7 @@ class ProfileService:
             "display_name",
             "username",
             "default_route_mode",
+            "map_provider",
             "home_location_text",
             "home_location_lat",
             "home_location_lon",

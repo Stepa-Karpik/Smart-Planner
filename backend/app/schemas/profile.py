@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
-from app.core.enums import EventLocationSource, RouteMode
+from app.core.enums import EventLocationSource, MapProvider, RouteMode
 
 
 class ProfileRead(BaseModel):
@@ -11,6 +11,7 @@ class ProfileRead(BaseModel):
     username: str
     display_name: str | None
     default_route_mode: RouteMode
+    map_provider: MapProvider
     home_location_text: str | None = None
     home_location_lat: float | None = None
     home_location_lon: float | None = None
@@ -21,6 +22,7 @@ class ProfileUpdate(BaseModel):
     username: str | None = Field(default=None, min_length=3, max_length=64)
     display_name: str | None = Field(default=None, max_length=128)
     default_route_mode: RouteMode | None = None
+    map_provider: MapProvider | None = None
     home_location_text: str | None = Field(default=None, max_length=255)
     home_location_lat: float | None = Field(default=None, ge=-90, le=90)
     home_location_lon: float | None = Field(default=None, ge=-180, le=180)

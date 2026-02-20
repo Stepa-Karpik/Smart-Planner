@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { LocationInput } from "@/components/location-input"
 import { fetchRoutePreview, fetchRouteRecommendations, updateProfile, useProfile } from "@/lib/hooks"
-import type { RouteMode, RoutePreview, RouteRecommendation } from "@/lib/types"
+import type { MapProvider, RouteMode, RoutePreview, RouteRecommendation } from "@/lib/types"
 import { useI18n } from "@/lib/i18n"
 
 interface LocationState {
@@ -64,6 +64,7 @@ export default function RoutesPage() {
   const { tr } = useI18n()
   const searchParams = useSearchParams()
   const { data: profile, mutate: mutateProfile } = useProfile()
+  const mapProvider: MapProvider = profile?.map_provider || "leaflet"
 
   const initialToRaw = searchParams.get("to") || ""
   const initialToCoords = parseLatLon(initialToRaw)
@@ -175,6 +176,7 @@ export default function RoutesPage() {
                   value={from.text}
                   lat={from.lat}
                   lon={from.lon}
+                  mapProvider={mapProvider}
                   placeholder={tr("Address or point", "Адрес или точка")}
                   onChange={(next) => setFrom({ text: next.text, lat: next.lat, lon: next.lon })}
                 />
@@ -185,6 +187,7 @@ export default function RoutesPage() {
                   value={to.text}
                   lat={to.lat}
                   lon={to.lon}
+                  mapProvider={mapProvider}
                   placeholder={tr("Address or point", "Адрес или точка")}
                   onChange={(next) => setTo({ text: next.text, lat: next.lat, lon: next.lon })}
                 />
@@ -244,6 +247,7 @@ export default function RoutesPage() {
                     fromPoint={preview.from_point}
                     toPoint={preview.to_point}
                     geometry={preview.geometry}
+                    provider={mapProvider}
                   />
                 </div>
               ) : (
