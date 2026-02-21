@@ -11,6 +11,7 @@ interface MessageBubbleProps {
   content: string
   isStreaming?: boolean
   inputType?: "text" | "voice"
+  actionMeta?: ActionMeta
 }
 
 function parseAssistantContent(content: string): { cleaned: string; meta: ActionMeta } {
@@ -25,18 +26,20 @@ function parseAssistantContent(content: string): { cleaned: string; meta: Action
 }
 
 function actionMetaView(meta: ActionMeta, tr: (en: string, ru: string) => string) {
-  if (meta === "create") return { label: tr("Created event", "Создано событие"), dot: "bg-emerald-500" }
-  if (meta === "update") return { label: tr("Updated event", "Изменено событие"), dot: "bg-amber-500" }
-  if (meta === "delete") return { label: tr("Deleted event", "Удалено событие"), dot: "bg-red-500" }
+  if (meta === "create") return { label: tr("Event created", "Событие создано"), dot: "bg-emerald-500" }
+  if (meta === "update") return { label: tr("Event updated", "Событие изменено"), dot: "bg-amber-500" }
+  if (meta === "delete") return { label: tr("Event deleted", "Событие удалено"), dot: "bg-red-500" }
   return null
 }
 
-export function MessageBubble({ role, content, isStreaming, inputType = "text" }: MessageBubbleProps) {
+export function MessageBubble({ role, content, isStreaming, inputType = "text", actionMeta = null }: MessageBubbleProps) {
   const { tr } = useI18n()
   const isUser = role === "user"
   const isSystem = role === "system"
-  const { cleaned, meta } = isUser ? { cleaned: content, meta: null as ActionMeta } : parseAssistantContent(content)
-  const metaView = actionMetaView(meta, tr)
+  const parsed = isUser ? { cleaned: content, meta: null as ActionMeta } : parseAssistantContent(content)
+  const cleaned = parsed.cleaned
+  const resolvedMeta = actionMeta || parsed.meta
+  const metaView = actionMetaView(resolvedMeta, tr)
 
   if (isSystem) {
     return (

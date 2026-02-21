@@ -7,9 +7,11 @@ import type { CalendarEvent } from "@/lib/types"
 import { Badge } from "@/components/ui/badge"
 import { Clock } from "lucide-react"
 import { useI18n } from "@/lib/i18n"
+import { useProfile } from "@/lib/hooks"
+import { formatTimeInTimezone } from "@/lib/timezone"
 
-function formatTime(iso: string) {
-  return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+function formatTime(iso: string, timezone?: string | null, locale?: string | null) {
+  return formatTimeInTimezone(iso, timezone, locale)
 }
 
 const priorityColors: Record<string, string> = {
@@ -36,7 +38,8 @@ function locationMapLink(event: CalendarEvent) {
 }
 
 export function EventCard({ event }: { event: CalendarEvent }) {
-  const { tr } = useI18n()
+  const { tr, locale } = useI18n()
+  const { data: profile } = useProfile()
   const mapLink = locationMapLink(event)
 
   return (
@@ -55,7 +58,9 @@ export function EventCard({ event }: { event: CalendarEvent }) {
       <div className="flex items-center gap-3 text-xs text-muted-foreground">
         <span className="flex items-center gap-1">
           <Clock className="h-3 w-3" />
-          {event.all_day ? tr("All day", "Весь день") : `${formatTime(event.start_at)} - ${formatTime(event.end_at)}`}
+          {event.all_day
+            ? tr("All day", "Весь день")
+            : `${formatTime(event.start_at, profile?.timezone, locale)} - ${formatTime(event.end_at, profile?.timezone, locale)}`}
         </span>
       </div>
 

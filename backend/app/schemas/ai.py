@@ -29,6 +29,7 @@ class AIChatResponse(BaseModel):
     options: list[dict] = Field(default_factory=list)
     memory_suggestions: list[dict[str, Any]] = Field(default_factory=list)
     planner_summary: dict[str, Any] = Field(default_factory=dict)
+    response_meta: str | None = None
 
 
 class AssistantModeRead(BaseModel):

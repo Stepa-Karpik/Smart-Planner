@@ -1,9 +1,10 @@
 ﻿"use client"
 
 import Link from "next/link"
-import { format } from "date-fns"
 import type { CalendarEvent } from "@/lib/types"
 import { useI18n } from "@/lib/i18n"
+import { useProfile } from "@/lib/hooks"
+import { dayKeyInTimezone, formatTimeInTimezone, getZonedDateParts, resolveUserTimezone } from "@/lib/timezone"
 
 interface EventGanttProps {
   events: CalendarEvent[]
@@ -18,14 +19,15 @@ function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(value, max))
 }
 
-function minutesFromDayStart(date: Date) {
-  return date.getHours() * 60 + date.getMinutes()
+function minutesFromDayStart(parts: { hour: number; minute: number }) {
+  return parts.hour * 60 + parts.minute
 }
 
-function groupByDay(events: CalendarEvent[]) {
+function groupByDay(events: CalendarEvent[], timezone?: string | null) {
   const map = new Map<string, CalendarEvent[]>()
   for (const event of events) {
-    const key = new Date(event.start_at).toISOString().slice(0, 10)
+    const key = dayKeyInTimezone(event.start_at, timezone)
+    if (!key) continue
     const list = map.get(key) || []
     list.push(event)
     map.set(key, list)
@@ -44,8 +46,10 @@ function formatTravel(minutes: number, tr: (en: string, ru: string) => string) {
 }
 
 export function EventGantt({ events, travelMinutes }: EventGanttProps) {
-  const { tr } = useI18n()
-  const groups = groupByDay(events)
+  const { tr, locale } = useI18n()
+  const { data: profile } = useProfile()
+  const timezone = profile?.timezone
+  const groups = groupByDay(events, timezone)
 
   return (
     <div className="overflow-x-auto rounded-lg border bg-card">
@@ -69,16 +73,23 @@ export function EventGantt({ events, travelMinutes }: EventGanttProps) {
           {groups.map(([day, dayEvents]) => (
             <div key={day} className="flex flex-col gap-2">
               <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                {format(new Date(day), "EEEE, dd LLL yyyy")}
+                {new Intl.DateTimeFormat(locale === "ru" ? "ru-RU" : "en-US", {
+                  weekday: "long",
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                  timeZone: resolveUserTimezone(timezone),
+                }).format(new Date(`${day}T12:00:00Z`))}
               </div>
 
               {dayEvents
                 .sort((a, b) => (a.start_at < b.start_at ? -1 : 1))
                 .map((event) => {
-                  const start = new Date(event.start_at)
-                  const end = new Date(event.end_at)
-                  const startMinute = clamp(minutesFromDayStart(start), 0, DAY_MINUTES)
-                  const endMinute = clamp(minutesFromDayStart(end), startMinute + 1, DAY_MINUTES)
+                  const startParts = getZonedDateParts(event.start_at, timezone)
+                  const endParts = getZonedDateParts(event.end_at, timezone)
+                  if (!startParts || !endParts) return null
+                  const startMinute = clamp(minutesFromDayStart(startParts), 0, DAY_MINUTES)
+                  const endMinute = clamp(minutesFromDayStart(endParts), startMinute + 1, DAY_MINUTES)
                   const left = startMinute * PX_PER_MINUTE
                   const width = Math.max((endMinute - startMinute) * PX_PER_MINUTE, 6)
 
@@ -94,7 +105,7 @@ export function EventGantt({ events, travelMinutes }: EventGanttProps) {
                           {event.title}
                         </Link>
                         <div className="text-xs text-muted-foreground">
-                          {format(start, "HH:mm")} - {format(end, "HH:mm")}
+                          {formatTimeInTimezone(event.start_at, timezone, locale)} - {formatTimeInTimezone(event.end_at, timezone, locale)}
                         </div>
                       </div>
 
@@ -118,7 +129,7 @@ export function EventGantt({ events, travelMinutes }: EventGanttProps) {
                         <div
                           className={`absolute top-[12px] h-5 rounded ${event.status === "done" ? "bg-emerald-500/70" : "bg-accent/80"}`}
                           style={{ left: `${left}px`, width: `${width}px` }}
-                          title={`${event.title} ${format(start, "HH:mm")} - ${format(end, "HH:mm")}`}
+                          title={`${event.title} ${formatTimeInTimezone(event.start_at, timezone, locale)} - ${formatTimeInTimezone(event.end_at, timezone, locale)}`}
                         />
                       </div>
                     </div>

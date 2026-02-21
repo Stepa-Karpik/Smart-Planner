@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge"
 import { fetchFeasibility, useProfile } from "@/lib/hooks"
 import type { FeasibilityResult, RouteMode } from "@/lib/types"
 import { useI18n } from "@/lib/i18n"
+import { formatDateTimeInTimezone, fromDateValueToUtcIso } from "@/lib/timezone"
 
 function modeLabel(mode: RouteMode, tr: (en: string, ru: string) => string) {
   if (mode === "walking") return tr("Walking", "Пешком")
@@ -22,7 +23,7 @@ function modeLabel(mode: RouteMode, tr: (en: string, ru: string) => string) {
 }
 
 export default function FeasibilityPage() {
-  const { tr } = useI18n()
+  const { tr, locale } = useI18n()
   const { data: profile } = useProfile()
 
   const today = new Date()
@@ -45,7 +46,9 @@ export default function FeasibilityPage() {
   async function handleCheck(event: React.FormEvent) {
     event.preventDefault()
     setLoading(true)
-    const response = await fetchFeasibility(new Date(fromDate).toISOString(), new Date(`${toDate}T23:59:59`).toISOString(), mode)
+    const fromIso = fromDateValueToUtcIso(fromDate, profile?.timezone) || new Date(fromDate).toISOString()
+    const toIso = fromDateValueToUtcIso(toDate, profile?.timezone, { endOfDay: true }) || new Date(`${toDate}T23:59:59`).toISOString()
+    const response = await fetchFeasibility(fromIso, toIso, mode)
     setLoading(false)
     if (response.error || !response.data) {
       toast.error(response.error?.message || tr("Failed to run feasibility check", "Не удалось выполнить проверку"))
@@ -135,7 +138,7 @@ export default function FeasibilityPage() {
                           <Badge variant="outline">{modeLabel(conflict.mode, tr)}</Badge>
                         </TableCell>
                         <TableCell className="text-muted-foreground">
-                          {tr("Move to", "Перенести на")} {new Date(conflict.suggested_start_at).toLocaleString()}
+                          {tr("Move to", "Перенести на")} {formatDateTimeInTimezone(conflict.suggested_start_at, profile?.timezone, locale)}
                         </TableCell>
                       </TableRow>
                     ))}

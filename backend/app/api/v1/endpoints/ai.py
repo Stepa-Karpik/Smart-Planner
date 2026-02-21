@@ -74,6 +74,7 @@ async def ai_chat(
         options=result.options or [],
         memory_suggestions=result.memory_suggestions or [],
         planner_summary=result.planner_summary or {},
+        response_meta=result.response_meta,
     )
     return success_response(data=data.model_dump(), request=request)
 

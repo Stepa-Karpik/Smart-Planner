@@ -2,6 +2,7 @@
 
 from datetime import datetime, timezone
 from uuid import UUID
+from zoneinfo import ZoneInfo
 
 from aiogram import F, Router
 from aiogram.types import CallbackQuery
@@ -12,6 +13,8 @@ from app.core.enums import EventStatus
 from app.schemas.event import EventUpdate
 from app.services.events import EventService
 from app.services.telegram import TelegramIntegrationService
+from app.services.user_timezone import UserTimezoneService
+from app.repositories.user import UserRepository
 
 router = Router(name="callbacks")
 
@@ -24,6 +27,11 @@ async def _resolve_user_id(chat_id: int):
             return await TelegramIntegrationService(session, redis).get_user_id_by_chat(chat_id)
         except Exception:
             return None
+
+
+async def _resolve_user_timezone_name(session, user_id: UUID) -> str:
+    user = await UserRepository(session).get_by_id(user_id)
+    return UserTimezoneService.resolve_timezone_name(user)
 
 
 def _uuid_from_hex(value: str) -> UUID:
@@ -96,10 +104,13 @@ async def conflict_actions(callback: CallbackQuery) -> None:
         redis = await redis_client()
         async with session:
             service = EventService(session, redis)
+            timezone_name = await _resolve_user_timezone_name(session, user_id)
             payload = EventUpdate(start_at=start_at, end_at=end_at)
             event = await service.update_event(user_id, event_id, payload)
+            tz = ZoneInfo(timezone_name)
             await callback.message.edit_text(
-                f"Событие перенесено: {event.start_at.strftime('%d.%m %H:%M')} - {event.end_at.strftime('%H:%M')}"
+                "Событие перенесено: "
+                f"{event.start_at.astimezone(tz).strftime('%d.%m %H:%M')} - {event.end_at.astimezone(tz).strftime('%H:%M')}"
             )
         await callback.answer("Перенос выполнен")
         return

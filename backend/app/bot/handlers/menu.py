@@ -3,6 +3,7 @@
 import io
 from datetime import datetime, timezone
 from uuid import UUID
+from zoneinfo import ZoneInfo
 
 from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
@@ -24,6 +25,8 @@ from app.services.feasibility import TravelFeasibilityService
 from app.services.reminders import ReminderService
 from app.services.routing import RouteService
 from app.services.telegram import TelegramIntegrationService
+from app.services.user_timezone import UserTimezoneService
+from app.repositories.user import UserRepository
 
 router = Router(name="menu")
 
@@ -32,15 +35,30 @@ def _chat_session_key(chat_id: int) -> str:
     return f"tg:ai:session:{chat_id}"
 
 
-def parse_datetime_input(raw: str) -> datetime | None:
+def parse_datetime_input(raw: str, timezone_name: str) -> datetime | None:
     raw = raw.strip()
+    tz = ZoneInfo(timezone_name)
     for fmt in ["%Y-%m-%d %H:%M", "%d.%m.%Y %H:%M"]:
         try:
             parsed = datetime.strptime(raw, fmt)
-            return parsed.replace(tzinfo=timezone.utc)
+            return parsed.replace(tzinfo=tz).astimezone(timezone.utc)
         except ValueError:
             continue
     return None
+
+
+async def _resolve_user_timezone_name(session, user_id: UUID) -> str:
+    user = await UserRepository(session).get_by_id(user_id)
+    return UserTimezoneService.resolve_timezone_name(user)
+
+
+def _format_local_range(start_at: datetime, end_at: datetime, timezone_name: str, include_date: bool = False) -> str:
+    tz = ZoneInfo(timezone_name)
+    start_local = start_at.astimezone(tz)
+    end_local = end_at.astimezone(tz)
+    if include_date:
+        return f"{start_local.strftime('%d.%m %H:%M')} - {end_local.strftime('%H:%M')}"
+    return f"{start_local.strftime('%H:%M')} - {end_local.strftime('%H:%M')}"
 
 
 async def resolve_user_id(chat_id: int):
@@ -120,13 +138,14 @@ async def today_events(message: Message) -> None:
     redis = await redis_client()
     async with session:
         service = EventService(session, redis)
+        timezone_name = await _resolve_user_timezone_name(session, user_id)
         events = await service.get_today_events(user_id)
         if not events:
             await message.answer("На сегодня событий нет.", reply_markup=main_keyboard())
             return
 
         for event in events[:20]:
-            text = f"{event.start_at.strftime('%H:%M')} - {event.end_at.strftime('%H:%M')}\n{event.title}"
+            text = f"{_format_local_range(event.start_at, event.end_at, timezone_name)}\n{event.title}"
             if event.location_text:
                 text += f"\n📍 {event.location_text}"
             await message.answer(text, reply_markup=event_actions_keyboard(event.id.hex))
@@ -143,13 +162,14 @@ async def upcoming_events(message: Message) -> None:
     redis = await redis_client()
     async with session:
         service = EventService(session, redis)
+        timezone_name = await _resolve_user_timezone_name(session, user_id)
         events = await service.get_upcoming_events(user_id, hours=48)
         if not events:
             await message.answer("Ближайших событий нет.", reply_markup=main_keyboard())
             return
 
         for event in events[:20]:
-            text = f"{event.start_at.strftime('%d.%m %H:%M')} - {event.end_at.strftime('%H:%M')}\n{event.title}"
+            text = f"{_format_local_range(event.start_at, event.end_at, timezone_name, include_date=True)}\n{event.title}"
             if event.location_text:
                 text += f"\n📍 {event.location_text}"
             await message.answer(text, reply_markup=event_actions_keyboard(event.id.hex))
@@ -176,28 +196,41 @@ async def add_event_title(message: Message, state: FSMContext) -> None:
         return
     await state.update_data(title=title)
     await state.set_state(AddEventStates.waiting_start)
-    await message.answer("Укажи начало в формате YYYY-MM-DD HH:MM (UTC).")
+    data = await state.get_data()
+    timezone_name = "Europe/Moscow"
+    try:
+        user_id = UUID(data["user_id"])
+        session = await new_session()
+        async with session:
+            timezone_name = await _resolve_user_timezone_name(session, user_id)
+    except Exception:
+        timezone_name = "Europe/Moscow"
+    await state.update_data(timezone_name=timezone_name)
+    await message.answer(f"Укажи начало в формате YYYY-MM-DD HH:MM (часовой пояс: {timezone_name}).")
 
 
 @router.message(AddEventStates.waiting_start)
 async def add_event_start_time(message: Message, state: FSMContext) -> None:
-    parsed = parse_datetime_input(message.text or "")
+    data = await state.get_data()
+    timezone_name = str(data.get("timezone_name") or "Europe/Moscow")
+    parsed = parse_datetime_input(message.text or "", timezone_name)
     if parsed is None:
         await message.answer("Неверный формат. Пример: 2026-02-18 15:30")
         return
     await state.update_data(start_at=parsed.isoformat())
     await state.set_state(AddEventStates.waiting_end)
-    await message.answer("Укажи конец в формате YYYY-MM-DD HH:MM (UTC).")
+    await message.answer(f"Укажи конец в формате YYYY-MM-DD HH:MM (часовой пояс: {timezone_name}).")
 
 
 @router.message(AddEventStates.waiting_end)
 async def add_event_end_time(message: Message, state: FSMContext) -> None:
-    parsed = parse_datetime_input(message.text or "")
+    data = await state.get_data()
+    timezone_name = str(data.get("timezone_name") or "Europe/Moscow")
+    parsed = parse_datetime_input(message.text or "", timezone_name)
     if parsed is None:
         await message.answer("Неверный формат. Пример: 2026-02-18 16:30")
         return
 
-    data = await state.get_data()
     start_at = datetime.fromisoformat(data["start_at"])
     if parsed <= start_at:
         await message.answer("Конец должен быть позже начала.")
@@ -225,11 +258,14 @@ async def add_event_reminder(callback: CallbackQuery, state: FSMContext) -> None
     await state.update_data(reminder=reminder)
 
     data = await state.get_data()
+    timezone_name = str(data.get("timezone_name") or "Europe/Moscow")
+    start_value = datetime.fromisoformat(data["start_at"])
+    end_value = datetime.fromisoformat(data["end_at"])
     summary = (
         f"Проверь данные:\n"
         f"Название: {data['title']}\n"
-        f"Начало: {data['start_at']}\n"
-        f"Конец: {data['end_at']}\n"
+        f"Начало: {start_value.astimezone(ZoneInfo(timezone_name)).strftime('%Y-%m-%d %H:%M')}\n"
+        f"Конец: {end_value.astimezone(ZoneInfo(timezone_name)).strftime('%Y-%m-%d %H:%M')}\n"
         f"Место: {data.get('location_text') or '-'}\n"
         f"Напоминание: {data.get('reminder') or 'нет'}"
     )
@@ -249,6 +285,7 @@ async def add_event_cancel(callback: CallbackQuery, state: FSMContext) -> None:
 async def add_event_confirm(callback: CallbackQuery, state: FSMContext) -> None:
     data = await state.get_data()
     user_id = UUID(data["user_id"])
+    timezone_name = str(data.get("timezone_name") or "Europe/Moscow")
 
     session = await new_session()
     redis = await redis_client()
@@ -268,7 +305,12 @@ async def add_event_confirm(callback: CallbackQuery, state: FSMContext) -> None:
             await ReminderService(session).add_reminder(user_id=user_id, event_id=event.id, offset_minutes=reminder_offset)
 
     await state.clear()
-    await callback.message.answer(f"Событие создано: {event.title}", reply_markup=main_keyboard())
+    start_label = event.start_at.astimezone(ZoneInfo(timezone_name)).strftime("%d.%m.%Y %H:%M")
+    location_suffix = f" Место: {event.location_text}." if event.location_text else ""
+    await callback.message.answer(
+        f"Создал событие \"{event.title}\" в {start_label}.{location_suffix}",
+        reply_markup=main_keyboard(),
+    )
     await callback.answer()
 
 

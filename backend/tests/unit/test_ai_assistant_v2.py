@@ -94,7 +94,12 @@ class FakeEventService:
 
     async def create_event(self, user_id: UUID, payload):
         self.calls.append((user_id, payload))
-        return SimpleNamespace(id=uuid4(), title=payload.title)
+        return SimpleNamespace(
+            id=uuid4(),
+            title=payload.title,
+            start_at=payload.start_at,
+            location_text=getattr(payload, "location_text", None),
+        )
 
 
 def _new_service() -> AIService:
@@ -102,9 +107,9 @@ def _new_service() -> AIService:
     service.redis = FakeRedis()
     service.assistant_repo = FakeAssistantRepo()
     service.tools = SimpleNamespace(
-        is_in_domain=lambda _text: True,
-        detect_intent=lambda _text: "general",
-        try_parse_task=lambda _text: None,
+        is_in_domain=lambda _text, now_local=None: True,
+        detect_intent=lambda _text, now_local=None: "general",
+        try_parse_task=lambda _text, now_local=None: None,
     )
     return service
 
@@ -174,8 +179,8 @@ async def test_fallback_when_ai_assistant_unavailable_returns_deterministic_plan
     service = _new_service()
     now = datetime.now(timezone.utc).replace(second=0, microsecond=0)
     service.tools = SimpleNamespace(
-        is_in_domain=lambda _text: True,
-        try_parse_task=lambda _text: SimpleNamespace(
+        is_in_domain=lambda _text, now_local=None: True,
+        try_parse_task=lambda _text, now_local=None: SimpleNamespace(
             title="Sync",
             start_at=now + timedelta(days=1),
             end_at=now + timedelta(days=1, hours=1),
@@ -190,6 +195,7 @@ async def test_fallback_when_ai_assistant_unavailable_returns_deterministic_plan
         mode=AssistantMode.PLANNER,
         message="schedule meeting tomorrow",
         reason="ai_assistant_circuit_open",
+        now_local=datetime.now(timezone.utc),
     )
 
     assert envelope.intent == "fallback"
@@ -273,7 +279,7 @@ async def test_create_event_normalizes_alternative_payload_keys():
     result = await service._execute_action(user_id, action)
 
     assert result.success is True
-    assert "Event created" in result.message
+    assert "событие" in result.message.lower()
 
 
 @pytest.mark.asyncio
@@ -282,9 +288,9 @@ async def test_create_event_uses_source_message_when_payload_is_incomplete():
     service.event_service = FakeEventService()
     now = datetime.now(timezone.utc).replace(second=0, microsecond=0)
     service.tools = SimpleNamespace(
-        is_in_domain=lambda _text: True,
-        detect_intent=lambda _text: "create_event",
-        try_parse_task=lambda _text: SimpleNamespace(
+        is_in_domain=lambda _text, now_local=None: True,
+        detect_intent=lambda _text, now_local=None: "create_event",
+        try_parse_task=lambda _text, now_local=None: SimpleNamespace(
             title="Встреча с начальством",
             start_at=now + timedelta(days=1, hours=12),
             end_at=now + timedelta(days=1, hours=15),
@@ -304,16 +310,16 @@ async def test_create_event_uses_source_message_when_payload_is_incomplete():
     result = await service._execute_action(user_id, action)
 
     assert result.success is True
-    assert "Event created" in result.message
+    assert "событие" in result.message.lower()
 
 
 def test_deterministic_planner_fast_path_builds_create_event_action():
     service = _new_service()
     now = datetime.now(timezone.utc).replace(second=0, microsecond=0)
     service.tools = SimpleNamespace(
-        is_in_domain=lambda _text: True,
-        detect_intent=lambda _text: "create_event",
-        try_parse_task=lambda _text: SimpleNamespace(
+        is_in_domain=lambda _text, now_local=None: True,
+        detect_intent=lambda _text, now_local=None: "create_event",
+        try_parse_task=lambda _text, now_local=None: SimpleNamespace(
             title="Встреча с начальством",
             start_at=now + timedelta(days=1, hours=12),
             end_at=now + timedelta(days=1, hours=15),
@@ -328,6 +334,7 @@ def test_deterministic_planner_fast_path_builds_create_event_action():
         mode=AssistantMode.PLANNER,
         message="завтра встреча с начальством с 12:00 до 15:00. Место: ДГТУ Ростов-на-Дону",
         target_chat_type=AIChatType.PLANNER,
+        now_local=datetime.now(timezone.utc),
     )
 
     assert envelope is not None

@@ -11,9 +11,10 @@ import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useCalendars, useEvents } from "@/lib/hooks"
+import { useCalendars, useEvents, useProfile } from "@/lib/hooks"
 import type { EventStatus } from "@/lib/types"
 import { useI18n } from "@/lib/i18n"
+import { dayKeyInTimezone, fromDateValueToUtcIso, resolveUserTimezone } from "@/lib/timezone"
 
 function todayRange() {
   const now = new Date()
@@ -23,13 +24,20 @@ function todayRange() {
 }
 
 export default function TodayPage() {
-  const { tr } = useI18n()
+  const { tr, locale } = useI18n()
+  const { data: profile } = useProfile()
   const [editorOpen, setEditorOpen] = useState(false)
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState<EventStatus | "all">("all")
   const [calendarFilter, setCalendarFilter] = useState("all")
 
-  const range = useMemo(() => todayRange(), [])
+  const range = useMemo(() => {
+    const now = new Date()
+    const todayKey = dayKeyInTimezone(now.toISOString(), profile?.timezone) || now.toISOString().slice(0, 10)
+    const from = fromDateValueToUtcIso(todayKey, profile?.timezone) || todayRange().from
+    const to = fromDateValueToUtcIso(todayKey, profile?.timezone, { endOfDay: true }) || todayRange().to
+    return { from, to }
+  }, [profile?.timezone])
   const { data: events, isLoading, mutate } = useEvents({
     from: range.from,
     to: range.to,
@@ -39,11 +47,12 @@ export default function TodayPage() {
   })
   const { data: calendars } = useCalendars()
 
-  const todayLabel = new Date().toLocaleDateString(undefined, {
+  const todayLabel = new Intl.DateTimeFormat(locale === "ru" ? "ru-RU" : "en-US", {
     weekday: "long",
     month: "long",
     day: "numeric",
-  })
+    timeZone: resolveUserTimezone(profile?.timezone),
+  }).format(new Date())
 
   const allDayEvents = events?.filter((event) => event.all_day) || []
   const timedEvents = events?.filter((event) => !event.all_day) || []

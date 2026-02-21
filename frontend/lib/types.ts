@@ -236,6 +236,7 @@ export interface AiChatResponse {
   options?: Array<Record<string, unknown>>
   memory_suggestions?: Array<Record<string, unknown>>
   planner_summary?: Record<string, unknown>
+  response_meta?: "create" | "update" | "delete" | "info" | null
 }
 
 export type AssistantMode = "AUTO" | "PLANNER" | "COMPANION"
@@ -253,6 +254,7 @@ export interface Profile {
   display_name?: string | null
   default_route_mode: RouteMode
   map_provider: MapProvider
+  timezone: string
   home_location_text?: string | null
   home_location_lat?: number | null
   home_location_lon?: number | null

@@ -14,6 +14,7 @@ import { EventGantt } from "@/components/event-gantt"
 import { fetchRoutePreview, useCalendars, useEvents, useProfile } from "@/lib/hooks"
 import type { EventStatus } from "@/lib/types"
 import { useI18n } from "@/lib/i18n"
+import { dayKeyInTimezone, fromDateValueToUtcIso } from "@/lib/timezone"
 
 type ViewMode = "list" | "calendar" | "gantt"
 
@@ -47,16 +48,20 @@ export default function EventsPage() {
   const [travelMinutes, setTravelMinutes] = useState<Record<string, number>>({})
 
   const query = useMemo(
-    () => ({
-      from: new Date(fromDate).toISOString(),
-      to: new Date(`${toDate}T23:59:59`).toISOString(),
-      q: search || undefined,
-      status: statusFilter !== "all" ? statusFilter : undefined,
-      calendar_id: calendarFilter !== "all" ? calendarFilter : undefined,
-      limit: 200,
-      offset: 0,
-    }),
-    [calendarFilter, fromDate, search, statusFilter, toDate],
+    () => {
+      const fromIso = fromDateValueToUtcIso(fromDate, profile?.timezone) || new Date(fromDate).toISOString()
+      const toIso = fromDateValueToUtcIso(toDate, profile?.timezone, { endOfDay: true }) || new Date(`${toDate}T23:59:59`).toISOString()
+      return {
+        from: fromIso,
+        to: toIso,
+        q: search || undefined,
+        status: statusFilter !== "all" ? statusFilter : undefined,
+        calendar_id: calendarFilter !== "all" ? calendarFilter : undefined,
+        limit: 200,
+        offset: 0,
+      }
+    },
+    [calendarFilter, fromDate, profile?.timezone, search, statusFilter, toDate],
   )
 
   const { data: events, isLoading, mutate } = useEvents(query)
@@ -90,8 +95,8 @@ export default function EventsPage() {
           continue
         }
 
-        const prevDay = prev.start_at.slice(0, 10)
-        const currDay = curr.start_at.slice(0, 10)
+        const prevDay = dayKeyInTimezone(prev.start_at, profile?.timezone)
+        const currDay = dayKeyInTimezone(curr.start_at, profile?.timezone)
         if (prevDay !== currDay) {
           continue
         }

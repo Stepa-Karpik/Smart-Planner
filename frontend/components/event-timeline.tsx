@@ -2,18 +2,22 @@
 
 import { cn } from "@/lib/utils"
 import type { CalendarEvent } from "@/lib/types"
+import { useProfile } from "@/lib/hooks"
+import { useI18n } from "@/lib/i18n"
+import { formatTimeInTimezone, getZonedDateParts } from "@/lib/timezone"
 
 const HOUR_HEIGHT = 60 // px per hour
 const START_HOUR = 7
 const END_HOUR = 22
 
-function formatTime(iso: string) {
-  return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+function formatTime(iso: string, timezone?: string | null, locale?: string | null) {
+  return formatTimeInTimezone(iso, timezone, locale)
 }
 
-function getPosition(iso: string) {
-  const d = new Date(iso)
-  const hours = d.getHours() + d.getMinutes() / 60
+function getPosition(iso: string, timezone?: string | null) {
+  const parts = getZonedDateParts(iso, timezone)
+  if (!parts) return 0
+  const hours = parts.hour + parts.minute / 60
   return Math.max(0, (hours - START_HOUR) * HOUR_HEIGHT)
 }
 
@@ -32,12 +36,15 @@ const eventColors = [
 ]
 
 export function EventTimeline({ events }: { events: CalendarEvent[] }) {
+  const { data: profile } = useProfile()
+  const { locale } = useI18n()
+  const timezone = profile?.timezone
   const hours = Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => START_HOUR + i)
   const totalHeight = hours.length * HOUR_HEIGHT
 
   // Now indicator
-  const now = new Date()
-  const nowHours = now.getHours() + now.getMinutes() / 60
+  const nowParts = getZonedDateParts(new Date().toISOString(), timezone)
+  const nowHours = nowParts ? nowParts.hour + nowParts.minute / 60 : 0
   const showNow = nowHours >= START_HOUR && nowHours <= END_HOUR
   const nowTop = (nowHours - START_HOUR) * HOUR_HEIGHT
 
@@ -71,7 +78,7 @@ export function EventTimeline({ events }: { events: CalendarEvent[] }) {
 
       {/* Events */}
       {timedEvents.map((event, i) => {
-        const top = getPosition(event.start_at)
+        const top = getPosition(event.start_at, timezone)
         const height = getDuration(event.start_at, event.end_at)
         const colorClass = eventColors[i % eventColors.length]
 
@@ -87,7 +94,9 @@ export function EventTimeline({ events }: { events: CalendarEvent[] }) {
           >
             <p className="font-medium truncate">{event.title}</p>
             {height > 36 && (
-              <p className="opacity-70 text-[10px]">{formatTime(event.start_at)} - {formatTime(event.end_at)}</p>
+              <p className="opacity-70 text-[10px]">
+                {formatTime(event.start_at, timezone, locale)} - {formatTime(event.end_at, timezone, locale)}
+              </p>
             )}
           </a>
         )

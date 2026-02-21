@@ -16,6 +16,7 @@ class ProfileRead(BaseModel):
     home_location_lat: float | None = None
     home_location_lon: float | None = None
     home_location_source: EventLocationSource | None = None
+    timezone: str
 
 
 class ProfileUpdate(BaseModel):

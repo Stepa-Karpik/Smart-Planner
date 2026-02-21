@@ -1,11 +1,23 @@
 "use client"
 
 import Link from "next/link"
-import { addMonths, eachDayOfInterval, endOfMonth, endOfWeek, format, isSameMonth, startOfMonth, startOfWeek, subMonths } from "date-fns"
+import {
+  addMonths,
+  eachDayOfInterval,
+  endOfMonth,
+  endOfWeek,
+  format,
+  isSameMonth,
+  startOfMonth,
+  startOfWeek,
+  subMonths,
+} from "date-fns"
 import { ChevronLeft, ChevronRight } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import type { CalendarEvent } from "@/lib/types"
+import { useProfile } from "@/lib/hooks"
 import { useI18n } from "@/lib/i18n"
+import { dayKeyInTimezone } from "@/lib/timezone"
+import type { CalendarEvent } from "@/lib/types"
+import { Button } from "@/components/ui/button"
 
 interface EventCalendarViewProps {
   events: CalendarEvent[]
@@ -13,21 +25,19 @@ interface EventCalendarViewProps {
   onMonthChange: (next: Date) => void
 }
 
-function eventsForDay(events: CalendarEvent[], day: Date) {
-  const dayStart = new Date(day)
-  dayStart.setHours(0, 0, 0, 0)
-  const dayEnd = new Date(day)
-  dayEnd.setHours(23, 59, 59, 999)
-
+function eventsForDay(events: CalendarEvent[], day: Date, timezone?: string | null) {
+  const dayKey = format(day, "yyyy-MM-dd")
   return events.filter((event) => {
-    const start = new Date(event.start_at)
-    const end = new Date(event.end_at)
-    return start <= dayEnd && end >= dayStart && event.status !== "canceled"
+    const startKey = dayKeyInTimezone(event.start_at, timezone)
+    const endKey = dayKeyInTimezone(event.end_at, timezone)
+    if (!startKey || !endKey) return false
+    return startKey <= dayKey && endKey >= dayKey && event.status !== "canceled"
   })
 }
 
 export function EventCalendarView({ events, month, onMonthChange }: EventCalendarViewProps) {
   const { tr } = useI18n()
+  const { data: profile } = useProfile()
 
   const monthStart = startOfMonth(month)
   const monthEnd = endOfMonth(month)
@@ -57,7 +67,7 @@ export function EventCalendarView({ events, month, onMonthChange }: EventCalenda
 
       <div className="grid grid-cols-7 gap-2">
         {days.map((day) => {
-          const dayEvents = eventsForDay(events, day)
+          const dayEvents = eventsForDay(events, day, profile?.timezone)
           const inCurrentMonth = isSameMonth(day, month)
 
           return (

@@ -13,9 +13,10 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
-import { deleteEvent, updateEvent, useEvent } from "@/lib/hooks"
+import { deleteEvent, updateEvent, useEvent, useProfile } from "@/lib/hooks"
 import { cn } from "@/lib/utils"
 import { useI18n } from "@/lib/i18n"
+import { formatDateTimeInTimezone } from "@/lib/timezone"
 
 const statusColors: Record<string, string> = {
   planned: "bg-accent/10 text-accent border-accent/20",
@@ -23,14 +24,8 @@ const statusColors: Record<string, string> = {
   canceled: "bg-muted text-muted-foreground border-border",
 }
 
-function formatDateTime(value: string) {
-  return new Date(value).toLocaleString(undefined, {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  })
+function formatDateTime(value: string, timezone?: string | null, locale?: string | null) {
+  return formatDateTimeInTimezone(value, timezone, locale)
 }
 
 function buildMapUrl(locationText?: string, lat?: number, lon?: number) {
@@ -44,11 +39,12 @@ function buildMapUrl(locationText?: string, lat?: number, lon?: number) {
 }
 
 export default function EventDetailPage() {
-  const { tr } = useI18n()
+  const { tr, locale } = useI18n()
   const params = useParams()
   const router = useRouter()
   const eventId = params.id as string
   const { data: event, isLoading, mutate } = useEvent(eventId)
+  const { data: profile } = useProfile()
   const [editorOpen, setEditorOpen] = useState(false)
 
   async function handleStatusChange(status: "done" | "canceled") {
@@ -169,8 +165,8 @@ export default function EventDetailPage() {
                 <span>{tr("All day", "Весь день")}</span>
               ) : (
                 <div>
-                  <p>{formatDateTime(event.start_at)}</p>
-                  <p>{formatDateTime(event.end_at)}</p>
+                  <p>{formatDateTime(event.start_at, profile?.timezone, locale)}</p>
+                  <p>{formatDateTime(event.end_at, profile?.timezone, locale)}</p>
                 </div>
               )}
             </div>

@@ -88,7 +88,7 @@ function readWarnings(plannerSummary: Record<string, unknown> | null | undefined
 }
 
 function chatTypeLabel(chatType: "planner" | "companion", tr: (en: string, ru: string) => string) {
-  return chatType === "planner" ? tr("Planner", "Planner") : tr("Companion", "Companion")
+  return chatType === "planner" ? tr("Planner", "Планировщик") : tr("Companion", "Помощник")
 }
 
 export default function AiChatPage() {
@@ -116,7 +116,7 @@ export default function AiChatPage() {
   const [ingestOpen, setIngestOpen] = useState(false)
   const [isListening, setIsListening] = useState(false)
   const [liveTranscript, setLiveTranscript] = useState("")
-  const [selectedMode, setSelectedMode] = useState<AssistantMode>("AUTO")
+  const [selectedMode, setSelectedMode] = useState<AssistantMode>("COMPANION")
   const [modeUpdating, setModeUpdating] = useState(false)
   const [showModeHint, setShowModeHint] = useState(false)
 
@@ -157,8 +157,12 @@ export default function AiChatPage() {
 
   useEffect(() => {
     if (!assistantModeState?.default_mode) return
+    if (assistantModeState.default_mode === "AUTO") {
+      setSelectedMode(assistantModeState.active_chat_type === "planner" ? "PLANNER" : "COMPANION")
+      return
+    }
     setSelectedMode(assistantModeState.default_mode)
-  }, [assistantModeState?.default_mode])
+  }, [assistantModeState?.default_mode, assistantModeState?.active_chat_type])
 
   useEffect(() => {
     if (!assistantModeState?.active_session_id) return
@@ -201,12 +205,7 @@ export default function AiChatPage() {
   }, [])
 
   async function handleNewChat() {
-    const preferredType =
-      selectedMode === "PLANNER"
-        ? "planner"
-        : selectedMode === "COMPANION"
-          ? "companion"
-          : selectedChatType || undefined
+    const preferredType = selectedMode === "PLANNER" ? "planner" : selectedMode === "COMPANION" ? "companion" : selectedChatType || undefined
     const res = await createAiSession(preferredType)
     if (res.error || !res.data) {
       toast.error(res.error?.message || tr("Failed to create chat", "Не удалось создать чат"))
@@ -251,8 +250,7 @@ export default function AiChatPage() {
     setSelectedMode(mode)
     setModeUpdating(true)
 
-    const targetChatType =
-      mode === "PLANNER" ? "planner" : mode === "COMPANION" ? "companion" : null
+    const targetChatType = mode === "PLANNER" ? "planner" : "companion"
     const currentSessionId = selectedSessionId || activeSessionId
     const hasMessages = (historyMessages?.length || 0) > 0
     let createNewChat = false
@@ -322,7 +320,7 @@ export default function AiChatPage() {
 
     const chatType =
       selectedSession?.chat_type ||
-      (selectedMode === "PLANNER" ? "planner" : selectedMode === "COMPANION" ? "companion" : undefined)
+      (selectedMode === "PLANNER" ? "planner" : "companion")
 
     const sessionId = await sendMessage(payload, selectedSessionId || activeSessionId, {
       inputType,
@@ -540,14 +538,11 @@ export default function AiChatPage() {
                 disabled={modeUpdating || assistantModeLoading}
                 className="rounded-xl border bg-background p-1"
               >
-                <ToggleGroupItem value="AUTO" className="h-8 rounded-lg px-3 text-xs">
-                  Auto
-                </ToggleGroupItem>
                 <ToggleGroupItem value="PLANNER" className="h-8 rounded-lg px-3 text-xs">
-                  Planner
+                  {tr("Planner", "Планировщик")}
                 </ToggleGroupItem>
                 <ToggleGroupItem value="COMPANION" className="h-8 rounded-lg px-3 text-xs">
-                  Companion
+                  {tr("Companion", "Помощник")}
                 </ToggleGroupItem>
               </ToggleGroup>
             </div>
@@ -557,18 +552,13 @@ export default function AiChatPage() {
                   {tr("Chat type", "Тип чата")}: {chatTypeLabel(selectedChatType, tr)}
                 </span>
               )}
-              {selectedMode === "PLANNER" && (
-                <span className="inline-flex items-center rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-1 text-xs text-emerald-700 dark:text-emerald-300">
-                  {tr("Planning mode active", "Режим планирования активен")}
-                </span>
-              )}
             </div>
           </div>
           {showModeHint && (
             <div className="mx-auto mt-2 w-full max-w-2xl rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-xs text-muted-foreground">
               {tr(
-                "Tip: switch mode anytime. AUTO chooses automatically, PLANNER focuses on schedule, COMPANION is universal.",
-                "Подсказка: режим можно менять в любой момент. AUTO выбирает сам, PLANNER фокусируется на расписании, COMPANION — универсальный помощник.",
+                "Tip: switch mode anytime. Planner focuses on schedule, Companion is universal.",
+                "Подсказка: режим можно менять в любой момент. Планировщик фокусируется на расписании, Помощник — универсальный.",
               )}
             </div>
           )}
@@ -613,6 +603,7 @@ export default function AiChatPage() {
                       role={msg.role}
                       content={msg.content}
                       inputType={msg.inputType}
+                      actionMeta={(msg.meta?.responseMeta as "create" | "update" | "delete" | "info" | null) || null}
                       isStreaming={isStreaming && i === uiMessages.length - 1 && msg.role === "assistant"}
                     />
 

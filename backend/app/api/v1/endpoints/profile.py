@@ -7,6 +7,7 @@ from app.api.deps import get_current_user, get_db_session
 from app.core.responses import success_response
 from app.schemas.profile import PasswordChangeRequest, ProfileRead, ProfileUpdate
 from app.services.profile import ProfileService
+from app.services.user_timezone import UserTimezoneService
 
 router = APIRouter(prefix="/profile", tags=["Profile"])
 
@@ -29,6 +30,7 @@ async def get_profile(
         home_location_lat=user.home_location_lat,
         home_location_lon=user.home_location_lon,
         home_location_source=user.home_location_source,
+        timezone=UserTimezoneService.resolve_timezone_name(user),
     )
     return success_response(data=data.model_dump(), request=request)
 
@@ -52,6 +54,7 @@ async def update_profile(
         home_location_lat=user.home_location_lat,
         home_location_lon=user.home_location_lon,
         home_location_source=user.home_location_source,
+        timezone=UserTimezoneService.resolve_timezone_name(user),
     )
     return success_response(data=data.model_dump(), request=request)
 

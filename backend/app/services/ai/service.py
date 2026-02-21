@@ -9,6 +9,7 @@ from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 from typing import Any, Literal
 from uuid import UUID, uuid4
+from zoneinfo import ZoneInfo
 
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -45,6 +46,7 @@ from app.services.ai.providers import build_providers
 from app.services.ai.tools import AITools
 from app.services.events import EventService
 from app.services.feasibility import TravelFeasibilityService
+from app.services.user_timezone import UserTimezoneService
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +56,7 @@ class ActionExecutionResult:
     action_type: str
     success: bool
     message: str
+    meta: Literal["create", "update", "delete", "info"] = "info"
 
 
 @dataclass(slots=True)
@@ -70,6 +73,7 @@ class ChatResult:
     options: list[dict[str, Any]] | None = None
     memory_suggestions: list[dict[str, Any]] | None = None
     planner_summary: dict[str, Any] | None = None
+    response_meta: Literal["create", "update", "delete", "info"] | None = None
 
 
 class AIService:
@@ -240,6 +244,25 @@ class AIService:
         return "ru"
 
     @staticmethod
+    def _safe_zoneinfo(tz_name: str) -> ZoneInfo:
+        try:
+            return ZoneInfo(tz_name)
+        except Exception:
+            return ZoneInfo("Europe/Moscow")
+
+    @classmethod
+    def _to_user_local(cls, value: datetime, tz_name: str) -> datetime:
+        aware = value if value.tzinfo else value.replace(tzinfo=timezone.utc)
+        return aware.astimezone(cls._safe_zoneinfo(tz_name))
+
+    @classmethod
+    def _format_local_datetime(cls, value: datetime, tz_name: str, language: str) -> str:
+        local = cls._to_user_local(value, tz_name)
+        if language == "en":
+            return local.strftime("%Y-%m-%d %H:%M")
+        return local.strftime("%d.%m.%Y %H:%M")
+
+    @staticmethod
     def _is_positive_reply(text: str) -> bool:
         normalized = text.lower().strip()
         return normalized in {
@@ -404,13 +427,14 @@ class AIService:
         mode: AssistantMode,
         message: str,
         target_chat_type: AIChatType,
+        now_local: datetime,
     ) -> AIResultEnvelope | None:
         if target_chat_type != AIChatType.PLANNER:
             return None
 
         intent = self.tools.detect_intent(message)
         normalized = message.lower()
-        now = datetime.now(timezone.utc)
+        now = now_local.astimezone(timezone.utc)
 
         if intent in {"list_tomorrow", "weekly_overview", "schedule_query"}:
             if "tomorrow" in normalized or "завтра" in normalized:
@@ -455,8 +479,8 @@ class AIService:
                     ProposedAction(
                         type="free_slots",
                         payload={
-                            "date_from": now.date().isoformat(),
-                            "date_to": (now + timedelta(days=2)).date().isoformat(),
+                            "date_from": now_local.date().isoformat(),
+                            "date_to": (now_local + timedelta(days=2)).date().isoformat(),
                             "duration_minutes": self._extract_duration_minutes_from_text(message, default=60),
                             "work_hours_only": True,
                         },
@@ -472,7 +496,7 @@ class AIService:
             )
 
         if intent == "create_event":
-            parsed = self.tools.try_parse_task(message)
+            parsed = self.tools.try_parse_task(message, now_local=now_local)
             if parsed is None or not parsed.has_explicit_date:
                 return None
             return AIResultEnvelope(
@@ -813,6 +837,7 @@ class AIService:
         mode: AssistantMode,
         message: str,
         reason: str,
+        now_local: datetime,
         actor_role: Literal["user", "admin"] = "user",
     ) -> AIResultEnvelope:
         planner_like = mode == AssistantMode.PLANNER or self.tools.is_in_domain(message)
@@ -873,7 +898,6 @@ class AIService:
             )
 
         if self._looks_like_free_slots_request(message):
-            now = datetime.now(timezone.utc)
             return AIResultEnvelope(
                 request_id=str(request_id),
                 mode=mode,
@@ -886,8 +910,8 @@ class AIService:
                     {
                         "type": "free_slots",
                         "payload": {
-                            "date_from": now.date().isoformat(),
-                            "date_to": (now + timedelta(days=2)).date().isoformat(),
+                            "date_from": now_local.date().isoformat(),
+                            "date_to": (now_local + timedelta(days=2)).date().isoformat(),
                             "duration_minutes": 60,
                             "work_hours_only": True,
                         },
@@ -906,7 +930,7 @@ class AIService:
                 ),
             )
 
-        parsed = self.tools.try_parse_task(message)
+        parsed = self.tools.try_parse_task(message, now_local=now_local)
         if parsed is not None and parsed.has_explicit_date:
             payload = {
                 "title": parsed.title,
@@ -942,7 +966,6 @@ class AIService:
                 user_message=user_message,
             )
 
-        now = datetime.now(timezone.utc)
         return AIResultEnvelope(
             request_id=str(request_id),
             mode=mode,
@@ -962,8 +985,8 @@ class AIService:
                     "label": "Show free slots for next 2 days" if language == "en" else "Показать свободные слоты на 2 дня",
                     "action_type": "free_slots",
                     "payload_patch": {
-                        "date_from": now.date().isoformat(),
-                        "date_to": (now + timedelta(days=2)).date().isoformat(),
+                        "date_from": now_local.date().isoformat(),
+                        "date_to": (now_local + timedelta(days=2)).date().isoformat(),
                         "duration_minutes": 60,
                         "work_hours_only": True,
                     },
@@ -984,6 +1007,8 @@ class AIService:
         self,
         user_id: UUID,
         actions: list[ProposedAction],
+        *,
+        now_local: datetime | None = None,
     ) -> ValidationResult:
         warnings: list[str] = []
         conflicts: list[dict[str, Any]] = []
@@ -1009,7 +1034,7 @@ class AIService:
             if action.type == "create_event" and start_at is None:
                 source_message = str(payload.get("source_message") or "").strip()
                 if source_message:
-                    parsed = self.tools.try_parse_task(source_message)
+                    parsed = self.tools.try_parse_task(source_message, now_local=now_local)
                     if parsed is not None and parsed.has_explicit_date:
                         start_at = parsed.start_at
                         if end_at is None:
@@ -1117,7 +1142,15 @@ class AIService:
             warnings=warnings,
         )
 
-    async def _execute_action(self, user_id: UUID, action: ProposedAction) -> ActionExecutionResult:
+    async def _execute_action(
+        self,
+        user_id: UUID,
+        action: ProposedAction,
+        *,
+        language: str = "ru",
+        timezone_name: str = "Europe/Moscow",
+        now_local: datetime | None = None,
+    ) -> ActionExecutionResult:
         if action.safety.needs_confirmation and action.type in {
             "create_event",
             "update_event",
@@ -1126,31 +1159,40 @@ class AIService:
             "optimize_schedule",
             "set_preference",
         }:
-            return ActionExecutionResult(
-                action_type=action.type,
-                success=False,
-                message=f"Draft action ({action.type}) was not applied because confirmation is required.",
+            message = (
+                f"Черновое действие ({action.type}) не применено: требуется подтверждение."
+                if language == "ru"
+                else f"Draft action ({action.type}) was not applied because confirmation is required."
             )
+            return ActionExecutionResult(action_type=action.type, success=False, message=message, meta="info")
 
         payload = action.payload
         if action.type == "none":
-            return ActionExecutionResult(action_type=action.type, success=True, message="")
+            return ActionExecutionResult(action_type=action.type, success=True, message="", meta="info")
 
         if action.type == "set_mode":
             raw_mode = payload.get("default_mode") or payload.get("mode")
             try:
                 mode = AssistantMode(str(raw_mode))
             except Exception:
-                return ActionExecutionResult(action_type=action.type, success=False, message="Could not parse assistant mode.")
+                message = "Не удалось определить режим ассистента." if language == "ru" else "Could not parse assistant mode."
+                return ActionExecutionResult(action_type=action.type, success=False, message=message, meta="info")
             await self.assistant_repo.set_default_mode(user_id, mode)
-            return ActionExecutionResult(action_type=action.type, success=True, message=f"Okay, default mode: {mode.value}.")
+            message = (
+                f"Ок, режим по умолчанию: {mode.value}."
+                if language == "ru"
+                else f"Okay, default mode: {mode.value}."
+            )
+            return ActionExecutionResult(action_type=action.type, success=True, message=message, meta="info")
 
         if action.type == "set_preference":
             key = str(payload.get("key") or "").strip()
             if not key:
-                return ActionExecutionResult(action_type=action.type, success=False, message="Preference key is required.")
+                message = "Нужен ключ настройки." if language == "ru" else "Preference key is required."
+                return ActionExecutionResult(action_type=action.type, success=False, message=message, meta="info")
             await self.assistant_repo.set_preference(user_id, key, payload.get("value"))
-            return ActionExecutionResult(action_type=action.type, success=True, message=f"Preference saved: {key}.")
+            message = f"Сохранил настройку: {key}." if language == "ru" else f"Preference saved: {key}."
+            return ActionExecutionResult(action_type=action.type, success=True, message=message, meta="info")
 
         if action.type == "create_event":
             payload = self._normalize_create_event_payload(payload)
@@ -1162,7 +1204,7 @@ class AIService:
             if not title or start_at is None:
                 source_message = str(payload.get("source_message") or "").strip()
                 if source_message:
-                    parsed = self.tools.try_parse_task(source_message)
+                    parsed = self.tools.try_parse_task(source_message, now_local=now_local)
                     if parsed is not None and parsed.has_explicit_date:
                         if not title:
                             title = parsed.title
@@ -1174,14 +1216,24 @@ class AIService:
                             payload["location_text"] = parsed.location_text
 
             if not title or start_at is None:
-                return ActionExecutionResult(action_type=action.type, success=False, message="Could not create event: title and start_at are required.")
+                message = (
+                    "Не удалось создать событие: обязательны title и start_at."
+                    if language == "ru"
+                    else "Could not create event: title and start_at are required."
+                )
+                return ActionExecutionResult(action_type=action.type, success=False, message=message, meta="info")
             if end_at is None:
                 if isinstance(duration_minutes, int) and 1 <= duration_minutes <= 24 * 60:
                     end_at = start_at + timedelta(minutes=duration_minutes)
                 else:
                     end_at = start_at + timedelta(hours=1)
             if end_at <= start_at:
-                return ActionExecutionResult(action_type=action.type, success=False, message="Could not create event: end_at must be after start_at.")
+                message = (
+                    "Не удалось создать событие: end_at должен быть позже start_at."
+                    if language == "ru"
+                    else "Could not create event: end_at must be after start_at."
+                )
+                return ActionExecutionResult(action_type=action.type, success=False, message=message, meta="info")
             try:
                 event = await self.event_service.create_event(
                     user_id=user_id,
@@ -1201,14 +1253,28 @@ class AIService:
                 )
             except Exception as exc:
                 logger.exception("create_event action failed", extra={"user_id": str(user_id), "payload": payload})
-                return ActionExecutionResult(action_type=action.type, success=False, message=f"Could not create event: {exc}")
-            return ActionExecutionResult(action_type=action.type, success=True, message=f"Event created: {event.title}.")
+                message = (
+                    f"Не удалось создать событие: {exc}"
+                    if language == "ru"
+                    else f"Could not create event: {exc}"
+                )
+                return ActionExecutionResult(action_type=action.type, success=False, message=message, meta="info")
+            start_label = self._format_local_datetime(event.start_at, timezone_name, language)
+            location_text = str(getattr(event, "location_text", "") or "").strip()
+            if language == "ru":
+                location_suffix = f" Место: {location_text}." if location_text else "."
+                message = f"Создал событие \"{event.title}\" в {start_label}{location_suffix}"
+            else:
+                location_suffix = f" Location: {location_text}." if location_text else "."
+                message = f"Created event \"{event.title}\" at {start_label}{location_suffix}"
+            return ActionExecutionResult(action_type=action.type, success=True, message=message, meta="create")
 
         if action.type == "update_event":
             event_id = self._parse_uuid(payload.get("event_id"))
             patch = payload.get("patch") if isinstance(payload.get("patch"), dict) else {}
             if event_id is None:
-                return ActionExecutionResult(action_type=action.type, success=False, message="event_id is required for update_event.")
+                message = "Для update_event нужен event_id." if language == "ru" else "event_id is required for update_event."
+                return ActionExecutionResult(action_type=action.type, success=False, message=message, meta="info")
             update_payload: dict[str, Any] = {}
             for key in ("title", "description", "location_text", "location_lat", "location_lon", "all_day", "priority"):
                 if key in patch:
@@ -1220,7 +1286,8 @@ class AIService:
             if end_at is not None:
                 update_payload["end_at"] = end_at
             if not update_payload:
-                return ActionExecutionResult(action_type=action.type, success=False, message="update_event has empty patch.")
+                message = "update_event: пустой patch." if language == "ru" else "update_event has empty patch."
+                return ActionExecutionResult(action_type=action.type, success=False, message=message, meta="info")
             try:
                 event = await self.event_service.update_event(user_id, event_id, EventUpdate(**update_payload))
             except Exception as exc:
@@ -1228,48 +1295,84 @@ class AIService:
                     "update_event action failed",
                     extra={"user_id": str(user_id), "event_id": str(event_id), "patch_keys": list(update_payload.keys())},
                 )
-                return ActionExecutionResult(action_type=action.type, success=False, message=f"Could not update event: {exc}")
-            return ActionExecutionResult(action_type=action.type, success=True, message=f"Event updated: {event.title}.")
+                message = (
+                    f"Не удалось изменить событие: {exc}"
+                    if language == "ru"
+                    else f"Could not update event: {exc}"
+                )
+                return ActionExecutionResult(action_type=action.type, success=False, message=message, meta="info")
+            if language == "ru":
+                message = f"Изменил событие \"{event.title}\"."
+            else:
+                message = f"Updated event \"{event.title}\"."
+            return ActionExecutionResult(action_type=action.type, success=True, message=message, meta="update")
 
         if action.type == "delete_event":
             event_id = self._parse_uuid(payload.get("event_id"))
             if event_id is None:
-                return ActionExecutionResult(action_type=action.type, success=False, message="event_id is required for delete_event.")
+                message = "Для delete_event нужен event_id." if language == "ru" else "event_id is required for delete_event."
+                return ActionExecutionResult(action_type=action.type, success=False, message=message, meta="info")
             try:
                 await self.event_service.soft_delete_event(user_id, event_id)
             except Exception as exc:
                 logger.exception("delete_event action failed", extra={"user_id": str(user_id), "event_id": str(event_id)})
-                return ActionExecutionResult(action_type=action.type, success=False, message=f"Could not delete event: {exc}")
-            return ActionExecutionResult(action_type=action.type, success=True, message="Event deleted.")
+                message = (
+                    f"Не удалось удалить событие: {exc}"
+                    if language == "ru"
+                    else f"Could not delete event: {exc}"
+                )
+                return ActionExecutionResult(action_type=action.type, success=False, message=message, meta="info")
+            message = "Удалил событие." if language == "ru" else "Deleted event."
+            return ActionExecutionResult(action_type=action.type, success=True, message=message, meta="delete")
 
         if action.type == "list_events":
             payload_range = str(payload.get("range") or "today").lower()
-            now = datetime.now(timezone.utc)
+            tz = self._safe_zoneinfo(timezone_name)
+            local_now = now_local.astimezone(tz) if now_local is not None else datetime.now(tz)
             if payload_range == "tomorrow":
-                from_dt = now + timedelta(days=1)
-                to_dt = from_dt + timedelta(days=1)
+                base_day = local_now.date() + timedelta(days=1)
+                from_dt = datetime(base_day.year, base_day.month, base_day.day, 0, 0, tzinfo=tz).astimezone(timezone.utc)
+                to_dt = datetime(base_day.year, base_day.month, base_day.day, 23, 59, 59, tzinfo=tz).astimezone(timezone.utc)
             elif payload_range == "week":
-                from_dt = now
-                to_dt = now + timedelta(days=7)
+                start_day = local_now.date()
+                end_day = start_day + timedelta(days=7)
+                from_dt = datetime(start_day.year, start_day.month, start_day.day, 0, 0, tzinfo=tz).astimezone(timezone.utc)
+                to_dt = datetime(end_day.year, end_day.month, end_day.day, 0, 0, tzinfo=tz).astimezone(timezone.utc)
             elif payload_range == "custom":
-                from_dt = self._parse_iso(payload.get("date_from")) or now
+                from_dt = self._parse_iso(payload.get("date_from")) or local_now.astimezone(timezone.utc)
                 to_dt = self._parse_iso(payload.get("date_to")) or (from_dt + timedelta(days=1))
             else:
-                from_dt = now
-                to_dt = now + timedelta(days=1)
+                base_day = local_now.date()
+                from_dt = datetime(base_day.year, base_day.month, base_day.day, 0, 0, tzinfo=tz).astimezone(timezone.utc)
+                to_dt = datetime(base_day.year, base_day.month, base_day.day, 23, 59, 59, tzinfo=tz).astimezone(timezone.utc)
             events = await self.event_service.list_events_range(user_id, from_dt, to_dt)
             if not events:
-                return ActionExecutionResult(action_type=action.type, success=True, message="No events found in the selected range.")
-            lines = ["Events:"]
+                message = "В выбранном периоде событий нет." if language == "ru" else "No events found in the selected range."
+                return ActionExecutionResult(action_type=action.type, success=True, message=message, meta="info")
+            lines = ["События:"] if language == "ru" else ["Events:"]
             for item in events[:10]:
-                lines.append(f"- {item.start_at.isoformat()} {item.title}")
-            return ActionExecutionResult(action_type=action.type, success=True, message="\n".join(lines))
+                start_label = self._format_local_datetime(item.start_at, timezone_name, language)
+                lines.append(f"- {start_label} {item.title}")
+            return ActionExecutionResult(action_type=action.type, success=True, message="\n".join(lines), meta="info")
 
         if action.type == "free_slots":
-            date_from = self._parse_iso(payload.get("date_from"))
-            date_to = self._parse_iso(payload.get("date_to"))
+            tz = self._safe_zoneinfo(timezone_name)
+            local_now = now_local.astimezone(tz) if now_local is not None else datetime.now(tz)
+
+            raw_date_from = payload.get("date_from")
+            raw_date_to = payload.get("date_to")
+            date_from = self._parse_iso(raw_date_from)
+            date_to = self._parse_iso(raw_date_to)
+
+            if isinstance(raw_date_from, str) and re.fullmatch(r"\d{4}-\d{2}-\d{2}", raw_date_from.strip()):
+                parsed_day = datetime.fromisoformat(raw_date_from.strip())
+                date_from = datetime(parsed_day.year, parsed_day.month, parsed_day.day, 0, 0, tzinfo=tz).astimezone(timezone.utc)
+            if isinstance(raw_date_to, str) and re.fullmatch(r"\d{4}-\d{2}-\d{2}", raw_date_to.strip()):
+                parsed_day = datetime.fromisoformat(raw_date_to.strip())
+                date_to = datetime(parsed_day.year, parsed_day.month, parsed_day.day, 23, 59, 59, tzinfo=tz).astimezone(timezone.utc)
+
             if date_from is None:
-                date_from = datetime.now(timezone.utc)
+                date_from = local_now.astimezone(timezone.utc)
             if date_to is None or date_to <= date_from:
                 date_to = date_from + timedelta(days=2)
             duration = payload.get("duration_minutes")
@@ -1284,26 +1387,58 @@ class AIService:
                 work_end_hour=19,
             )
             if not slots:
-                return ActionExecutionResult(action_type=action.type, success=True, message="No free slots found.")
-            lines = ["Free slots:"]
+                message = "Свободных слотов не найдено." if language == "ru" else "No free slots found."
+                return ActionExecutionResult(action_type=action.type, success=True, message=message, meta="info")
+            lines = ["Свободные слоты:"] if language == "ru" else ["Free slots:"]
             for item in slots[:6]:
-                lines.append(f"- {item['start_at']} .. {item['end_at']}")
-            return ActionExecutionResult(action_type=action.type, success=True, message="\n".join(lines))
+                start_at = self._parse_iso(item.get("start_at"))
+                end_at = self._parse_iso(item.get("end_at"))
+                if start_at and end_at:
+                    start_label = self._format_local_datetime(start_at, timezone_name, language)
+                    end_local = self._to_user_local(end_at, timezone_name)
+                    end_label = end_local.strftime("%H:%M")
+                    lines.append(f"- {start_label} - {end_label}")
+                else:
+                    lines.append(f"- {item.get('start_at')} .. {item.get('end_at')}")
+            return ActionExecutionResult(action_type=action.type, success=True, message="\n".join(lines), meta="info")
 
         if action.type in {"merge_events", "optimize_schedule"}:
+            message = (
+                f"{action.type} сейчас доступен как черновик и требует выбора варианта."
+                if language == "ru"
+                else f"{action.type} is currently available as a draft and requires option selection."
+            )
             return ActionExecutionResult(
                 action_type=action.type,
                 success=False,
-                message=f"{action.type} is currently available as a draft and requires option selection.",
+                message=message,
+                meta="info",
             )
 
-        return ActionExecutionResult(action_type=action.type, success=False, message=f"Unsupported action: {action.type}")
+        message = f"Неподдерживаемое действие: {action.type}" if language == "ru" else f"Unsupported action: {action.type}"
+        return ActionExecutionResult(action_type=action.type, success=False, message=message, meta="info")
 
-    async def _execute_actions(self, user_id: UUID, actions: list[ProposedAction]) -> list[ActionExecutionResult]:
+    async def _execute_actions(
+        self,
+        user_id: UUID,
+        actions: list[ProposedAction],
+        *,
+        language: str,
+        timezone_name: str,
+        now_local: datetime,
+    ) -> list[ActionExecutionResult]:
         ordered = sorted(actions, key=lambda item: item.priority)
         results: list[ActionExecutionResult] = []
         for action in ordered:
-            results.append(await self._execute_action(user_id, action))
+            results.append(
+                await self._execute_action(
+                    user_id,
+                    action,
+                    language=language,
+                    timezone_name=timezone_name,
+                    now_local=now_local,
+                )
+            )
         return results
 
     async def _apply_option(
@@ -1311,6 +1446,10 @@ class AIService:
         user_id: UUID,
         session_id: UUID,
         option: ProposedOption,
+        *,
+        language: str,
+        timezone_name: str,
+        now_local: datetime,
     ) -> ActionExecutionResult:
         action = ProposedAction(
             type=option.action_type,
@@ -1318,7 +1457,13 @@ class AIService:
             priority=1,
             safety={"needs_confirmation": False, "reason": None},
         )
-        result = await self._execute_action(user_id, action)
+        result = await self._execute_action(
+            user_id,
+            action,
+            language=language,
+            timezone_name=timezone_name,
+            now_local=now_local,
+        )
         await self._clear_pending_options(session_id)
         return result
 
@@ -1343,6 +1488,13 @@ class AIService:
         if failed:
             return "\n".join(failed)
         return base_message or "Ready."
+
+    @staticmethod
+    def _resolve_response_meta(results: list[ActionExecutionResult]) -> Literal["create", "update", "delete", "info"]:
+        for item in results:
+            if item.success and item.meta in {"create", "update", "delete"}:
+                return item.meta
+        return "info"
 
     async def _store_assistant_message(
         self,
@@ -1374,6 +1526,9 @@ class AIService:
     ) -> ChatResult:
         profile = await self.assistant_repo.get_or_create_profile_memory(user_id)
         mode_override, clean_message = self._extract_mode_override(message)
+        user = await self._get_user(user_id)
+        timezone_name, now_local = UserTimezoneService.now_local(user)
+        request_language = self._detect_language(clean_message or message)
         effective_mode = mode_override or profile.default_mode
         target_chat_type = chat_type or self._mode_to_chat_type(effective_mode, clean_message, self.tools)
         ai_session = await self._resolve_session_for_chat_type(
@@ -1413,9 +1568,16 @@ class AIService:
                     selected_option = pending_options[choice - 1]
 
         if selected_option is not None:
-            option_result = await self._apply_option(user_id, ai_session.id, selected_option)
-            answer = option_result.message or "Option applied."
-            await self._store_assistant_message(ai_session.id, answer)
+            option_result = await self._apply_option(
+                user_id,
+                ai_session.id,
+                selected_option,
+                language=request_language,
+                timezone_name=timezone_name,
+                now_local=now_local,
+            )
+            answer = option_result.message or ("Вариант применён." if request_language == "ru" else "Option applied.")
+            await self._store_assistant_message(ai_session.id, answer, meta=option_result.meta)
             await self._save_conversation_summary(user_id, ai_session.id)
             await self.session.commit()
             return ChatResult(
@@ -1423,6 +1585,7 @@ class AIService:
                 chat_type=ai_session.chat_type,
                 display_index=ai_session.display_index,
                 answer=answer,
+                response_meta=option_result.meta,
             )
 
         request_id = uuid4()
@@ -1431,6 +1594,7 @@ class AIService:
             mode=effective_mode,
             message=clean_message,
             target_chat_type=target_chat_type,
+            now_local=now_local,
         )
         used_deterministic_path = deterministic_interpreted is not None
 
@@ -1446,6 +1610,7 @@ class AIService:
                     mode=effective_mode,
                     message=clean_message,
                     reason="backend_unavailable:ai_assistant_healthcheck_failed",
+                    now_local=now_local,
                     actor_role=actor_role,
                 )
             else:
@@ -1472,6 +1637,7 @@ class AIService:
                         mode=effective_mode,
                         message=clean_message,
                         reason=str(exc),
+                        now_local=now_local,
                         actor_role=actor_role,
                     )
 
@@ -1479,7 +1645,7 @@ class AIService:
 
         backend_available = True
         try:
-            validation = await self._validate_actions(user_id, interpreted.proposed_actions)
+            validation = await self._validate_actions(user_id, interpreted.proposed_actions, now_local=now_local)
         except Exception as exc:
             logger.exception(
                 "validation failed, using degraded backend_available=false",
@@ -1520,6 +1686,7 @@ class AIService:
         memory_prompts = await self._store_memory_suggestions(user_id, ai_session.id, envelope)
 
         answer: str
+        response_meta: Literal["create", "update", "delete", "info"] = "info"
         options_payload: list[dict[str, Any]] = []
         if envelope.requires_user_input:
             if envelope.options:
@@ -1529,8 +1696,15 @@ class AIService:
         else:
             await self._clear_pending_options(ai_session.id)
             execution_actions = self._attach_source_message_to_actions(envelope.proposed_actions, clean_message)
-            execution_results = await self._execute_actions(user_id, execution_actions)
+            execution_results = await self._execute_actions(
+                user_id,
+                execution_actions,
+                language=request_language,
+                timezone_name=timezone_name,
+                now_local=now_local,
+            )
             answer = self._compose_action_message(envelope.user_message, execution_results)
+            response_meta = self._resolve_response_meta(execution_results)
 
         if memory_prompts:
             answer = f"{answer}\n\n" + "\n".join(memory_prompts[:1])
@@ -1540,7 +1714,7 @@ class AIService:
             answer,
             provider="ai-assistant",
             model="assistant-v2",
-            meta="info" if not envelope.requires_user_input else "update",
+            meta=response_meta if not envelope.requires_user_input else "info",
         )
 
         await self._save_conversation_summary(user_id, ai_session.id)
@@ -1559,6 +1733,7 @@ class AIService:
             options=options_payload,
             memory_suggestions=[item.model_dump(mode="json") for item in envelope.memory_suggestions],
             planner_summary=envelope.planner_summary.model_dump(mode="json"),
+            response_meta=response_meta if not envelope.requires_user_input else "info",
         )
 
     async def stream_chat(

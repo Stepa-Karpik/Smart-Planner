@@ -12,6 +12,7 @@ export interface ChatUiMeta {
   chatType?: "planner" | "companion" | null
   intent?: string | null
   fallbackReasonCode?: string | null
+  responseMeta?: "create" | "update" | "delete" | "info" | null
   requiresUserInput?: boolean
   clarifyingQuestion?: string | null
   options?: Array<Record<string, unknown>>
@@ -80,6 +81,7 @@ export function useSseChat() {
             chatType: data.chat_type || null,
             intent: data.intent || null,
             fallbackReasonCode: data.fallback_reason_code || null,
+            responseMeta: data.response_meta || null,
             requiresUserInput: !!data.requires_user_input,
             clarifyingQuestion: data.clarifying_question || null,
             options: Array.isArray(data.options) ? data.options : [],

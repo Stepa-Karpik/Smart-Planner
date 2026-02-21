@@ -10,10 +10,11 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
-import { createCalendar, createEvent, updateEvent, useCalendars } from "@/lib/hooks"
+import { createCalendar, createEvent, updateEvent, useCalendars, useProfile } from "@/lib/hooks"
 import type { CalendarEvent, EventCreate, EventUpdate } from "@/lib/types"
 import { LocationInput } from "@/components/location-input"
 import { useI18n } from "@/lib/i18n"
+import { fromDateTimeLocalValueToUtcIso, toDateTimeLocalValue } from "@/lib/timezone"
 
 interface EventEditorModalProps {
   open: boolean
@@ -31,6 +32,7 @@ function toLocalDateTimeInput(date: Date) {
 
 export function EventEditorModal({ open, onOpenChange, event, onSaved }: EventEditorModalProps) {
   const { tr } = useI18n()
+  const { data: profile } = useProfile()
   const { data: calendars, mutate: mutateCalendars } = useCalendars()
   const isEdit = !!event
 
@@ -61,8 +63,8 @@ export function EventEditorModal({ open, onOpenChange, event, onSaved }: EventEd
       setTitle(event.title)
       setDescription(event.description || "")
       setCalendarId(event.calendar_id)
-      setStartAt(event.start_at.slice(0, 16))
-      setEndAt(event.end_at.slice(0, 16))
+      setStartAt(toDateTimeLocalValue(event.start_at, profile?.timezone))
+      setEndAt(toDateTimeLocalValue(event.end_at, profile?.timezone))
       setHasEndAt(true)
       setAllDay(event.all_day)
       setPriority((event.priority ?? 1) as 0 | 1 | 2 | 3)
@@ -76,8 +78,8 @@ export function EventEditorModal({ open, onOpenChange, event, onSaved }: EventEd
       setTitle("")
       setDescription("")
       setCalendarId(calendars?.[0]?.id || "")
-      setStartAt(toLocalDateTimeInput(now))
-      setEndAt(toLocalDateTimeInput(later))
+      setStartAt(toDateTimeLocalValue(now.toISOString(), profile?.timezone) || toLocalDateTimeInput(now))
+      setEndAt(toDateTimeLocalValue(later.toISOString(), profile?.timezone) || toLocalDateTimeInput(later))
       setHasEndAt(true)
       setAllDay(false)
       setPriority(1)
@@ -86,7 +88,7 @@ export function EventEditorModal({ open, onOpenChange, event, onSaved }: EventEd
       setLocationLon(null)
       setLocationSource("manual_text")
     }
-  }, [open, event, calendars])
+  }, [open, event, calendars, profile?.timezone])
 
   async function handleCreateCalendar() {
     if (!newCalendarTitle.trim()) {
@@ -124,8 +126,12 @@ export function EventEditorModal({ open, onOpenChange, event, onSaved }: EventEd
       return
     }
 
-    const startIso = new Date(startAt).toISOString()
-    const endIso = hasEndAt && endAt ? new Date(endAt).toISOString() : undefined
+    const startIso = fromDateTimeLocalValueToUtcIso(startAt, profile?.timezone)
+    const endIso = hasEndAt && endAt ? fromDateTimeLocalValueToUtcIso(endAt, profile?.timezone) || undefined : undefined
+    if (!startIso) {
+      toast.error(tr("Start date is required", "Нужно указать время начала"))
+      return
+    }
 
     if (hasEndAt && endIso && new Date(endIso) <= new Date(startIso)) {
       toast.error(tr("End must be later than start", "Окончание должно быть позже начала"))

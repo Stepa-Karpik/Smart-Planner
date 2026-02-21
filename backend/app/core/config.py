@@ -55,6 +55,7 @@ class Settings(BaseSettings):
     ai_assistant_internal_api_key: str = ""
     ai_context_window_messages: int = 16
     ai_context_summary_max_chars: int = 1200
+    default_user_timezone: str = "Europe/Moscow"
 
     routes_cache_ttl_sec: int = 900
     geocode_cache_ttl_sec: int = 1800
