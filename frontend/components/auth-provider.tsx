@@ -32,7 +32,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ refresh_token: localStorage.getItem("sp_refresh_token") }),
       })
 
-      if (refreshRes.data) {
+      if (refreshRes.data?.tokens && refreshRes.data.user_id && refreshRes.data.email && refreshRes.data.username) {
         setAccessToken(refreshRes.data.tokens.access_token)
         localStorage.setItem("sp_refresh_token", refreshRes.data.tokens.refresh_token)
         setState({
@@ -65,6 +65,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (res.error || !res.data) {
       return { success: false, error: res.error?.message || "Login failed" }
     }
+    if (res.data.requires_twofa && res.data.twofa_method && res.data.twofa_session_id) {
+      return {
+        success: false,
+        twofaChallenge: {
+          method: res.data.twofa_method,
+          sessionId: res.data.twofa_session_id,
+          expiresAt: res.data.expires_at,
+          message: res.data.message ?? null,
+        },
+      }
+    }
+    if (!res.data.tokens || !res.data.user_id || !res.data.email || !res.data.username) {
+      return { success: false, error: "Invalid login response" }
+    }
 
     setState({
       isAuthenticated: true,
@@ -82,7 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = useCallback(async (email: string, username: string, password: string) => {
     const res = await apiRegister(email, username, password)
-    if (res.error || !res.data) {
+    if (res.error || !res.data?.tokens || !res.data.user_id || !res.data.email || !res.data.username) {
       return { success: false, error: res.error?.message || "Registration failed" }
     }
 

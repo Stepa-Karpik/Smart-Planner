@@ -1,4 +1,12 @@
-﻿import type { ApiEnvelope, AuthPayload } from "./types"
+﻿import type {
+  ApiEnvelope,
+  AuthPayload,
+  LoginTwoFASessionStatusPayload,
+  TotpSetupPayload,
+  TwoFAPendingStatusPayload,
+  TwoFASettings,
+  TwoFATelegramPending,
+} from "./types"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000"
 
@@ -39,7 +47,7 @@ async function refreshAccessToken(): Promise<boolean> {
     if (!res.ok) return false
 
     const envelope: ApiEnvelope<AuthPayload> = await res.json()
-    if (envelope.error || !envelope.data) return false
+    if (envelope.error || !envelope.data?.tokens) return false
 
     setAccessToken(envelope.data.tokens.access_token)
     setRefreshToken(envelope.data.tokens.refresh_token)
@@ -100,7 +108,7 @@ export async function login(loginValue: string, password: string) {
     body: JSON.stringify({ login: loginValue, password }),
   })
 
-  if (envelope.data) {
+  if (envelope.data?.tokens) {
     setAccessToken(envelope.data.tokens.access_token)
     setRefreshToken(envelope.data.tokens.refresh_token)
   }
@@ -114,7 +122,7 @@ export async function register(email: string, username: string, password: string
     body: JSON.stringify({ email, username, password }),
   })
 
-  if (envelope.data) {
+  if (envelope.data?.tokens) {
     setAccessToken(envelope.data.tokens.access_token)
     setRefreshToken(envelope.data.tokens.refresh_token)
   }
@@ -145,3 +153,76 @@ export function hasRefreshToken(): boolean {
 }
 
 export { setRefreshToken as storeRefreshToken }
+
+export async function verifyLoginTwofaTotp(twofaSessionId: string, code: string) {
+  const envelope = await apiRequest<AuthPayload>("/api/v1/auth/twofa/totp/verify", {
+    method: "POST",
+    body: JSON.stringify({ twofa_session_id: twofaSessionId, code }),
+  })
+
+  if (envelope.data?.tokens) {
+    setAccessToken(envelope.data.tokens.access_token)
+    setRefreshToken(envelope.data.tokens.refresh_token)
+  }
+
+  return envelope
+}
+
+export async function requestLoginTwofaTelegram(twofaSessionId: string) {
+  return apiRequest<LoginTwoFASessionStatusPayload>("/api/v1/auth/twofa/telegram/request", {
+    method: "POST",
+    body: JSON.stringify({ twofa_session_id: twofaSessionId }),
+  })
+}
+
+export async function getLoginTwofaSessionStatus(twofaSessionId: string) {
+  return apiRequest<LoginTwoFASessionStatusPayload>(`/api/v1/auth/twofa/session/${twofaSessionId}`)
+}
+
+export async function completeLoginTwofaTelegram(twofaSessionId: string) {
+  const envelope = await apiRequest<AuthPayload>("/api/v1/auth/twofa/telegram/complete", {
+    method: "POST",
+    body: JSON.stringify({ twofa_session_id: twofaSessionId }),
+  })
+
+  if (envelope.data?.tokens) {
+    setAccessToken(envelope.data.tokens.access_token)
+    setRefreshToken(envelope.data.tokens.refresh_token)
+  }
+
+  return envelope
+}
+
+export async function getTwofaSettings() {
+  return apiRequest<TwoFASettings>("/api/v1/integrations/twofa")
+}
+
+export async function requestEnableTelegramTwofa() {
+  return apiRequest<TwoFATelegramPending>("/api/v1/integrations/twofa/telegram/enable-request", { method: "POST" })
+}
+
+export async function requestDisableTelegramTwofa() {
+  return apiRequest<TwoFATelegramPending>("/api/v1/integrations/twofa/telegram/disable-request", { method: "POST" })
+}
+
+export async function getTwofaPendingStatus(pendingId: string) {
+  return apiRequest<TwoFAPendingStatusPayload>(`/api/v1/integrations/twofa/pending/${pendingId}`)
+}
+
+export async function setupTotpTwofa() {
+  return apiRequest<TotpSetupPayload>("/api/v1/integrations/twofa/totp/setup", { method: "POST" })
+}
+
+export async function verifyTotpTwofaSetup(pendingId: string, code: string) {
+  return apiRequest<{ ok: boolean }>("/api/v1/integrations/twofa/totp/verify-setup", {
+    method: "POST",
+    body: JSON.stringify({ pending_id: pendingId, code }),
+  })
+}
+
+export async function disableTotpTwofa(code: string) {
+  return apiRequest<{ ok: boolean }>("/api/v1/integrations/twofa/totp/disable", {
+    method: "POST",
+    body: JSON.stringify({ code }),
+  })
+}

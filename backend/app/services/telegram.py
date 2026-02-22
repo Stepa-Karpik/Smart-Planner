@@ -11,6 +11,7 @@ from app.core.config import get_settings
 from app.core.exceptions import NotFoundError, UnauthorizedError, ValidationAppError
 from app.core.security import hash_telegram_code
 from app.repositories.telegram import TelegramRepository
+from app.repositories.user import UserRepository
 
 
 class TelegramIntegrationService:
@@ -77,6 +78,9 @@ class TelegramIntegrationService:
 
     async def unlink(self, user_id: UUID) -> None:
         await self.telegram_repo.unlink(user_id)
+        user = await UserRepository(self.session).get_by_id(user_id)
+        if user is not None and (getattr(user, "twofa_method", "none") or "none").lower() == "telegram":
+            user.twofa_method = "none"
         await self.session.commit()
 
     async def get_user_id_by_chat(self, chat_id: int) -> UUID:

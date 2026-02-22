@@ -2,6 +2,19 @@
 
 import useSWR, { mutate as globalMutate } from "swr"
 import { apiRequest } from "./api-client"
+import {
+  completeLoginTwofaTelegram,
+  disableTotpTwofa,
+  getLoginTwofaSessionStatus,
+  getTwofaPendingStatus,
+  getTwofaSettings,
+  requestDisableTelegramTwofa,
+  requestEnableTelegramTwofa,
+  requestLoginTwofaTelegram,
+  setupTotpTwofa,
+  verifyLoginTwofaTotp,
+  verifyTotpTwofaSetup,
+} from "./api-client"
 import type {
   AssistantMode,
   AssistantModeState,
@@ -27,6 +40,11 @@ import type {
   RouteRecommendation,
   TelegramStartPayload,
   TelegramStatus,
+  LoginTwoFASessionStatusPayload,
+  TotpSetupPayload,
+  TwoFAPendingStatusPayload,
+  TwoFASettings,
+  TwoFATelegramPending,
 } from "./types"
 
 async function fetcher<T>(path: string): Promise<T> {
@@ -148,6 +166,10 @@ export function useTelegramStatus() {
   return useSWR<TelegramStatus>("/api/v1/integrations/telegram/status", fetcher)
 }
 
+export function useTwofaSettings() {
+  return useSWR<TwoFASettings>("/api/v1/integrations/twofa", fetcher)
+}
+
 export async function startTelegramLink() {
   return apiRequest<TelegramStartPayload>("/api/v1/integrations/telegram/start", { method: "POST" })
 }
@@ -158,6 +180,62 @@ export async function unlinkTelegram() {
     globalMutate("/api/v1/integrations/telegram/status")
   }
   return res
+}
+
+export async function enableTelegramTwofaRequest() {
+  const res = await requestEnableTelegramTwofa()
+  if (!res.error) {
+    globalMutate("/api/v1/integrations/twofa")
+  }
+  return res
+}
+
+export async function disableTelegramTwofaRequest() {
+  const res = await requestDisableTelegramTwofa()
+  if (!res.error) {
+    globalMutate("/api/v1/integrations/twofa")
+  }
+  return res
+}
+
+export async function fetchTwofaPendingStatus(pendingId: string) {
+  return getTwofaPendingStatus(pendingId)
+}
+
+export async function startTotpTwofaSetup() {
+  return setupTotpTwofa()
+}
+
+export async function confirmTotpTwofaSetup(pendingId: string, code: string) {
+  const res = await verifyTotpTwofaSetup(pendingId, code)
+  if (!res.error) {
+    globalMutate("/api/v1/integrations/twofa")
+  }
+  return res
+}
+
+export async function disableTotpTwofaByCode(code: string) {
+  const res = await disableTotpTwofa(code)
+  if (!res.error) {
+    globalMutate("/api/v1/integrations/twofa")
+  }
+  return res
+}
+
+export async function requestLoginTelegramTwofa(twofaSessionId: string) {
+  return requestLoginTwofaTelegram(twofaSessionId)
+}
+
+export async function fetchLoginTwofaSessionStatus(twofaSessionId: string) {
+  return getLoginTwofaSessionStatus(twofaSessionId)
+}
+
+export async function completeTelegramTwofaLogin(twofaSessionId: string) {
+  return completeLoginTwofaTelegram(twofaSessionId)
+}
+
+export async function verifyTotpTwofaLogin(twofaSessionId: string, code: string) {
+  return verifyLoginTwofaTotp(twofaSessionId, code)
 }
 
 export async function fetchLocationSuggestions(query: string, limit = 8, signal?: AbortSignal) {

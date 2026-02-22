@@ -4,6 +4,7 @@ import { useState } from "react"
 import { CheckCircle2, Loader2, MapPinned } from "lucide-react"
 import { toast } from "sonner"
 import { TelegramLinkCard } from "@/components/telegram-link-card"
+import { TwoFactorSettingsCard } from "@/components/twofa-settings-card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -164,6 +165,7 @@ export default function IntegrationsPage() {
         </CardContent>
       </Card>
 
+      <TwoFactorSettingsCard />
       <TelegramLinkCard />
     </div>
   )

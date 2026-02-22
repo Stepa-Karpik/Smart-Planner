@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from sqlalchemy import Boolean, Float, DateTime, String, func
+from datetime import datetime
+
+from sqlalchemy import Boolean, DateTime, Float, Integer, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.enums import EventLocationSource, MapProvider, RouteMode
@@ -34,6 +36,11 @@ class User(Base, UUIDPrimaryKeyMixin, TimestampMixin):
         db_enum(EventLocationSource, "event_location_source"),
         nullable=True,
     )
+    twofa_method: Mapped[str] = mapped_column(String(16), nullable=False, default="none", server_default="none")
+    twofa_totp_secret: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    twofa_totp_enabled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    twofa_telegram_enabled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    twofa_last_totp_step: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     calendars = relationship("Calendar", back_populates="user", cascade="all,delete-orphan")
     refresh_tokens = relationship("RefreshToken", back_populates="user", cascade="all,delete-orphan")

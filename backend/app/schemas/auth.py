@@ -45,3 +45,4 @@ class AuthResponse(BaseModel):
     display_name: str | None = None
     default_route_mode: RouteMode
     tokens: TokenPair
+    requires_twofa: bool = False

@@ -76,3 +76,25 @@ def conflict_keyboard(event_hex: str, start_ts: int, end_ts: int) -> InlineKeybo
             [InlineKeyboardButton(text="❌ Игнорировать", callback_data=f"cf:ignore:{event_hex}")],
         ]
     )
+
+
+def twofa_login_keyboard(session_id_hex: str) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(text="✅ Подтвердить вход", callback_data=f"2fa:login:approve:{session_id_hex}"),
+                InlineKeyboardButton(text="❌ Отклонить", callback_data=f"2fa:login:deny:{session_id_hex}"),
+            ]
+        ]
+    )
+
+
+def twofa_settings_keyboard(pending_id_hex: str) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(text="✅ Подтвердить", callback_data=f"2fa:set:approve:{pending_id_hex}"),
+                InlineKeyboardButton(text="❌ Отклонить", callback_data=f"2fa:set:deny:{pending_id_hex}"),
+            ]
+        ]
+    )

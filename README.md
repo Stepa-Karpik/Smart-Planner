@@ -202,3 +202,24 @@ Smart Planner — система планирования, где AI не про
 - Backend returns `geometry_latlon` in `[lat, lon]` format for frontend route rendering.
 - Use `geometry_latlon` for both Leaflet and Yandex Maps.
 - ORS raw geometry `[lon, lat]` is converted in backend.
+
+## 2FA (Telegram / TOTP)
+
+- Supported 2FA methods: `none | telegram | totp` (only one active at a time).
+- Login tokens are issued only after successful second-factor verification.
+- Telegram 2FA uses Telegram inline confirmation buttons for login and enable/disable actions.
+- TOTP 2FA is compatible with Yandex Key / standard authenticator apps (`otpauth://`).
+
+### New backend endpoints
+
+- `GET /api/v1/integrations/twofa`
+- `POST /api/v1/integrations/twofa/telegram/enable-request`
+- `POST /api/v1/integrations/twofa/telegram/disable-request`
+- `GET /api/v1/integrations/twofa/pending/{pending_id}`
+- `POST /api/v1/integrations/twofa/totp/setup`
+- `POST /api/v1/integrations/twofa/totp/verify-setup`
+- `POST /api/v1/integrations/twofa/totp/disable`
+- `POST /api/v1/auth/twofa/totp/verify`
+- `POST /api/v1/auth/twofa/telegram/request`
+- `GET /api/v1/auth/twofa/session/{twofa_session_id}`
+- `POST /api/v1/auth/twofa/telegram/complete`

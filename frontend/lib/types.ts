@@ -24,14 +24,24 @@ export interface AuthTokens {
   token_type?: string
 }
 
+export type TwoFAMethod = "none" | "telegram" | "totp"
+export type TwoFALoginMethod = "telegram" | "totp"
+export type TwoFAStatus = "pending" | "approved" | "denied" | "expired"
+export type TwoFALoginStatus = TwoFAStatus | "used"
+
 export interface AuthPayload {
-  user_id: string
-  email: string
-  username: string
+  user_id?: string
+  email?: string
+  username?: string
   display_name?: string | null
   default_route_mode?: RouteMode
   map_provider?: MapProvider
-  tokens: AuthTokens
+  tokens?: AuthTokens
+  requires_twofa?: boolean
+  twofa_method?: TwoFALoginMethod
+  twofa_session_id?: string
+  expires_at?: string
+  message?: string | null
 }
 
 export interface User {
@@ -144,6 +154,44 @@ export interface TelegramStartPayload {
   desktop_link: string
   expires_at: string
   instruction: string
+}
+
+export interface TwoFASettings {
+  twofa_method: TwoFAMethod
+  telegram_linked: boolean
+  telegram_confirmed: boolean
+  totp_enabled: boolean
+}
+
+export interface TwoFATelegramPending {
+  pending_id: string
+  method: "telegram"
+  action: "enable" | "disable"
+  status: TwoFAStatus
+  expires_at: string
+}
+
+export interface TwoFAPendingStatusPayload {
+  pending_id: string
+  method: string
+  action: string
+  status: TwoFAStatus
+  expires_at?: string | null
+}
+
+export interface TotpSetupPayload {
+  pending_id: string
+  secret: string
+  otpauth_uri: string
+  expires_at: string
+}
+
+export interface LoginTwoFASessionStatusPayload {
+  twofa_session_id: string
+  twofa_method: TwoFALoginMethod
+  status: TwoFALoginStatus
+  expires_at: string
+  sent_to_telegram: boolean
 }
 
 export type MapProvider = "leaflet" | "yandex"

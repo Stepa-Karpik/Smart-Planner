@@ -72,3 +72,32 @@ class UserRepository:
         user.password_hash = password_hash
         await self.session.flush()
         return user
+
+    async def update_twofa(
+        self,
+        user: User,
+        *,
+        method: str | None = None,
+        totp_secret: str | None = None,
+        totp_enabled_at=None,
+        telegram_enabled_at=None,
+        last_totp_step: int | None = None,
+        clear_totp_secret: bool = False,
+        clear_last_totp_step: bool = False,
+    ) -> User:
+        if method is not None:
+            user.twofa_method = method
+        if clear_totp_secret:
+            user.twofa_totp_secret = None
+        elif totp_secret is not None:
+            user.twofa_totp_secret = totp_secret
+        if totp_enabled_at is not None:
+            user.twofa_totp_enabled_at = totp_enabled_at
+        if telegram_enabled_at is not None:
+            user.twofa_telegram_enabled_at = telegram_enabled_at
+        if clear_last_totp_step:
+            user.twofa_last_totp_step = None
+        elif last_totp_step is not None:
+            user.twofa_last_totp_step = last_totp_step
+        await self.session.flush()
+        return user

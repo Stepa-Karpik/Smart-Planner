@@ -15,7 +15,19 @@ export interface AuthState {
 }
 
 export interface AuthContextType extends AuthState {
-  signIn: (username: string, password: string) => Promise<{ success: boolean; error?: string }>
+  signIn: (
+    username: string,
+    password: string,
+  ) => Promise<{
+    success: boolean
+    error?: string
+    twofaChallenge?: {
+      method: "telegram" | "totp"
+      sessionId: string
+      expiresAt?: string
+      message?: string | null
+    }
+  }>
   signUp: (email: string, username: string, password: string) => Promise<{ success: boolean; error?: string }>
   signOut: () => Promise<void>
   refreshAuth: () => Promise<void>

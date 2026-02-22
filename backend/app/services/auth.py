@@ -41,14 +41,12 @@ class AuthService:
         user = await self.users.create(email=email, username=username, password_hash=password_hash)
         await self.calendars.create(user_id=user.id, title="Default", is_default=True)
 
-        access_token = create_access_token(user.id)
-        refresh_token = create_refresh_token(user.id)
-        await self._store_refresh_token(user.id, refresh_token)
+        access_token, refresh_token = await self.issue_tokens(user.id)
 
         await self.session.commit()
         return user, access_token, refresh_token
 
-    async def login(self, login: str, password: str):
+    async def authenticate_user(self, login: str, password: str):
         user = await self.users.get_by_login(login)
         if user is None or not user.is_active:
             raise UnauthorizedError("Invalid credentials")
@@ -56,12 +54,21 @@ class AuthService:
         if not verify_password(password, user.password_hash):
             raise UnauthorizedError("Invalid credentials")
 
-        access_token = create_access_token(user.id)
-        refresh_token = create_refresh_token(user.id)
-        await self._store_refresh_token(user.id, refresh_token)
+        return user
+
+    async def login(self, login: str, password: str):
+        user = await self.authenticate_user(login, password)
+
+        access_token, refresh_token = await self.issue_tokens(user.id)
 
         await self.session.commit()
         return user, access_token, refresh_token
+
+    async def issue_tokens(self, user_id):
+        access_token = create_access_token(user_id)
+        refresh_token = create_refresh_token(user_id)
+        await self._store_refresh_token(user_id, refresh_token)
+        return access_token, refresh_token
 
     async def refresh(self, refresh_token: str):
         payload = decode_token(refresh_token)
@@ -78,9 +85,7 @@ class AuthService:
         if user is None:
             raise UnauthorizedError("User not found")
 
-        new_access = create_access_token(user.id)
-        new_refresh = create_refresh_token(user.id)
-        await self._store_refresh_token(user.id, new_refresh)
+        new_access, new_refresh = await self.issue_tokens(user.id)
 
         await self.session.commit()
         return user, new_access, new_refresh

@@ -13,6 +13,7 @@ from app.core.enums import EventStatus
 from app.schemas.event import EventUpdate
 from app.services.events import EventService
 from app.services.telegram import TelegramIntegrationService
+from app.services.twofa import TwoFactorAuthService
 from app.services.user_timezone import UserTimezoneService
 from app.repositories.user import UserRepository
 
@@ -36,6 +37,59 @@ async def _resolve_user_timezone_name(session, user_id: UUID) -> str:
 
 def _uuid_from_hex(value: str) -> UUID:
     return UUID(hex=value)
+
+
+def _twofa_result_text(status: str) -> str:
+    if status == "approved":
+        return "Подтверждено ✅"
+    if status == "denied":
+        return "Отклонено ❌"
+    if status == "used":
+        return "Уже использовано ✅"
+    return "Истекло ⏳"
+
+
+@router.callback_query(F.data.startswith("2fa:"))
+async def twofa_actions(callback: CallbackQuery) -> None:
+    parts = callback.data.split(":")
+    if len(parts) != 4:
+        await callback.answer("Некорректное действие", show_alert=True)
+        return
+
+    _, scope, decision, raw_id = parts
+    if decision not in {"approve", "deny"}:
+        await callback.answer("Некорректное действие", show_alert=True)
+        return
+
+    try:
+        entity_id = _uuid_from_hex(raw_id)
+    except Exception:
+        await callback.answer("Некорректный идентификатор", show_alert=True)
+        return
+
+    session = await new_session()
+    redis = await redis_client()
+    async with session:
+        service = TwoFactorAuthService(session, redis)
+        if scope == "login":
+            result = await service.confirm_login_telegram_from_callback(
+                chat_id=callback.message.chat.id,
+                twofa_session_id=entity_id,
+                decision=decision,
+            )
+        elif scope == "set":
+            result = await service.confirm_telegram_method_change_from_callback(
+                chat_id=callback.message.chat.id,
+                pending_id=entity_id,
+                decision=decision,
+            )
+        else:
+            await callback.answer("Некорректное действие", show_alert=True)
+            return
+
+    status = str(result.get("status", "expired"))
+    await callback.message.edit_text(_twofa_result_text(status))
+    await callback.answer()
 
 
 @router.callback_query(F.data.startswith("ev:"))
