@@ -188,3 +188,17 @@ AI Assistant v2 выделен в отдельный FastAPI микросерв�
 
 
 Smart Planner — система планирования, где AI не просто фиксирует события, а помогает принимать решения о времени.
+
+---
+
+## Routes Provider Priority (ORS / Yandex / Mock)
+
+- Add `OPENROUTESERVICE_API_KEY` to local `.env` to enable OpenRouteService routing.
+- Provider priority: `OpenRouteService -> Yandex -> Mock`.
+- Runtime fallback: ORS failure -> Yandex (if configured) -> Mock.
+
+### geometry_latlon
+
+- Backend returns `geometry_latlon` in `[lat, lon]` format for frontend route rendering.
+- Use `geometry_latlon` for both Leaflet and Yandex Maps.
+- ORS raw geometry `[lon, lat]` is converted in backend.

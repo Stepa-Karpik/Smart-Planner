@@ -150,6 +150,7 @@ async def route_preview(
         from_point=RoutePoint(lat=from_point.lat, lon=from_point.lon),
         to_point=RoutePoint(lat=to_point.lat, lon=to_point.lon),
         geometry=route.geometry,
+        geometry_latlon=route.geometry_latlon,
         steps=route.steps,
     )
     return success_response(data=data.model_dump(), request=request)

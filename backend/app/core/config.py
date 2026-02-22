@@ -36,6 +36,7 @@ class Settings(BaseSettings):
     yandex_router_api_key: str = ""
     yandex_maps_api_key: str = ""
     yandex_geocoder_api_key: str = ""
+    openrouteservice_api_key: str = ""
 
     city_pt_fare: float = 65.0
     car_cost_per_km: float = 12.0

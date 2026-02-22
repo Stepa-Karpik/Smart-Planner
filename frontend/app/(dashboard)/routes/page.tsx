@@ -246,6 +246,7 @@ export default function RoutesPage() {
                   <RoutePreviewMap
                     fromPoint={preview.from_point}
                     toPoint={preview.to_point}
+                    geometryLatLon={preview.geometry_latlon}
                     geometry={preview.geometry}
                     provider={mapProvider}
                   />

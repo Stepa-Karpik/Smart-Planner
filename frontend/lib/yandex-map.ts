@@ -23,6 +23,8 @@ interface YandexGeoObject {
   geometry: YandexGeometry
 }
 
+interface YandexPolyline extends YandexGeoObject {}
+
 interface YandexGeoObjectCollection {
   add: (item: YandexGeoObject) => void
   remove: (item: YandexGeoObject) => void
@@ -64,6 +66,11 @@ interface YandexNamespace {
     properties?: Record<string, unknown>,
     options?: Record<string, unknown>,
   ) => YandexGeoObject
+  Polyline: new (
+    coordinates: [number, number][],
+    properties?: Record<string, unknown>,
+    options?: Record<string, unknown>,
+  ) => YandexPolyline
 }
 
 declare global {
@@ -271,6 +278,7 @@ export function calcYandexBounds(points: [number, number][]): [[number, number],
 
 export type {
   YandexGeoObject,
+  YandexPolyline,
   YandexMap,
   YandexMapEvent,
   YandexNamespace,

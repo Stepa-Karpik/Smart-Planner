@@ -23,6 +23,15 @@ function toMapCoords(pair: unknown): [number, number] | null {
   return [b, a]
 }
 
+function toLatLonCoords(pair: unknown): [number, number] | null {
+  if (!Array.isArray(pair) || pair.length < 2) return null
+  const lat = Number(pair[0])
+  const lon = Number(pair[1])
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null
+  if (!isValidLatLon(lat, lon)) return null
+  return [lat, lon]
+}
+
 function parseWktLineString(value: string): [number, number][] {
   const match = value.match(/LINESTRING\s*\((.+)\)/i)
   if (!match) return []
@@ -71,6 +80,26 @@ export function normalizeLineGeometry(
     parsed.push(coords)
   }
 
+  return parsed.length >= 2 ? parsed : fallback
+}
+
+export function normalizeLatLonLineGeometry(
+  geometryLatLon: unknown,
+  fromPoint: RoutePoint,
+  toPoint: RoutePoint,
+): [number, number][] {
+  const fallback: [number, number][] = [
+    [fromPoint.lat, fromPoint.lon],
+    [toPoint.lat, toPoint.lon],
+  ]
+  if (!Array.isArray(geometryLatLon)) return fallback
+
+  const parsed: [number, number][] = []
+  for (const point of geometryLatLon) {
+    const coords = toLatLonCoords(point)
+    if (!coords) continue
+    parsed.push(coords)
+  }
   return parsed.length >= 2 ? parsed : fallback
 }
 

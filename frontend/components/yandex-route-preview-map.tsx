@@ -4,22 +4,25 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import { Loader2 } from "lucide-react"
 import { useI18n } from "@/lib/i18n"
 import { mapLogError, mapLogInfo, mapLogWarn, waitForContainerSize } from "@/lib/leaflet-map"
-import { normalizeLineGeometry, normalizePoint, type RoutePoint } from "@/lib/route-geometry"
+import { drawRoute } from "@/lib/route-draw"
+import { normalizeLatLonLineGeometry, normalizeLineGeometry, normalizePoint, type RoutePoint } from "@/lib/route-geometry"
 import {
   calcYandexBounds,
   fitYandexViewport,
   loadYandexMaps,
   type YandexGeoObject,
   type YandexMap,
+  type YandexPolyline,
 } from "@/lib/yandex-map"
 
 interface YandexRoutePreviewMapProps {
   fromPoint: RoutePoint
   toPoint: RoutePoint
+  geometryLatLon?: unknown
   geometry?: unknown
 }
 
-export function YandexRoutePreviewMap({ fromPoint, toPoint, geometry }: YandexRoutePreviewMapProps) {
+export function YandexRoutePreviewMap({ fromPoint, toPoint, geometryLatLon, geometry }: YandexRoutePreviewMapProps) {
   const { tr } = useI18n()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -28,7 +31,7 @@ export function YandexRoutePreviewMap({ fromPoint, toPoint, geometry }: YandexRo
   const mapRef = useRef<YandexMap | null>(null)
   const fromMarkerRef = useRef<YandexGeoObject | null>(null)
   const toMarkerRef = useRef<YandexGeoObject | null>(null)
-  const lineRef = useRef<YandexGeoObject | null>(null)
+  const lineRef = useRef<YandexPolyline | null>(null)
   const resizeObserverRef = useRef<ResizeObserver | null>(null)
   const trRef = useRef(tr)
 
@@ -38,10 +41,12 @@ export function YandexRoutePreviewMap({ fromPoint, toPoint, geometry }: YandexRo
 
   const safeFrom = useMemo(() => normalizePoint(fromPoint), [fromPoint.lat, fromPoint.lon])
   const safeTo = useMemo(() => normalizePoint(toPoint), [toPoint.lat, toPoint.lon])
-  const lineCoords = useMemo(
-    () => normalizeLineGeometry(geometry, safeFrom, safeTo),
-    [geometry, safeFrom.lat, safeFrom.lon, safeTo.lat, safeTo.lon],
-  )
+  const lineCoords = useMemo(() => {
+    if (geometryLatLon) {
+      return normalizeLatLonLineGeometry(geometryLatLon, safeFrom, safeTo)
+    }
+    return normalizeLineGeometry(geometry, safeFrom, safeTo)
+  }, [geometryLatLon, geometry, safeFrom.lat, safeFrom.lon, safeTo.lat, safeTo.lon])
 
   const fitRouteBounds = (map: YandexMap, points: [number, number][]) => {
     const bounds = calcYandexBounds(points)
@@ -108,26 +113,18 @@ export function YandexRoutePreviewMap({ fromPoint, toPoint, geometry }: YandexRo
             preset: "islands#blueCircleDotIcon",
           },
         )
-        const routeLine = new ymaps.GeoObject(
-          {
-            geometry: {
-              type: "LineString",
-              coordinates: lineCoords,
-            },
-          },
-          {},
-          {
-            strokeColor: "#f5b400",
-            strokeWidth: 4,
-            strokeOpacity: 0.9,
-          },
-        )
+        const routeLine = drawRoute({
+          mapProvider: "yandex",
+          geometryLatLon: lineCoords,
+          map,
+          ymaps,
+          line: null,
+        })
 
         fromMarkerRef.current = fromMarker
         toMarkerRef.current = toMarker
         lineRef.current = routeLine
 
-        map.geoObjects.add(routeLine)
         map.geoObjects.add(fromMarker)
         map.geoObjects.add(toMarker)
 
@@ -184,7 +181,13 @@ export function YandexRoutePreviewMap({ fromPoint, toPoint, geometry }: YandexRo
 
     fromMarker.geometry.setCoordinates([safeFrom.lat, safeFrom.lon])
     toMarker.geometry.setCoordinates([safeTo.lat, safeTo.lon])
-    line.geometry.setCoordinates(lineCoords)
+    lineRef.current = drawRoute({
+      mapProvider: "yandex",
+      geometryLatLon: lineCoords,
+      map,
+      ymaps: window.ymaps!,
+      line,
+    })
     fitRouteBounds(map, lineCoords)
   }, [safeFrom.lat, safeFrom.lon, safeTo.lat, safeTo.lon, lineCoords])
 

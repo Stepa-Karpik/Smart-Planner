@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any
+
 from pydantic import BaseModel
 
 from app.core.enums import RouteMode
@@ -23,7 +25,8 @@ class RoutePreviewResponse(BaseModel):
     distance_m: int
     from_point: RoutePoint
     to_point: RoutePoint
-    geometry: list[list[float]] | None = None
+    geometry: Any | None = None
+    geometry_latlon: list[list[float]] | None = None
     steps: list[dict] | None = None
 
 

@@ -169,6 +169,7 @@ export interface RoutePreview {
     lon: number
   }
   geometry?: unknown
+  geometry_latlon?: unknown
   steps?: Record<string, unknown>[]
 }
 

@@ -14,15 +14,17 @@ import {
   type LeafletMap,
   type LeafletPolyline,
 } from "@/lib/leaflet-map"
-import { normalizeLineGeometry, normalizePoint, type RoutePoint } from "@/lib/route-geometry"
+import { drawRoute } from "@/lib/route-draw"
+import { normalizeLatLonLineGeometry, normalizeLineGeometry, normalizePoint, type RoutePoint } from "@/lib/route-geometry"
 
 interface LeafletRoutePreviewMapProps {
   fromPoint: RoutePoint
   toPoint: RoutePoint
+  geometryLatLon?: unknown
   geometry?: unknown
 }
 
-export function LeafletRoutePreviewMap({ fromPoint, toPoint, geometry }: LeafletRoutePreviewMapProps) {
+export function LeafletRoutePreviewMap({ fromPoint, toPoint, geometryLatLon, geometry }: LeafletRoutePreviewMapProps) {
   const { tr } = useI18n()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -41,10 +43,12 @@ export function LeafletRoutePreviewMap({ fromPoint, toPoint, geometry }: Leaflet
 
   const safeFrom = useMemo(() => normalizePoint(fromPoint), [fromPoint.lat, fromPoint.lon])
   const safeTo = useMemo(() => normalizePoint(toPoint), [toPoint.lat, toPoint.lon])
-  const lineCoords = useMemo(
-    () => normalizeLineGeometry(geometry, safeFrom, safeTo),
-    [geometry, safeFrom.lat, safeFrom.lon, safeTo.lat, safeTo.lon],
-  )
+  const lineCoords = useMemo(() => {
+    if (geometryLatLon) {
+      return normalizeLatLonLineGeometry(geometryLatLon, safeFrom, safeTo)
+    }
+    return normalizeLineGeometry(geometry, safeFrom, safeTo)
+  }, [geometryLatLon, geometry, safeFrom.lat, safeFrom.lon, safeTo.lat, safeTo.lon])
 
   useEffect(() => {
     if (!containerEl || mapRef.current) return
@@ -86,11 +90,13 @@ export function LeafletRoutePreviewMap({ fromPoint, toPoint, geometry }: Leaflet
           fillOpacity: 0.95,
           weight: 2,
         }).addTo(map)
-        lineRef.current = L.polyline(lineCoords, {
-          color: "#f5b400",
-          weight: 4,
-          opacity: 0.9,
-        }).addTo(map)
+        lineRef.current = drawRoute({
+          mapProvider: "leaflet",
+          geometryLatLon: lineCoords,
+          map,
+          L,
+          line: null,
+        })
 
         if (typeof ResizeObserver !== "undefined") {
           const ro = new ResizeObserver(() => invalidateMapSize(mapRef.current))
@@ -145,7 +151,13 @@ export function LeafletRoutePreviewMap({ fromPoint, toPoint, geometry }: Leaflet
 
     fromMarker.setLatLng([safeFrom.lat, safeFrom.lon])
     toMarker.setLatLng([safeTo.lat, safeTo.lon])
-    line.setLatLngs(lineCoords)
+    lineRef.current = drawRoute({
+      mapProvider: "leaflet",
+      geometryLatLon: lineCoords,
+      map,
+      L: window.L!,
+      line,
+    })
 
     const bounds = line.getBounds()
     if (bounds.isValid()) {
