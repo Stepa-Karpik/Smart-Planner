@@ -5,8 +5,6 @@
       POSTGRES_DB: planner
       POSTGRES_USER: planner
       POSTGRES_PASSWORD: planner
-    ports:
-      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -17,8 +15,6 @@
 
   redis:
     image: redis:7
-    ports:
-      - "6379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -49,12 +45,12 @@
       migrator:
         condition: service_completed_successfully
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:8100/health || exit 1"]
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8100/health || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 10
     ports:
-      - "8100:8100"
+      - "127.0.0.1:8100:8100"
 
   api:
     build:
@@ -72,10 +68,10 @@
       ai-assistant:
         condition: service_healthy
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     command: ["sh", "scripts/entrypoint-api.sh"]
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:8000/healthz || exit 1"]
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8000/healthz || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -140,7 +136,7 @@
       api:
         condition: service_healthy
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
 
 volumes:
   postgres_data:

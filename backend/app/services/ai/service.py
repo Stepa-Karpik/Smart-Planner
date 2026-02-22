@@ -105,6 +105,18 @@ class AIService:
         return f"ai:pending_memory:{session_id}"
 
     @staticmethod
+    def _focus_event_key(session_id: UUID) -> str:
+        return f"ai:focus_event:{session_id}"
+
+    @staticmethod
+    def _pending_title_update_key(session_id: UUID) -> str:
+        return f"ai:pending_title_update:{session_id}"
+
+    @staticmethod
+    def _pending_followup_key(session_id: UUID) -> str:
+        return f"ai:pending_followup:{session_id}"
+
+    @staticmethod
     def _strip_meta_prefix(text: str) -> str:
         return re.sub(r"^\[\[meta:[a-z_]+]]\s*", "", text).strip()
 
@@ -232,6 +244,185 @@ class AIService:
             "notes": data.get("notes") if "notes" in data else data.get("description"),
             "source_message": data.get("source_message") or data.get("__source_message"),
         }
+
+    @classmethod
+    def _normalize_update_event_payload(cls, payload: Any) -> dict[str, Any]:
+        data = payload if isinstance(payload, dict) else {}
+        patch_raw = data.get("patch") if isinstance(data.get("patch"), dict) else {}
+        event_data = data.get("event") if isinstance(data.get("event"), dict) else {}
+
+        patch: dict[str, Any] = {}
+
+        def read(*keys: str):
+            for key in keys:
+                if key in patch_raw:
+                    return patch_raw.get(key)
+                if key in data:
+                    return data.get(key)
+                if key in event_data:
+                    return event_data.get(key)
+            return None
+
+        title = read("title", "name", "new_title", "event_title", "subject")
+        if isinstance(title, str) and title.strip():
+            patch["title"] = title.strip()
+
+        description = read("description", "notes")
+        if description is not None:
+            patch["description"] = description
+
+        location_text = read("location_text", "location", "place", "address")
+        if location_text is not None:
+            patch["location_text"] = location_text
+
+        location_lat = read("location_lat", "lat")
+        location_lon = read("location_lon", "lon")
+        if location_lat is not None:
+            patch["location_lat"] = location_lat
+        if location_lon is not None:
+            patch["location_lon"] = location_lon
+
+        for key in ("all_day", "priority"):
+            value = read(key)
+            if value is not None:
+                patch[key] = value
+
+        start_at = read("start_at", "starts_at", "start", "datetime_start", "from")
+        end_at = read("end_at", "ends_at", "end", "datetime_end", "to")
+        if start_at is None:
+            date_part = read("date", "start_date", "day")
+            start_time = read("start_time", "time_from", "from_time", "time")
+            if isinstance(start_time, str) and cls._parse_iso(start_time) is not None:
+                start_at = start_time
+            else:
+                start_at = cls._combine_date_time(date_part, start_time)
+        if end_at is None:
+            date_part = read("date", "start_date", "day")
+            end_time = read("end_time", "time_to", "to_time")
+            if isinstance(end_time, str) and cls._parse_iso(end_time) is not None:
+                end_at = end_time
+            else:
+                end_at = cls._combine_date_time(date_part, end_time)
+
+        if start_at is not None:
+            patch["start_at"] = start_at
+        if end_at is not None:
+            patch["end_at"] = end_at
+
+        event_id = (
+            data.get("event_id")
+            or data.get("id")
+            or event_data.get("event_id")
+            or event_data.get("id")
+            or patch_raw.get("event_id")
+            or patch_raw.get("id")
+        )
+
+        return {
+            "event_id": event_id,
+            "patch": patch,
+            "source_message": data.get("source_message") or data.get("__source_message"),
+        }
+
+    @staticmethod
+    def _normalize_event_title(value: Any) -> str:
+        text = str(value or "").strip().lower()
+        text = re.sub(r"[\s\"'`«»“”„‟]+", " ", text)
+        return text.strip()
+
+    @classmethod
+    def _extract_quoted_values(cls, text: str) -> list[str]:
+        values: list[str] = []
+        for pattern in (
+            r"\"([^\"]{1,220})\"",
+            r"«([^»]{1,220})»",
+            r"'([^']{1,220})'",
+        ):
+            for match in re.finditer(pattern, text):
+                value = match.group(1).strip()
+                if value and value not in values:
+                    values.append(value)
+        return values
+
+    @classmethod
+    def _extract_rename_details(cls, text: str) -> tuple[str | None, str | None]:
+        normalized = text.strip()
+        lower = normalized.lower()
+        rename_markers = ("переимен", "назван", "rename", "title", "name", "поменя")
+        if not any(marker in lower for marker in rename_markers):
+            return None, None
+
+        quoted = cls._extract_quoted_values(normalized)
+        new_title: str | None = None
+        target_title: str | None = None
+
+        match_new = re.search(
+            r"(?:на|to)\s+(?:название\s+)?(?:\"([^\"]{1,220})\"|«([^»]{1,220})»|'([^']{1,220})')",
+            normalized,
+            flags=re.IGNORECASE,
+        )
+        if match_new:
+            new_title = next((part.strip() for part in match_new.groups() if part and part.strip()), None)
+
+        match_target = re.search(
+            r"(?:у|для|событи[ея]|event)\s+(?:\"([^\"]{1,220})\"|«([^»]{1,220})»|'([^']{1,220})')",
+            normalized,
+            flags=re.IGNORECASE,
+        )
+        if match_target:
+            target_title = next((part.strip() for part in match_target.groups() if part and part.strip()), None)
+
+        if len(quoted) >= 2:
+            if new_title is None:
+                new_title = quoted[0]
+            if target_title is None:
+                target_title = quoted[1]
+        elif len(quoted) == 1 and new_title is None:
+            new_title = quoted[0]
+
+        if isinstance(new_title, str):
+            new_title = new_title.strip().strip(".,;:!?")
+        if isinstance(target_title, str):
+            target_title = target_title.strip().strip(".,;:!?")
+
+        return (new_title or None), (target_title or None)
+
+    @staticmethod
+    def _normalize_pending_title_value(text: str) -> str | None:
+        value = text.strip()
+        if not value:
+            return None
+
+        value = re.sub(r"^(просто|это|название|пусть будет)\s+", "", value, flags=re.IGNORECASE).strip()
+        value = value.strip().strip(".,;:!?")
+        if (value.startswith('"') and value.endswith('"')) or (value.startswith("«") and value.endswith("»")):
+            value = value[1:-1].strip()
+        if (value.startswith("'") and value.endswith("'")):
+            value = value[1:-1].strip()
+
+        if not value or len(value) > 220:
+            return None
+        if value.endswith("?"):
+            return None
+        return value
+
+    @staticmethod
+    def _is_rename_request(text: str) -> bool:
+        lower = text.lower()
+        if not lower:
+            return False
+        return any(
+            marker in lower
+            for marker in (
+                "переимен",
+                "поменяй название",
+                "измени название",
+                "назови",
+                "rename",
+                "change title",
+                "change name",
+            )
+        )
 
     @staticmethod
     def _detect_language(text: str) -> str:
@@ -412,7 +603,7 @@ class AIService:
 
         enriched: list[ProposedAction] = []
         for action in actions:
-            if action.type != "create_event":
+            if action.type not in {"create_event", "update_event", "delete_event"}:
                 enriched.append(action)
                 continue
             payload = dict(action.payload)
@@ -706,6 +897,376 @@ class AIService:
 
     async def _clear_pending_memory_items(self, session_id: UUID) -> None:
         await self.redis.delete(self._pending_memory_key(session_id))
+
+    async def _store_focus_event(self, session_id: UUID, event: Any) -> None:
+        event_id = self._parse_uuid(getattr(event, "id", None))
+        if event_id is None:
+            return
+        payload = {
+            "event_id": str(event_id),
+            "title": str(getattr(event, "title", "") or ""),
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }
+        await self.redis.setex(self._focus_event_key(session_id), 60 * 60 * 24 * 7, json.dumps(payload, ensure_ascii=False))
+
+    async def _load_focus_event(self, session_id: UUID) -> dict[str, Any] | None:
+        raw = await self.redis.get(self._focus_event_key(session_id))
+        if not raw:
+            return None
+        try:
+            payload = json.loads(raw)
+            if not isinstance(payload, dict):
+                return None
+            event_id = self._parse_uuid(payload.get("event_id"))
+            if event_id is None:
+                return None
+            return {
+                "event_id": str(event_id),
+                "title": str(payload.get("title") or "").strip(),
+            }
+        except Exception:
+            return None
+
+    async def _clear_focus_event(self, session_id: UUID) -> None:
+        await self.redis.delete(self._focus_event_key(session_id))
+
+    async def _store_pending_title_update(self, session_id: UUID, event_id: UUID) -> None:
+        payload = {"event_id": str(event_id)}
+        await self.redis.setex(
+            self._pending_title_update_key(session_id),
+            60 * 30,
+            json.dumps(payload, ensure_ascii=False),
+        )
+
+    async def _load_pending_title_update(self, session_id: UUID) -> UUID | None:
+        raw = await self.redis.get(self._pending_title_update_key(session_id))
+        if not raw:
+            return None
+        try:
+            payload = json.loads(raw)
+            if not isinstance(payload, dict):
+                return None
+            return self._parse_uuid(payload.get("event_id"))
+        except Exception:
+            return None
+
+    async def _clear_pending_title_update(self, session_id: UUID) -> None:
+        await self.redis.delete(self._pending_title_update_key(session_id))
+
+    async def _store_pending_followup(
+        self,
+        session_id: UUID,
+        *,
+        action_type: str,
+        payload: dict[str, Any],
+        source_message: str,
+    ) -> None:
+        if action_type not in {"create_event", "update_event"}:
+            return
+        payload_obj = payload if isinstance(payload, dict) else {}
+        try:
+            payload_obj = json.loads(json.dumps(payload_obj, ensure_ascii=False, default=str))
+        except Exception:
+            payload_obj = {}
+        body = {
+            "action_type": action_type,
+            "payload": payload_obj,
+            "source_message": source_message.strip(),
+            "clarify_count": 1,
+        }
+        await self.redis.setex(
+            self._pending_followup_key(session_id),
+            60 * 30,
+            json.dumps(body, ensure_ascii=False),
+        )
+
+    async def _load_pending_followup(self, session_id: UUID) -> dict[str, Any] | None:
+        raw = await self.redis.get(self._pending_followup_key(session_id))
+        if not raw:
+            return None
+        try:
+            payload = json.loads(raw)
+        except Exception:
+            return None
+        if not isinstance(payload, dict):
+            return None
+        action_type = str(payload.get("action_type") or "").strip()
+        if action_type not in {"create_event", "update_event"}:
+            return None
+        body = payload.get("payload")
+        if not isinstance(body, dict):
+            body = {}
+        source_message = str(payload.get("source_message") or "").strip()
+        clarify_count = self._to_int(payload.get("clarify_count")) or 1
+        return {
+            "action_type": action_type,
+            "payload": body,
+            "source_message": source_message,
+            "clarify_count": max(1, clarify_count),
+        }
+
+    async def _clear_pending_followup(self, session_id: UUID) -> None:
+        await self.redis.delete(self._pending_followup_key(session_id))
+
+    async def _find_recent_event_by_title(self, user_id: UUID, title: str, now_local: datetime) -> Any | None:
+        normalized_target = self._normalize_event_title(title)
+        if not normalized_target:
+            return None
+
+        from_dt = (now_local - timedelta(days=90)).astimezone(timezone.utc)
+        to_dt = (now_local + timedelta(days=365)).astimezone(timezone.utc)
+        try:
+            events = await self.event_service.list_events_range(user_id, from_dt, to_dt)
+        except Exception:
+            return None
+        if not events:
+            return None
+
+        def event_start(item: Any) -> datetime:
+            value = self._parse_iso(getattr(item, "start_at", None))
+            if value is None:
+                return now_local.astimezone(timezone.utc)
+            return value
+
+        def pick_best(candidates: list[Any]) -> Any | None:
+            if not candidates:
+                return None
+            if len(candidates) == 1:
+                return candidates[0]
+            pivot = now_local.astimezone(timezone.utc)
+            return min(candidates, key=lambda item: abs((event_start(item) - pivot).total_seconds()))
+
+        exact = [
+            item
+            for item in events
+            if self._normalize_event_title(getattr(item, "title", "")) == normalized_target
+        ]
+        best = pick_best(exact)
+        if best is not None:
+            return best
+
+        contains = [
+            item
+            for item in events
+            if normalized_target in self._normalize_event_title(getattr(item, "title", ""))
+            or self._normalize_event_title(getattr(item, "title", "")) in normalized_target
+        ]
+        if len(contains) == 1:
+            return contains[0]
+        return None
+
+    async def _resolve_update_event_reference(
+        self,
+        user_id: UUID,
+        session_id: UUID | None,
+        payload: dict[str, Any],
+        source_message: str,
+        now_local: datetime,
+    ) -> tuple[UUID | None, Any | None]:
+        event_id = self._parse_uuid(payload.get("event_id"))
+        if event_id is not None:
+            try:
+                event = await self.event_service.get_event(user_id, event_id)
+                return event_id, event
+            except Exception:
+                event_id = None
+
+        if session_id is not None:
+            focus = await self._load_focus_event(session_id)
+            focus_id = self._parse_uuid((focus or {}).get("event_id"))
+            if focus_id is not None:
+                try:
+                    event = await self.event_service.get_event(user_id, focus_id)
+                    return focus_id, event
+                except Exception:
+                    await self._clear_focus_event(session_id)
+
+        new_title, target_title = self._extract_rename_details(source_message)
+        candidate_title = target_title
+        if candidate_title:
+            event = await self._find_recent_event_by_title(user_id, candidate_title, now_local)
+            if event is not None:
+                event_id = self._parse_uuid(getattr(event, "id", None))
+                if event_id is not None:
+                    return event_id, event
+
+        quoted = self._extract_quoted_values(source_message)
+        for title_candidate in quoted:
+            if new_title and self._normalize_event_title(title_candidate) == self._normalize_event_title(new_title):
+                continue
+            event = await self._find_recent_event_by_title(user_id, title_candidate, now_local)
+            if event is not None:
+                event_id = self._parse_uuid(getattr(event, "id", None))
+                if event_id is not None:
+                    return event_id, event
+
+        try:
+            from_dt = (now_local - timedelta(days=2)).astimezone(timezone.utc)
+            to_dt = (now_local + timedelta(days=14)).astimezone(timezone.utc)
+            events = await self.event_service.list_events_range(user_id, from_dt, to_dt)
+            if len(events) == 1:
+                fallback_id = self._parse_uuid(getattr(events[0], "id", None))
+                if fallback_id is not None:
+                    return fallback_id, events[0]
+        except Exception:
+            return None, None
+
+        return None, None
+
+    def _derive_update_patch_from_source_message(
+        self,
+        source_message: str,
+        event: Any,
+        *,
+        now_local: datetime | None,
+    ) -> dict[str, Any]:
+        patch: dict[str, Any] = {}
+        new_title, _target_title = self._extract_rename_details(source_message)
+        if new_title:
+            patch["title"] = new_title
+
+        base_start = self._parse_iso(getattr(event, "start_at", None))
+        base_end = self._parse_iso(getattr(event, "end_at", None))
+        if base_start is None:
+            return patch
+        if base_end is None or base_end <= base_start:
+            base_end = base_start + timedelta(hours=1)
+
+        if not hasattr(self.tools, "parse_refinement"):
+            return patch
+
+        try:
+            refinement = self.tools.parse_refinement(
+                source_message,
+                base_start_at=base_start,
+                base_end_at=base_end,
+                now_local=now_local,
+            )
+        except Exception:
+            return patch
+
+        updates = refinement.updates if refinement is not None else {}
+        if isinstance(updates, dict):
+            for key, value in updates.items():
+                patch.setdefault(key, value)
+        return patch
+
+    @staticmethod
+    def _looks_like_title_question(text: str | None) -> bool:
+        lower = str(text or "").lower()
+        if not lower:
+            return False
+        return any(
+            marker in lower
+            for marker in (
+                "какое название",
+                "как назвать",
+                "название",
+                "какой заголовок",
+                "what title",
+                "which title",
+                "new name",
+                "rename",
+            )
+        )
+
+    @staticmethod
+    def _merge_source_messages(primary: str, followup: str) -> str:
+        first = (primary or "").strip()
+        second = (followup or "").strip()
+        if not first:
+            return second
+        if not second:
+            return first
+        if second in first:
+            return first
+        return f"{first}\n{second}"
+
+    async def _try_execute_pending_followup(
+        self,
+        *,
+        user_id: UUID,
+        session_id: UUID,
+        pending: dict[str, Any],
+        reply_message: str,
+        language: str,
+        timezone_name: str,
+        now_local: datetime,
+    ) -> ActionExecutionResult:
+        action_type = str(pending.get("action_type") or "").strip()
+        payload = pending.get("payload") if isinstance(pending.get("payload"), dict) else {}
+        source_message = str(pending.get("source_message") or "").strip()
+        merged_source = self._merge_source_messages(source_message, reply_message)
+
+        if action_type == "create_event":
+            normalized = self._normalize_create_event_payload(payload)
+            normalized["source_message"] = merged_source
+
+            parsed = self.tools.try_parse_task(merged_source, now_local=now_local)
+            if parsed is None or not parsed.has_explicit_date:
+                parsed = self.tools.try_parse_task(source_message, now_local=now_local) if source_message else None
+
+            if parsed is not None and parsed.has_explicit_date:
+                if not str(normalized.get("title") or "").strip():
+                    normalized["title"] = parsed.title
+                if self._parse_iso(normalized.get("start_at")) is None:
+                    normalized["start_at"] = parsed.start_at.isoformat()
+                if self._parse_iso(normalized.get("end_at")) is None and parsed.end_at is not None:
+                    normalized["end_at"] = parsed.end_at.isoformat()
+                if not normalized.get("location_text") and parsed.location_text:
+                    normalized["location_text"] = parsed.location_text
+
+            if not str(normalized.get("title") or "").strip():
+                title_candidate = self._normalize_pending_title_value(reply_message)
+                if title_candidate:
+                    normalized["title"] = title_candidate
+
+            action = ProposedAction(
+                type="create_event",
+                payload=normalized,
+                priority=1,
+                safety={"needs_confirmation": False, "reason": None},
+            )
+            return await self._execute_action(
+                user_id=user_id,
+                action=action,
+                language=language,
+                timezone_name=timezone_name,
+                now_local=now_local,
+                session_id=session_id,
+            )
+
+        if action_type == "update_event":
+            normalized = self._normalize_update_event_payload(payload)
+            normalized["source_message"] = merged_source
+            patch = normalized.get("patch") if isinstance(normalized.get("patch"), dict) else {}
+            if "title" not in patch:
+                title_candidate = self._normalize_pending_title_value(reply_message)
+                if title_candidate:
+                    patch["title"] = title_candidate
+            normalized["patch"] = patch
+
+            action = ProposedAction(
+                type="update_event",
+                payload=normalized,
+                priority=1,
+                safety={"needs_confirmation": False, "reason": None},
+            )
+            return await self._execute_action(
+                user_id=user_id,
+                action=action,
+                language=language,
+                timezone_name=timezone_name,
+                now_local=now_local,
+                session_id=session_id,
+            )
+
+        return ActionExecutionResult(
+            action_type=action_type or "none",
+            success=False,
+            message="",
+            meta="info",
+        )
 
     @staticmethod
     def _enforce_single_question(envelope: AIResultEnvelope) -> AIResultEnvelope:
@@ -1022,10 +1583,12 @@ class AIService:
                 continue
 
             payload = action.payload
+            normalized_update_payload: dict[str, Any] | None = None
             if action.type == "create_event":
                 payload = self._normalize_create_event_payload(payload)
             if action.type == "update_event":
-                payload = payload.get("patch", {}) if isinstance(payload, dict) else {}
+                normalized_update_payload = self._normalize_update_event_payload(payload)
+                payload = normalized_update_payload.get("patch", {})
 
             start_at = self._parse_iso(payload.get("start_at"))
             end_at = self._parse_iso(payload.get("end_at"))
@@ -1059,7 +1622,10 @@ class AIService:
 
             exclude_event_id = None
             if action.type == "update_event":
-                exclude_event_id = self._parse_uuid(action.payload.get("event_id"))
+                raw_event_id = action.payload.get("event_id")
+                if normalized_update_payload is not None:
+                    raw_event_id = normalized_update_payload.get("event_id")
+                exclude_event_id = self._parse_uuid(raw_event_id)
 
             overlap = []
             for event in existing_events:
@@ -1150,6 +1716,7 @@ class AIService:
         language: str = "ru",
         timezone_name: str = "Europe/Moscow",
         now_local: datetime | None = None,
+        session_id: UUID | None = None,
     ) -> ActionExecutionResult:
         if action.safety.needs_confirmation and action.type in {
             "create_event",
@@ -1259,6 +1826,9 @@ class AIService:
                     else f"Could not create event: {exc}"
                 )
                 return ActionExecutionResult(action_type=action.type, success=False, message=message, meta="info")
+            if session_id is not None:
+                await self._store_focus_event(session_id, event)
+                await self._clear_pending_title_update(session_id)
             start_label = self._format_local_datetime(event.start_at, timezone_name, language)
             location_text = str(getattr(event, "location_text", "") or "").strip()
             if language == "ru":
@@ -1270,11 +1840,44 @@ class AIService:
             return ActionExecutionResult(action_type=action.type, success=True, message=message, meta="create")
 
         if action.type == "update_event":
+            payload = self._normalize_update_event_payload(payload)
+            source_message = str(payload.get("source_message") or "").strip()
+            local_now = now_local or datetime.now(timezone.utc)
+
             event_id = self._parse_uuid(payload.get("event_id"))
-            patch = payload.get("patch") if isinstance(payload.get("patch"), dict) else {}
+            event = None
+            if event_id is not None:
+                try:
+                    event = await self.event_service.get_event(user_id, event_id)
+                except Exception:
+                    event = None
+
             if event_id is None:
-                message = "Для update_event нужен event_id." if language == "ru" else "event_id is required for update_event."
+                event_id, event = await self._resolve_update_event_reference(
+                    user_id=user_id,
+                    session_id=session_id,
+                    payload=payload,
+                    source_message=source_message,
+                    now_local=local_now,
+                )
+            if event_id is None:
+                message = (
+                    "Не удалось определить событие для изменения."
+                    if language == "ru"
+                    else "Could not resolve which event to update."
+                )
                 return ActionExecutionResult(action_type=action.type, success=False, message=message, meta="info")
+
+            patch = payload.get("patch") if isinstance(payload.get("patch"), dict) else {}
+            if source_message and event is not None:
+                derived_patch = self._derive_update_patch_from_source_message(
+                    source_message,
+                    event,
+                    now_local=local_now,
+                )
+                for key, value in derived_patch.items():
+                    patch.setdefault(key, value)
+
             update_payload: dict[str, Any] = {}
             for key in ("title", "description", "location_text", "location_lat", "location_lon", "all_day", "priority"):
                 if key in patch:
@@ -1286,7 +1889,19 @@ class AIService:
             if end_at is not None:
                 update_payload["end_at"] = end_at
             if not update_payload:
-                message = "update_event: пустой patch." if language == "ru" else "update_event has empty patch."
+                if session_id is not None and source_message and self._is_rename_request(source_message):
+                    await self._store_pending_title_update(session_id, event_id)
+                    prompt = (
+                        f"Какое название вы хотите установить для «{getattr(event, 'title', 'события')}»?"
+                        if language == "ru"
+                        else f"What title should I set for \"{getattr(event, 'title', 'this event')}\"?"
+                    )
+                    return ActionExecutionResult(action_type=action.type, success=False, message=prompt, meta="info")
+                message = (
+                    "Не удалось понять, что именно изменить в событии."
+                    if language == "ru"
+                    else "Could not determine which fields should be updated."
+                )
                 return ActionExecutionResult(action_type=action.type, success=False, message=message, meta="info")
             try:
                 event = await self.event_service.update_event(user_id, event_id, EventUpdate(**update_payload))
@@ -1301,6 +1916,9 @@ class AIService:
                     else f"Could not update event: {exc}"
                 )
                 return ActionExecutionResult(action_type=action.type, success=False, message=message, meta="info")
+            if session_id is not None:
+                await self._store_focus_event(session_id, event)
+                await self._clear_pending_title_update(session_id)
             if language == "ru":
                 message = f"Изменил событие \"{event.title}\"."
             else:
@@ -1308,7 +1926,21 @@ class AIService:
             return ActionExecutionResult(action_type=action.type, success=True, message=message, meta="update")
 
         if action.type == "delete_event":
-            event_id = self._parse_uuid(payload.get("event_id"))
+            payload = payload if isinstance(payload, dict) else {}
+            event_id = self._parse_uuid(payload.get("event_id") or payload.get("id"))
+            source_message = str(payload.get("source_message") or "").strip()
+            local_now = now_local or datetime.now(timezone.utc)
+
+            if event_id is None:
+                resolved_id, _ = await self._resolve_update_event_reference(
+                    user_id=user_id,
+                    session_id=session_id,
+                    payload={"event_id": None},
+                    source_message=source_message,
+                    now_local=local_now,
+                )
+                event_id = resolved_id
+
             if event_id is None:
                 message = "Для delete_event нужен event_id." if language == "ru" else "event_id is required for delete_event."
                 return ActionExecutionResult(action_type=action.type, success=False, message=message, meta="info")
@@ -1322,6 +1954,12 @@ class AIService:
                     else f"Could not delete event: {exc}"
                 )
                 return ActionExecutionResult(action_type=action.type, success=False, message=message, meta="info")
+            if session_id is not None:
+                focus = await self._load_focus_event(session_id)
+                focus_id = self._parse_uuid((focus or {}).get("event_id"))
+                if focus_id == event_id:
+                    await self._clear_focus_event(session_id)
+                    await self._clear_pending_title_update(session_id)
             message = "Удалил событие." if language == "ru" else "Deleted event."
             return ActionExecutionResult(action_type=action.type, success=True, message=message, meta="delete")
 
@@ -1349,6 +1987,8 @@ class AIService:
             if not events:
                 message = "В выбранном периоде событий нет." if language == "ru" else "No events found in the selected range."
                 return ActionExecutionResult(action_type=action.type, success=True, message=message, meta="info")
+            if session_id is not None and len(events) == 1:
+                await self._store_focus_event(session_id, events[0])
             lines = ["События:"] if language == "ru" else ["Events:"]
             for item in events[:10]:
                 start_label = self._format_local_datetime(item.start_at, timezone_name, language)
@@ -1426,6 +2066,7 @@ class AIService:
         language: str,
         timezone_name: str,
         now_local: datetime,
+        session_id: UUID | None = None,
     ) -> list[ActionExecutionResult]:
         ordered = sorted(actions, key=lambda item: item.priority)
         results: list[ActionExecutionResult] = []
@@ -1437,6 +2078,7 @@ class AIService:
                     language=language,
                     timezone_name=timezone_name,
                     now_local=now_local,
+                    session_id=session_id,
                 )
             )
         return results
@@ -1463,6 +2105,7 @@ class AIService:
             language=language,
             timezone_name=timezone_name,
             now_local=now_local,
+            session_id=session_id,
         )
         await self._clear_pending_options(session_id)
         return result
@@ -1577,6 +2220,8 @@ class AIService:
                 now_local=now_local,
             )
             answer = option_result.message or ("Вариант применён." if request_language == "ru" else "Option applied.")
+            await self._clear_pending_title_update(ai_session.id)
+            await self._clear_pending_followup(ai_session.id)
             await self._store_assistant_message(ai_session.id, answer, meta=option_result.meta)
             await self._save_conversation_summary(user_id, ai_session.id)
             await self.session.commit()
@@ -1586,6 +2231,107 @@ class AIService:
                 display_index=ai_session.display_index,
                 answer=answer,
                 response_meta=option_result.meta,
+            )
+
+        pending_title_event_id = await self._load_pending_title_update(ai_session.id)
+        if pending_title_event_id is not None:
+            if self._is_negative_reply(clean_message):
+                await self._clear_pending_title_update(ai_session.id)
+                cancel_message = (
+                    "Хорошо, оставляю название без изменений."
+                    if request_language == "ru"
+                    else "Okay, keeping the title unchanged."
+                )
+                await self._store_assistant_message(ai_session.id, cancel_message, meta="info")
+                await self._save_conversation_summary(user_id, ai_session.id)
+                await self.session.commit()
+                return ChatResult(
+                    session_id=ai_session.id,
+                    chat_type=ai_session.chat_type,
+                    display_index=ai_session.display_index,
+                    answer=cancel_message,
+                    response_meta="info",
+                )
+
+            title_candidate = self._normalize_pending_title_value(clean_message)
+            if title_candidate is not None:
+                pending_result = await self._execute_action(
+                    user_id=user_id,
+                    action=ProposedAction(
+                        type="update_event",
+                        payload={
+                            "event_id": str(pending_title_event_id),
+                            "patch": {"title": title_candidate},
+                            "source_message": clean_message,
+                        },
+                        priority=1,
+                        safety={"needs_confirmation": False, "reason": None},
+                    ),
+                    language=request_language,
+                    timezone_name=timezone_name,
+                    now_local=now_local,
+                    session_id=ai_session.id,
+                )
+                await self._clear_pending_title_update(ai_session.id)
+                await self._clear_pending_followup(ai_session.id)
+                answer = pending_result.message or (
+                    "Изменил название события." if request_language == "ru" else "Updated event title."
+                )
+                await self._store_assistant_message(ai_session.id, answer, meta=pending_result.meta)
+                await self._save_conversation_summary(user_id, ai_session.id)
+                await self.session.commit()
+                return ChatResult(
+                    session_id=ai_session.id,
+                    chat_type=ai_session.chat_type,
+                    display_index=ai_session.display_index,
+                    answer=answer,
+                    response_meta=pending_result.meta,
+                )
+
+        pending_followup = await self._load_pending_followup(ai_session.id)
+        if pending_followup is not None:
+            if self._is_negative_reply(clean_message):
+                await self._clear_pending_followup(ai_session.id)
+                cancel_message = (
+                    "Хорошо, не буду применять это изменение."
+                    if request_language == "ru"
+                    else "Okay, I will not apply this change."
+                )
+                await self._store_assistant_message(ai_session.id, cancel_message, meta="info")
+                await self._save_conversation_summary(user_id, ai_session.id)
+                await self.session.commit()
+                return ChatResult(
+                    session_id=ai_session.id,
+                    chat_type=ai_session.chat_type,
+                    display_index=ai_session.display_index,
+                    answer=cancel_message,
+                    response_meta="info",
+                )
+
+            followup_result = await self._try_execute_pending_followup(
+                user_id=user_id,
+                session_id=ai_session.id,
+                pending=pending_followup,
+                reply_message=clean_message,
+                language=request_language,
+                timezone_name=timezone_name,
+                now_local=now_local,
+            )
+            await self._clear_pending_followup(ai_session.id)
+            answer = followup_result.message or (
+                "Не удалось применить уточнение."
+                if request_language == "ru"
+                else "Could not apply the follow-up details."
+            )
+            await self._store_assistant_message(ai_session.id, answer, meta=followup_result.meta)
+            await self._save_conversation_summary(user_id, ai_session.id)
+            await self.session.commit()
+            return ChatResult(
+                session_id=ai_session.id,
+                chat_type=ai_session.chat_type,
+                display_index=ai_session.display_index,
+                answer=answer,
+                response_meta=followup_result.meta,
             )
 
         request_id = uuid4()
@@ -1692,9 +2438,59 @@ class AIService:
             if envelope.options:
                 await self._store_pending_options(ai_session.id, envelope.options)
                 options_payload = [item.model_dump(mode="json") for item in envelope.options]
+            else:
+                await self._clear_pending_options(ai_session.id)
+
+            followup_action = next(
+                (
+                    item
+                    for item in envelope.proposed_actions
+                    if item.type in {"create_event", "update_event"}
+                ),
+                None,
+            )
+            if followup_action is not None:
+                followup_source = str(followup_action.payload.get("source_message") or "").strip() or clean_message
+                await self._store_pending_followup(
+                    ai_session.id,
+                    action_type=followup_action.type,
+                    payload=followup_action.payload,
+                    source_message=followup_source,
+                )
+            elif envelope.intent in {"create_event", "update_event"}:
+                await self._store_pending_followup(
+                    ai_session.id,
+                    action_type=envelope.intent,
+                    payload={},
+                    source_message=clean_message,
+                )
+            elif target_chat_type == AIChatType.PLANNER:
+                fallback_intent = self.tools.detect_intent(clean_message)
+                if fallback_intent in {"create_event", "update_event"}:
+                    await self._store_pending_followup(
+                        ai_session.id,
+                        action_type=fallback_intent,
+                        payload={},
+                        source_message=clean_message,
+                    )
+                else:
+                    await self._clear_pending_followup(ai_session.id)
+            else:
+                await self._clear_pending_followup(ai_session.id)
+
+            if (
+                envelope.intent == "update_event"
+                and self._looks_like_title_question(envelope.clarifying_question or envelope.user_message)
+            ):
+                focus = await self._load_focus_event(ai_session.id)
+                focus_id = self._parse_uuid((focus or {}).get("event_id"))
+                if focus_id is not None:
+                    await self._store_pending_title_update(ai_session.id, focus_id)
             answer = self._format_requires_input(envelope)
         else:
             await self._clear_pending_options(ai_session.id)
+            await self._clear_pending_title_update(ai_session.id)
+            await self._clear_pending_followup(ai_session.id)
             execution_actions = self._attach_source_message_to_actions(envelope.proposed_actions, clean_message)
             execution_results = await self._execute_actions(
                 user_id,
@@ -1702,6 +2498,7 @@ class AIService:
                 language=request_language,
                 timezone_name=timezone_name,
                 now_local=now_local,
+                session_id=ai_session.id,
             )
             answer = self._compose_action_message(envelope.user_message, execution_results)
             response_meta = self._resolve_response_meta(execution_results)

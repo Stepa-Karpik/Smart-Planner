@@ -102,6 +102,36 @@ class FakeEventService:
         )
 
 
+class FakeEventUpdateService:
+    def __init__(self, event) -> None:
+        self.event = event
+        self.update_calls: list[tuple[UUID, object]] = []
+
+    async def get_event(self, _user_id: UUID, event_id: UUID):
+        if event_id != self.event.id:
+            raise ValueError("Event not found")
+        return self.event
+
+    async def update_event(self, _user_id: UUID, event_id: UUID, payload):
+        if event_id != self.event.id:
+            raise ValueError("Event not found")
+        self.update_calls.append((event_id, payload))
+
+        for field in ("title", "description", "location_text", "location_lat", "location_lon", "all_day", "priority"):
+            value = getattr(payload, field, None)
+            if value is not None:
+                setattr(self.event, field, value)
+
+        if getattr(payload, "start_at", None) is not None:
+            self.event.start_at = payload.start_at
+        if getattr(payload, "end_at", None) is not None:
+            self.event.end_at = payload.end_at
+        return self.event
+
+    async def list_events_range(self, _user_id: UUID, _from_dt: datetime, _to_dt: datetime):
+        return [self.event]
+
+
 def _new_service() -> AIService:
     service = AIService.__new__(AIService)
     service.redis = FakeRedis()
@@ -311,6 +341,117 @@ async def test_create_event_uses_source_message_when_payload_is_incomplete():
 
     assert result.success is True
     assert "событие" in result.message.lower()
+
+
+@pytest.mark.asyncio
+async def test_update_event_without_event_id_uses_focus_event():
+    service = _new_service()
+    user_id = uuid4()
+    session_id = uuid4()
+    now = datetime.now(timezone.utc).replace(second=0, microsecond=0)
+    event = SimpleNamespace(
+        id=uuid4(),
+        title="Meeting with Roma 8",
+        start_at=now + timedelta(days=1, hours=20),
+        end_at=now + timedelta(days=1, hours=21),
+        location_text="DGTU",
+    )
+    service.event_service = FakeEventUpdateService(event)
+    await service._store_focus_event(session_id, event)
+
+    action = ProposedAction(
+        type="update_event",
+        payload={"patch": {"title": "Meeting"}},
+        priority=1,
+        safety={"needs_confirmation": False, "reason": None},
+    )
+
+    result = await service._execute_action(
+        user_id,
+        action,
+        session_id=session_id,
+        now_local=now,
+    )
+
+    assert result.success is True
+    assert event.title == "Meeting"
+    assert len(service.event_service.update_calls) == 1
+
+
+@pytest.mark.asyncio
+async def test_update_event_derives_title_from_source_message():
+    service = _new_service()
+    user_id = uuid4()
+    session_id = uuid4()
+    now = datetime.now(timezone.utc).replace(second=0, microsecond=0)
+    event = SimpleNamespace(
+        id=uuid4(),
+        title="Meeting with Roma 8",
+        start_at=now + timedelta(days=1, hours=20),
+        end_at=now + timedelta(days=1, hours=21),
+        location_text="DGTU",
+    )
+    service.event_service = FakeEventUpdateService(event)
+    await service._store_focus_event(session_id, event)
+
+    action = ProposedAction(
+        type="update_event",
+        payload={"source_message": "rename to \"Meeting\""},
+        priority=1,
+        safety={"needs_confirmation": False, "reason": None},
+    )
+
+    result = await service._execute_action(
+        user_id,
+        action,
+        session_id=session_id,
+        now_local=now,
+    )
+
+    assert result.success is True
+    assert event.title == "Meeting"
+    assert len(service.event_service.update_calls) == 1
+
+
+@pytest.mark.asyncio
+async def test_pending_followup_create_uses_original_message_context():
+    service = _new_service()
+    service.event_service = FakeEventService()
+    now = datetime.now(timezone.utc).replace(second=0, microsecond=0)
+    service.tools = SimpleNamespace(
+        is_in_domain=lambda _text, now_local=None: True,
+        detect_intent=lambda _text, now_local=None: "create_event",
+        try_parse_task=lambda text, now_local=None: (
+            SimpleNamespace(
+                title="Meeting with mom",
+                start_at=now + timedelta(days=1, hours=20),
+                end_at=now + timedelta(days=1, hours=21),
+                location_text="Rostov Main Station",
+                reminder_offset=None,
+                has_explicit_date=True,
+            )
+            if "tomorrow" in text.lower() or "завтра" in text.lower()
+            else None
+        ),
+    )
+
+    result = await service._try_execute_pending_followup(
+        user_id=uuid4(),
+        session_id=uuid4(),
+        pending={
+            "action_type": "create_event",
+            "payload": {},
+            "source_message": "Tomorrow need to meet mom at station at 20:00",
+            "clarify_count": 1,
+        },
+        reply_message="Station: Rostov Main, no prep needed",
+        language="en",
+        timezone_name="Europe/Moscow",
+        now_local=now,
+    )
+
+    assert result.success is True
+    assert len(service.event_service.calls) == 1
 
 
 def test_deterministic_planner_fast_path_builds_create_event_action():
