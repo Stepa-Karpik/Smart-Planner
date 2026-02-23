@@ -2,11 +2,12 @@
 
 import Link from "next/link"
 import { useMemo, useState } from "react"
-import { Bell, BellRing, Megaphone, Settings2, Sparkles, TimerReset } from "lucide-react"
+import { Bell, BellRing, Megaphone, Settings2, Sparkles, Ticket, TimerReset } from "lucide-react"
 import { useAuth } from "@/lib/auth-store"
 import { isAdminRole } from "@/lib/authz"
 import { useFeed, useProfile } from "@/lib/hooks"
 import { useI18n } from "@/lib/i18n"
+import { supportSubtopicLabel, supportTopicLabel } from "@/lib/support-topics"
 import type { FeedItemType } from "@/lib/types"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -55,6 +56,15 @@ const TYPE_META: Record<
     hintEn: "Planning and task reminders",
     hintRu: "Напоминания о планировании и задачах",
   },
+  ticket: {
+    icon: Ticket,
+    dotClassName: "bg-emerald-400 shadow-[0_0_16px_rgba(52,211,153,0.7)]",
+    badgeClassName: "border-emerald-400/30 bg-emerald-400/10 text-emerald-200",
+    labelEn: "Tickets",
+    labelRu: "Тикеты",
+    hintEn: "Support ticket updates",
+    hintRu: "Обновления по тикетам поддержки",
+  },
 }
 
 function formatDateTime(value: string, locale: "en" | "ru") {
@@ -74,12 +84,17 @@ export default function FeedPage() {
     notification: true,
     update: true,
     reminder: true,
+    ticket: true,
   })
 
   const feedQuery = useFeed({ limit: 200, offset: 0 })
   const items = feedQuery.data ?? []
 
   const isAdmin = isAdminRole(profile?.role ?? user?.role ?? null)
+  const visibleTypes = useMemo<FeedItemType[]>(
+    () => (isAdmin ? ["notification", "update", "reminder", "ticket"] : ["notification", "update", "reminder"]),
+    [isAdmin],
+  )
 
   const counts = useMemo(() => {
     return items.reduce(
@@ -88,12 +103,21 @@ export default function FeedPage() {
         acc.all += 1
         return acc
       },
-      { all: 0, notification: 0, update: 0, reminder: 0 } as Record<"all" | FeedItemType, number>,
+      { all: 0, notification: 0, update: 0, reminder: 0, ticket: 0 } as Record<"all" | FeedItemType, number>,
     )
   }, [items])
 
-  const visibleItems = useMemo(() => items.filter((item) => filters[item.type]), [filters, items])
-  const activeFilterCount = Object.values(filters).filter(Boolean).length
+  const visibleItems = useMemo(
+    () =>
+      items.filter((item) => {
+        if (item.type === "ticket" && !isAdmin) {
+          return filters.notification
+        }
+        return filters[item.type]
+      }),
+    [filters, isAdmin, items],
+  )
+  const activeFilterCount = visibleTypes.filter((type) => filters[type]).length
 
   function toggleFilter(type: FeedItemType) {
     setFilters((prev) => ({ ...prev, [type]: !prev[type] }))
@@ -104,6 +128,7 @@ export default function FeedPage() {
       notification: enabled,
       update: enabled,
       reminder: enabled,
+      ticket: enabled,
     })
   }
 
@@ -137,7 +162,7 @@ export default function FeedPage() {
                 {tr("Visible", "Показано")}: {visibleItems.length}
               </Badge>
               <Badge className="rounded-full border-white/15 bg-white/5 px-3 py-1 text-white/80">
-                {tr("Filters", "Фильтры")}: {activeFilterCount}/3
+                {tr("Filters", "Фильтры")}: {activeFilterCount}/{visibleTypes.length}
               </Badge>
               {isAdmin && (
                 <>
@@ -187,8 +212,45 @@ export default function FeedPage() {
               </Card>
             ) : (
               visibleItems.map((item) => {
-                const meta = TYPE_META[item.type]
+                const displayType = !isAdmin && item.type === "ticket" ? "notification" : item.type
+                const meta = TYPE_META[displayType]
                 const Icon = meta.icon
+                const updatePoints = item.type === "update" && Array.isArray(item.meta?.update_points)
+                  ? item.meta.update_points.filter((point): point is string => typeof point === "string" && point.trim().length > 0)
+                  : []
+                const ticketEventKind = item.type === "ticket" ? item.meta?.ticket_event_kind : undefined
+                const ticketNumber = item.type === "ticket" ? item.meta?.ticket_public_number : undefined
+                const showTicketDetails = isAdmin && item.type === "ticket"
+                const ticketDisplayTitle =
+                  item.type === "ticket"
+                    ? ticketEventKind
+                      ? isAdmin
+                        ? ticketEventKind === "closed"
+                          ? tr(`Ticket ${ticketNumber ?? ""} closed`.trim(), `Тикет ${ticketNumber ?? ""} закрыт`.trim())
+                          : tr(`Ticket ${ticketNumber ?? ""} updated`.trim(), `Тикет ${ticketNumber ?? ""} обновлен`.trim())
+                        : tr("Support update", "Обновление поддержки")
+                      : isAdmin
+                        ? item.title
+                        : tr("Support update", "Обновление поддержки")
+                    : item.title
+                const ticketDisplayBody =
+                  item.type === "ticket"
+                    ? ticketEventKind
+                      ? ticketEventKind === "created"
+                        ? tr(
+                            isAdmin ? "Ticket was created and accepted by support" : "Your request has been accepted by support",
+                            isAdmin ? "Тикет создан и принят в поддержку" : "Ваше обращение принято поддержкой",
+                          )
+                        : ticketEventKind === "replied"
+                          ? tr("A reply from support has been received", "Поступил ответ от поддержки")
+                          : tr(
+                              isAdmin ? "Ticket status changed: closed" : "Request status changed: closed",
+                              isAdmin ? "Тикет был закрыт поддержкой" : "Обращение было закрыто поддержкой",
+                            )
+                      : isAdmin
+                        ? item.body
+                        : tr("Support request status has been updated", "Статус обращения в поддержку обновлён")
+                    : item.body
                 return (
                   <Card
                     key={item.id}
@@ -207,15 +269,49 @@ export default function FeedPage() {
                               {tr(meta.labelEn, meta.labelRu)}
                             </Badge>
                             <span className="text-xs text-white/45">{formatDateTime(item.published_at, locale)}</span>
-                            <span className="text-[11px] text-white/35">
-                              {item.target_username
-                                ? `${tr("for user", "для пользователя")} @${item.target_username}`
-                                : tr("for all users", "для всех пользователей")}
-                            </span>
+                            {isAdmin ? (
+                              <span className="text-[11px] text-white/35">
+                                {item.target_username
+                                  ? `${tr("for user", "для пользователя")} @${item.target_username}`
+                                  : tr("for all users", "для всех пользователей")}
+                              </span>
+                            ) : null}
                           </div>
 
-                          <h3 className="text-sm font-semibold text-white sm:text-base">{item.title}</h3>
-                          <p className="mt-1.5 text-sm leading-relaxed text-white/60">{item.body}</p>
+                          <h3 className="text-sm font-semibold text-white sm:text-base">{ticketDisplayTitle}</h3>
+                          <p className="mt-1.5 whitespace-pre-line break-words text-sm leading-relaxed text-white/60">{ticketDisplayBody}</p>
+                          {showTicketDetails && (item.meta?.ticket_id || item.meta?.ticket_topic || ticketEventKind) ? (
+                            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                              {ticketEventKind ? (
+                                <Badge variant="outline" className="rounded-full border-emerald-400/20 bg-emerald-400/5 text-emerald-200">
+                                  {ticketEventKind === "created" && tr("Created", "Создан")}
+                                  {ticketEventKind === "replied" && tr("Replied", "Ответ")}
+                                  {ticketEventKind === "closed" && tr("Closed", "Закрыт")}
+                                </Badge>
+                              ) : null}
+                              {item.meta?.ticket_id ? (
+                                <span className="text-white/45">ID: {item.meta.ticket_id.slice(0, 8)}...</span>
+                              ) : null}
+                              {item.meta?.ticket_topic ? (
+                                <span className="text-white/45">
+                                  {supportTopicLabel(locale, item.meta.ticket_topic)}
+                                  {item.meta.ticket_subtopic
+                                    ? ` · ${supportSubtopicLabel(locale, item.meta.ticket_topic, item.meta.ticket_subtopic)}`
+                                    : ""}
+                                </span>
+                              ) : null}
+                            </div>
+                          ) : null}
+                          {updatePoints.length > 0 ? (
+                            <ul className="mt-3 space-y-1.5 rounded-xl border border-white/10 bg-white/[0.02] p-3">
+                              {updatePoints.map((point, index) => (
+                                <li key={`${item.id}-${index}`} className="flex items-start gap-2 text-sm text-white/70">
+                                  <span className="mt-[0.38rem] h-1.5 w-1.5 rounded-full bg-violet-300/90" />
+                                  <span className="whitespace-pre-line break-words">{point}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          ) : null}
                         </div>
                       </div>
                     </CardContent>
@@ -241,7 +337,7 @@ export default function FeedPage() {
                     size="sm"
                     className={cn(
                       "rounded-full border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white",
-                      activeFilterCount === 3 && "border-white/30 bg-white/10",
+                      activeFilterCount === visibleTypes.length && "border-white/30 bg-white/10",
                     )}
                     onClick={() => setAllFilters(true)}
                   >
@@ -259,10 +355,11 @@ export default function FeedPage() {
                 </div>
 
                 <div className="space-y-2">
-                  {(Object.keys(TYPE_META) as FeedItemType[]).map((type) => {
+                  {visibleTypes.map((type) => {
                     const meta = TYPE_META[type]
                     const Icon = meta.icon
                     const active = filters[type]
+                    const displayCount = !isAdmin && type === "notification" ? counts.notification + counts.ticket : counts[type]
                     return (
                       <button
                         key={type}
@@ -281,7 +378,7 @@ export default function FeedPage() {
                           <p className="truncate text-xs text-white/45">{tr(meta.hintEn, meta.hintRu)}</p>
                         </div>
                         <Badge variant="outline" className="rounded-full border-white/10 bg-white/5 text-white/80">
-                          {counts[type]}
+                          {displayCount}
                         </Badge>
                         <Icon className="h-4 w-4 opacity-70" />
                       </button>

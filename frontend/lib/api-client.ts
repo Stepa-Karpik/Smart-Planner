@@ -8,6 +8,9 @@ import type {
   ApiEnvelope,
   AuthPayload,
   FeedItem,
+  SupportTicket,
+  SupportTicketDetail,
+  SupportTicketStatus,
   LoginTwoFASessionStatusPayload,
   TotpSetupPayload,
   TwoFAPendingStatusPayload,
@@ -107,6 +110,33 @@ export async function apiRequest<T>(path: string, options: RequestInit = {}): Pr
   }
 
   return res.json()
+}
+
+export async function apiRequestBlob(path: string, options: RequestInit = {}): Promise<Blob> {
+  const url = `${API_BASE}${path}`
+  const headers: Record<string, string> = {
+    ...(options.headers as Record<string, string>),
+  }
+
+  if (accessToken) {
+    headers["Authorization"] = `Bearer ${accessToken}`
+  }
+
+  let res = await fetch(url, { ...options, headers })
+
+  if (res.status === 401 && getRefreshToken()) {
+    const refreshed = await refreshAccessToken()
+    if (refreshed) {
+      headers["Authorization"] = `Bearer ${accessToken}`
+      res = await fetch(url, { ...options, headers })
+    }
+  }
+
+  if (!res.ok) {
+    throw new Error(`Request failed with status ${res.status}`)
+  }
+
+  return res.blob()
 }
 
 export async function login(loginValue: string, password: string) {
@@ -270,6 +300,75 @@ export async function adminUpdateFeedItem(itemId: string, data: AdminFeedItemUpd
 export async function adminDeleteFeedItem(itemId: string) {
   return apiRequest<{ ok: boolean }>(`/api/v1/admin/feed/${itemId}`, {
     method: "DELETE",
+  })
+}
+
+export async function getMySupportTickets(params: { limit?: number; offset?: number } = {}) {
+  return apiRequest<SupportTicket[]>(`/api/v1/support/tickets${buildQuery(params)}`)
+}
+
+export async function getMySupportTicket(ticketId: string) {
+  return apiRequest<SupportTicketDetail>(`/api/v1/support/tickets/${ticketId}`)
+}
+
+export async function createSupportTicket(data: {
+  topic: string
+  subtopic: string
+  subject: string
+  message: string
+  files?: File[]
+}) {
+  const formData = new FormData()
+  formData.append("topic", data.topic)
+  formData.append("subtopic", data.subtopic)
+  formData.append("subject", data.subject)
+  formData.append("message", data.message)
+  for (const file of data.files ?? []) {
+    formData.append("files", file)
+  }
+  return apiRequest<SupportTicketDetail>("/api/v1/support/tickets", {
+    method: "POST",
+    body: formData,
+  })
+}
+
+export async function replyMySupportTicket(data: {
+  ticketId: string
+  message: string
+  files?: File[]
+}) {
+  const formData = new FormData()
+  formData.append("message", data.message)
+  for (const file of data.files ?? []) {
+    formData.append("files", file)
+  }
+  return apiRequest<SupportTicketDetail>(`/api/v1/support/tickets/${data.ticketId}/reply`, {
+    method: "POST",
+    body: formData,
+  })
+}
+
+export async function adminListSupportTickets(params: { q?: string; status?: SupportTicketStatus; limit?: number; offset?: number } = {}) {
+  return apiRequest<SupportTicket[]>(
+    `/api/v1/admin/tickets${buildQuery(params as Record<string, string | number | boolean | null | undefined | string[]>)}`,
+  )
+}
+
+export async function adminGetSupportTicket(ticketId: string) {
+  return apiRequest<SupportTicketDetail>(`/api/v1/admin/tickets/${ticketId}`)
+}
+
+export async function adminReplySupportTicket(ticketId: string, message: string) {
+  return apiRequest<SupportTicketDetail>(`/api/v1/admin/tickets/${ticketId}/reply`, {
+    method: "POST",
+    body: JSON.stringify({ message }),
+  })
+}
+
+export async function adminCloseSupportTicket(ticketId: string) {
+  return apiRequest<SupportTicketDetail>(`/api/v1/admin/tickets/${ticketId}/close`, {
+    method: "POST",
+    body: JSON.stringify({}),
   })
 }
 

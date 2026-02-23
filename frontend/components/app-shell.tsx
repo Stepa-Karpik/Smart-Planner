@@ -32,6 +32,7 @@ import {
   AlertTriangle,
   MessageSquare,
   Bell,
+  LifeBuoy,
   Moon,
   LogOut,
   User,
@@ -138,6 +139,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton
+                asChild
+                tooltip={tr("Support", "Поддержка")}
+                className={cn(
+                  "rounded-xl transition-colors",
+                  isDark ? "text-white/75 hover:bg-white/10 hover:text-white" : "text-slate-600 hover:bg-black/5 hover:text-slate-900",
+                )}
+              >
+                <Link href="/support">
+                  <LifeBuoy className="h-4 w-4" />
+                  <span>{tr("Support", "Поддержка")}</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
                 tooltip={tr("Language", "Язык")}
                 className={cn(
                   "rounded-xl transition-colors",
@@ -216,7 +232,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               {activeNav?.title === "Profile" && tr("Profile", "Профиль")}
               {activeNav?.title === "Integrations" && tr("Integrations", "Интеграции")}
               {activeNav?.title === "Admin" && tr("Admin Panel", "Админ панель")}
-              {!activeNav && "Smart Planner"}
+              {!activeNav && (pathname.startsWith("/support") ? tr("Support", "Поддержка") : "Smart Planner")}
             </p>
             <p className={cn("truncate text-xs", isDark ? "text-white/45" : "text-slate-500")}>
               {tr("Focus mode dashboard", "Фокусный режим дашборда")}

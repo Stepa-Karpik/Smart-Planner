@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import type { ReactNode } from "react"
-import { ChevronRight, Shield, Sparkles, Users, Bell, Bot } from "lucide-react"
+import { ChevronRight, Shield, Sparkles, Users, Bell, Bot, Ticket } from "lucide-react"
 import { useI18n } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
@@ -42,6 +42,14 @@ const ADMIN_ROUTE_LINKS: AdminRouteLink[] = [
     titleRu: "Лента",
     descEn: "Broadcasts and targeted items",
     descRu: "Рассылки и адресные события",
+  },
+  {
+    href: "/admin/tickets",
+    icon: Ticket,
+    titleEn: "Tickets",
+    titleRu: "Тикеты",
+    descEn: "Support requests and replies",
+    descRu: "Обращения поддержки и ответы",
   },
   {
     href: "/admin/assistant",
@@ -84,7 +92,7 @@ export function AdminPageShell({
       </div>
 
       <div className="relative mx-auto flex max-w-7xl flex-col gap-6 p-4 md:p-6">
-        <Card className="rounded-2xl border-white/10 bg-black/30 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-sm">
+        <Card className="rounded-3xl border-white/10 bg-gradient-to-br from-black/35 via-black/25 to-black/30 shadow-[0_24px_70px_rgba(0,0,0,0.38)] backdrop-blur-sm">
           <CardHeader className="gap-3 md:flex-row md:items-end md:justify-between">
             <div className="space-y-2">
               <Badge className="w-fit rounded-full border-white/15 bg-white/5 px-3 py-1 text-white/75">
@@ -100,11 +108,11 @@ export function AdminPageShell({
           </CardHeader>
         </Card>
 
-        <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_300px]">
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_290px]">
           <div className="space-y-6">{children}</div>
 
           <aside className="space-y-4 xl:sticky xl:top-20 xl:h-fit">
-            <Card className="rounded-2xl border-white/10 bg-black/30 backdrop-blur-sm">
+            <Card className="rounded-2xl border-white/10 bg-black/30 shadow-[0_12px_36px_rgba(0,0,0,0.2)] backdrop-blur-sm">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm text-white">{tr("Anchors", "Якоря")}</CardTitle>
                 <CardDescription className="text-white/45">
@@ -123,7 +131,7 @@ export function AdminPageShell({
                       key={link.href}
                       href={link.href}
                       className={cn(
-                        "group flex items-center gap-3 rounded-2xl border px-3 py-2.5 transition",
+                        "group flex items-center gap-3 rounded-2xl border px-3 py-2.5 transition duration-200",
                         active
                           ? "border-white/20 bg-white/[0.08] text-white"
                           : "border-white/10 bg-white/[0.02] text-white/70 hover:bg-white/[0.05] hover:text-white",

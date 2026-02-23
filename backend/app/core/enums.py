@@ -45,6 +45,13 @@ class FeedItemType(str, Enum):
     NOTIFICATION = "notification"
     UPDATE = "update"
     REMINDER = "reminder"
+    TICKET = "ticket"
+
+
+class SupportTicketStatus(str, Enum):
+    OPEN = "open"
+    ANSWERED = "answered"
+    CLOSED = "closed"
 
 
 class AssistantMode(str, Enum):

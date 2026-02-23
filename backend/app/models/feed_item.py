@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from uuid import UUID as UUIDType
 
-from sqlalchemy import DateTime, ForeignKey, Index, String, func
+from sqlalchemy import JSON, DateTime, ForeignKey, Index, String, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -22,6 +22,7 @@ class FeedItem(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     type: Mapped[str] = mapped_column(String(32), nullable=False)
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     body: Mapped[str] = mapped_column(String(4000), nullable=False)
+    meta_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     target_username: Mapped[str | None] = mapped_column(String(64), nullable=True)
     created_by_user_id: Mapped[UUIDType | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     # Optional backdating / manual scheduling for admin-managed announcements.

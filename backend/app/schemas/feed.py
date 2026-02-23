@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -12,6 +13,7 @@ class FeedItemRead(BaseModel):
     type: FeedItemType
     title: str
     body: str
+    meta: dict[str, Any] | None = None
     target_username: str | None = None
     published_at: datetime
     created_at: datetime
@@ -29,6 +31,7 @@ class AdminFeedItemCreate(BaseModel):
     type: FeedItemType
     title: str = Field(min_length=1, max_length=255)
     body: str = Field(min_length=1, max_length=4000)
+    meta: dict[str, Any] | None = None
     target_username: str | None = Field(default=None, max_length=64)
     published_at: datetime | None = None
 
@@ -53,6 +56,7 @@ class AdminFeedItemUpdate(BaseModel):
     type: FeedItemType | None = None
     title: str | None = Field(default=None, min_length=1, max_length=255)
     body: str | None = Field(default=None, min_length=1, max_length=4000)
+    meta: dict[str, Any] | None = None
     target_username: str | None = Field(default=None, max_length=64)
     published_at: datetime | None = None
 
@@ -73,4 +77,3 @@ class AdminFeedItemUpdate(BaseModel):
             return None
         normalized = value.strip().lower()
         return normalized or None
-

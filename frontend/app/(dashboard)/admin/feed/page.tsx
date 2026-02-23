@@ -1,7 +1,7 @@
 "use client"
 
 import { useDeferredValue, useEffect, useMemo, useState } from "react"
-import { Bell, Loader2, PencilLine, Plus, Save, Send, Trash2 } from "lucide-react"
+import { Bell, Loader2, PencilLine, Plus, Save, Send, Ticket, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 import { AdminPageShell } from "@/components/admin/admin-page-shell"
 import { Badge } from "@/components/ui/badge"
@@ -13,13 +13,14 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Textarea } from "@/components/ui/textarea"
 import { createAdminFeedItem, patchAdminFeedItem, removeAdminFeedItem, useAdminFeed } from "@/lib/hooks"
 import { useI18n } from "@/lib/i18n"
-import type { FeedItem, FeedItemType } from "@/lib/types"
+import type { FeedItem, FeedItemMeta, FeedItemType } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
 type FeedEditorState = {
   type: FeedItemType
   title: string
   body: string
+  update_points: string[]
   target_username: string
   published_at_local: string
 }
@@ -28,6 +29,7 @@ const TYPE_META: Record<FeedItemType, { dot: string; labelEn: string; labelRu: s
   notification: { dot: "bg-sky-400", labelEn: "Notification", labelRu: "Уведомление" },
   update: { dot: "bg-violet-400", labelEn: "Update", labelRu: "Обновление" },
   reminder: { dot: "bg-amber-400", labelEn: "Reminder", labelRu: "Напоминание" },
+  ticket: { dot: "bg-emerald-400", labelEn: "Ticket", labelRu: "Тикет" },
 }
 
 function toLocalDateTimeInput(iso?: string | null): string {
@@ -51,6 +53,7 @@ function emptyDraft(): FeedEditorState {
     type: "update",
     title: "",
     body: "",
+    update_points: [],
     target_username: "",
     published_at_local: "",
   }
@@ -61,6 +64,7 @@ function draftFromItem(item: FeedItem): FeedEditorState {
     type: item.type,
     title: item.title,
     body: item.body,
+    update_points: Array.isArray(item.meta?.update_points) ? item.meta.update_points.filter((point): point is string => typeof point === "string") : [],
     target_username: item.target_username ?? "",
     published_at_local: toLocalDateTimeInput(item.published_at),
   }
@@ -126,6 +130,11 @@ export default function AdminFeedPage() {
       return
     }
 
+    const updatePoints = draft.type === "update"
+      ? draft.update_points.map((point) => point.trim()).filter(Boolean)
+      : []
+    const meta: FeedItemMeta | null = draft.type === "update" && updatePoints.length > 0 ? { update_points: updatePoints } : null
+
     setSaving(true)
 
     if (mode === "create") {
@@ -133,6 +142,7 @@ export default function AdminFeedPage() {
         type: draft.type,
         title,
         body,
+        meta,
         target_username: draft.target_username.trim() || null,
         published_at: toIsoOrNull(draft.published_at_local),
       })
@@ -161,12 +171,14 @@ export default function AdminFeedPage() {
       type?: FeedItemType
       title?: string
       body?: string
+      meta?: FeedItemMeta | null
       target_username?: string | null
       published_at?: string
     } = {
       type: draft.type,
       title,
       body,
+      meta,
       target_username: draft.target_username.trim() || "",
     }
     const publishedAt = toIsoOrNull(draft.published_at_local)
@@ -264,6 +276,9 @@ export default function AdminFeedPage() {
               </option>
               <option value="reminder" className="bg-[#0b0f17]">
                 {tr("Reminders", "Напоминания")}
+              </option>
+              <option value="ticket" className="bg-[#0b0f17]">
+                {tr("Tickets", "Тикеты")}
               </option>
             </select>
           </div>
@@ -418,6 +433,63 @@ export default function AdminFeedPage() {
                   className="min-h-[140px] rounded-xl border-white/15 bg-white/5 text-white placeholder:text-white/30"
                 />
               </div>
+
+              {draft.type === "update" ? (
+                <div className="space-y-2 rounded-xl border border-white/10 bg-white/[0.02] p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <Label className="text-white/80">{tr("Update points", "Пункты обновления")}</Label>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-8 rounded-lg border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white"
+                      onClick={() => setDraft((prev) => ({ ...prev, update_points: [...prev.update_points, ""] }))}
+                    >
+                      <Plus className="mr-1 h-3.5 w-3.5" />
+                      {tr("Add", "Добавить")}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-white/45">
+                    {tr(
+                      "Points will be displayed as a structured checklist under the main text in the feed.",
+                      "Пункты будут отображаться структурированным списком под основным текстом в ленте.",
+                    )}
+                  </p>
+                  <div className="space-y-2">
+                    {draft.update_points.length === 0 ? (
+                      <div className="rounded-lg border border-dashed border-white/10 px-3 py-2 text-xs text-white/45">
+                        {tr("No points yet. Click Add.", "Пунктов пока нет. Нажмите «Добавить».")}
+                      </div>
+                    ) : (
+                      draft.update_points.map((point, index) => (
+                        <div key={index} className="flex items-start gap-2">
+                          <span className="mt-3 h-1.5 w-1.5 rounded-full bg-violet-300/90" />
+                          <Input
+                            value={point}
+                            onChange={(event) =>
+                              setDraft((prev) => ({
+                                ...prev,
+                                update_points: prev.update_points.map((item, itemIndex) => (itemIndex === index ? event.target.value : item)),
+                              }))
+                            }
+                            placeholder={tr("Update point", "Пункт обновления")}
+                            className="h-10 rounded-xl border-white/15 bg-white/5 text-white placeholder:text-white/30"
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="h-10 w-10 rounded-xl border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white"
+                            onClick={() => setDraft((prev) => ({ ...prev, update_points: prev.update_points.filter((_, itemIndex) => itemIndex !== index) }))}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              ) : null}
 
               <div className="flex flex-wrap gap-2">
                 <Button type="button" onClick={handleSave} className="flex-1 rounded-xl" disabled={saving}>

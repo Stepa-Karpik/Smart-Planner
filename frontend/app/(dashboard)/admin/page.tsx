@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { Bell, Bot, Shield, Users } from "lucide-react"
+import { Bell, Bot, Shield, Ticket, Users } from "lucide-react"
 import { AdminPageShell } from "@/components/admin/admin-page-shell"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -36,6 +36,15 @@ const BLOCKS = [
     descRu: "Административный доступ к AI-инструментам и сервисным действиям.",
     accent: "from-cyan-500/20 to-emerald-500/5",
   },
+  {
+    href: "/admin/tickets",
+    icon: Ticket,
+    titleEn: "Tickets",
+    titleRu: "Тикеты",
+    descEn: "View tickets, reply to users, and close requests.",
+    descRu: "Просмотр тикетов, ответы пользователям и закрытие обращений.",
+    accent: "from-emerald-500/20 to-teal-500/5",
+  },
 ]
 
 export default function AdminOverviewPage() {
@@ -48,17 +57,17 @@ export default function AdminOverviewPage() {
       descriptionEn="Protected workspace for user management, feed broadcasts, and assistant administration."
       descriptionRu="Защищенное пространство для управления пользователями, рассылками ленты и администрирования ассистента."
     >
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 2xl:grid-cols-4">
         {BLOCKS.map((block) => {
           const Icon = block.icon
           return (
             <Card
               key={block.href}
-              className={`flex h-full flex-col rounded-2xl border-white/10 bg-gradient-to-br ${block.accent} bg-black/25 backdrop-blur-sm`}
+              className={`group flex h-full min-h-[240px] flex-col rounded-2xl border-white/10 bg-gradient-to-br ${block.accent} bg-black/25 shadow-[0_14px_40px_rgba(0,0,0,0.22)] backdrop-blur-sm transition hover:border-white/20 hover:bg-black/30`}
             >
               <CardHeader className="flex-1 space-y-3">
                 <div className="flex items-center justify-between">
-                  <div className="rounded-2xl border border-white/10 bg-white/5 p-3 text-white">
+                  <div className="rounded-2xl border border-white/10 bg-white/5 p-3 text-white transition group-hover:scale-[1.02]">
                     <Icon className="h-5 w-5" />
                   </div>
                   <Badge className="rounded-full border-white/15 bg-white/5 text-white/75">

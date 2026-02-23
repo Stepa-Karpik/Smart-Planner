@@ -61,3 +61,5 @@ class User(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     kb_patches_proposed = relationship("AdminKbPatch", foreign_keys="AdminKbPatch.proposed_by_user_id", back_populates="proposed_by")
     kb_patches_reviewed = relationship("AdminKbPatch", foreign_keys="AdminKbPatch.reviewed_by_user_id", back_populates="reviewed_by")
     feed_items_created = relationship("FeedItem", back_populates="created_by")
+    support_tickets = relationship("SupportTicket", back_populates="user", cascade="all,delete-orphan")
+    support_ticket_messages_authored = relationship("SupportTicketMessage", back_populates="author_user")

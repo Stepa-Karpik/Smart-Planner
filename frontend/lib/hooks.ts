@@ -2,15 +2,22 @@
 
 import useSWR, { mutate as globalMutate } from "swr"
 import {
+  adminCloseSupportTicket,
   adminCreateFeedItem,
   adminDeleteFeedItem,
   adminListFeedItems,
+  adminListSupportTickets,
   adminListUsers,
+  adminGetSupportTicket,
+  adminReplySupportTicket,
   adminUpdateFeedItem,
   adminUpdateUser,
   apiRequest,
   completeLoginTwofaTelegram,
+  createSupportTicket,
   getFeedItems,
+  getMySupportTicket,
+  getMySupportTickets,
   disableTotpTwofa,
   getLoginTwofaSessionStatus,
   getTwofaPendingStatus,
@@ -18,6 +25,7 @@ import {
   requestDisableTelegramTwofa,
   requestEnableTelegramTwofa,
   requestLoginTwofaTelegram,
+  replyMySupportTicket,
   setupTotpTwofa,
   verifyLoginTwofaTotp,
   verifyTotpTwofaSetup,
@@ -26,6 +34,7 @@ import type {
   AdminFeedItemCreate,
   AdminFeedItemUpdate,
   AdminFeedQuery,
+  AdminSupportTicketsQuery,
   AdminUser,
   AdminUserUpdate,
   AssistantMode,
@@ -52,6 +61,8 @@ import type {
   RouteMode,
   RoutePreview,
   RouteRecommendation,
+  SupportTicket,
+  SupportTicketDetail,
   TelegramStartPayload,
   TelegramStatus,
   LoginTwoFASessionStatusPayload,
@@ -111,6 +122,22 @@ function feedKey(params?: { types?: FeedItemType[]; limit?: number; offset?: num
     for (const type of params.types) qs.append("types", type)
   }
   return `/api/v1/feed${qs.toString() ? `?${qs.toString()}` : ""}`
+}
+
+function mySupportTicketsKey(params?: { limit?: number; offset?: number }) {
+  const qs = new URLSearchParams()
+  if (params?.limit !== undefined) qs.set("limit", String(params.limit))
+  if (params?.offset !== undefined) qs.set("offset", String(params.offset))
+  return `/api/v1/support/tickets${qs.toString() ? `?${qs.toString()}` : ""}`
+}
+
+function adminSupportTicketsKey(params?: AdminSupportTicketsQuery) {
+  const qs = new URLSearchParams()
+  if (params?.q) qs.set("q", params.q)
+  if (params?.status) qs.set("status", params.status)
+  if (params?.limit !== undefined) qs.set("limit", String(params.limit))
+  if (params?.offset !== undefined) qs.set("offset", String(params.offset))
+  return `/api/v1/admin/tickets${qs.toString() ? `?${qs.toString()}` : ""}`
 }
 
 export function useCalendars() {
@@ -426,6 +453,92 @@ export async function removeAdminFeedItem(itemId: string) {
   const res = await adminDeleteFeedItem(itemId)
   if (!res.error) {
     globalMutate((key: string) => typeof key === "string" && (key.startsWith("/api/v1/admin/feed") || key.startsWith("/api/v1/feed")), undefined, {
+      revalidate: true,
+    })
+  }
+  return res
+}
+
+export function useMySupportTickets(params?: { limit?: number; offset?: number }) {
+  const key = mySupportTicketsKey(params)
+  return useSWR<SupportTicket[]>(key, () =>
+    getMySupportTickets(params ?? {}).then((envelope) => {
+      if (envelope.error) throw new Error(envelope.error.message)
+      return envelope.data ?? []
+    }),
+  )
+}
+
+export function useMySupportTicket(ticketId: string | undefined) {
+  return useSWR<SupportTicketDetail>(ticketId ? `/api/v1/support/tickets/${ticketId}` : null, () =>
+    getMySupportTicket(ticketId as string).then((envelope) => {
+      if (envelope.error) throw new Error(envelope.error.message)
+      if (!envelope.data) throw new Error("Support ticket not found")
+      return envelope.data
+    }),
+  )
+}
+
+export async function createUserSupportTicket(data: {
+  topic: string
+  subtopic: string
+  subject: string
+  message: string
+  files?: File[]
+}) {
+  const res = await createSupportTicket(data)
+  if (!res.error) {
+    globalMutate((key: string) => typeof key === "string" && (key.startsWith("/api/v1/support/tickets") || key.startsWith("/api/v1/feed")), undefined, {
+      revalidate: true,
+    })
+  }
+  return res
+}
+
+export async function replyToMySupportTicket(data: { ticketId: string; message: string; files?: File[] }) {
+  const res = await replyMySupportTicket(data)
+  if (!res.error) {
+    globalMutate((key: string) => typeof key === "string" && (key.startsWith("/api/v1/support/tickets") || key.startsWith("/api/v1/feed")), undefined, {
+      revalidate: true,
+    })
+  }
+  return res
+}
+
+export function useAdminSupportTickets(params?: AdminSupportTicketsQuery) {
+  const key = adminSupportTicketsKey(params)
+  return useSWR<SupportTicket[]>(key, () =>
+    adminListSupportTickets(params ?? {}).then((envelope) => {
+      if (envelope.error) throw new Error(envelope.error.message)
+      return envelope.data ?? []
+    }),
+  )
+}
+
+export function useAdminSupportTicket(ticketId: string | undefined) {
+  return useSWR<SupportTicketDetail>(ticketId ? `/api/v1/admin/tickets/${ticketId}` : null, () =>
+    adminGetSupportTicket(ticketId as string).then((envelope) => {
+      if (envelope.error) throw new Error(envelope.error.message)
+      if (!envelope.data) throw new Error("Support ticket not found")
+      return envelope.data
+    }),
+  )
+}
+
+export async function replyToAdminSupportTicket(ticketId: string, message: string) {
+  const res = await adminReplySupportTicket(ticketId, message)
+  if (!res.error) {
+    globalMutate((key: string) => typeof key === "string" && (key.startsWith("/api/v1/admin/tickets") || key.startsWith("/api/v1/feed")), undefined, {
+      revalidate: true,
+    })
+  }
+  return res
+}
+
+export async function closeAdminSupportTicketById(ticketId: string) {
+  const res = await adminCloseSupportTicket(ticketId)
+  if (!res.error) {
+    globalMutate((key: string) => typeof key === "string" && (key.startsWith("/api/v1/admin/tickets") || key.startsWith("/api/v1/feed")), undefined, {
       revalidate: true,
     })
   }

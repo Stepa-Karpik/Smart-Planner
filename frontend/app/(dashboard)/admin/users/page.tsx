@@ -175,14 +175,14 @@ export default function AdminUsersPage() {
                                 {user.role === "admin" ? (
                                   <>
                                     <Shield className="mr-1 h-3 w-3" />
-                                    {tr("Admin", "РђРґРјРёРЅ")}
+                                    {tr("Admin", "Админ")}
                                   </>
                                 ) : (
-                                  tr("User", "РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ")
+                                  tr("User", "Пользователь")
                                 )}
                               </Badge>
                               <span className={cn("text-xs", user.is_active ? "text-emerald-300" : "text-red-300")}>
-                                {user.is_active ? tr("Active", "РђРєС‚РёРІРµРЅ") : tr("Disabled", "РћС‚РєР»СЋС‡РµРЅ")}
+                                {user.is_active ? tr("Active", "Активен") : tr("Disabled", "Отключен")}
                               </span>
                             </div>
                           </div>

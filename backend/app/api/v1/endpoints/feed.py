@@ -18,6 +18,7 @@ def _serialize_feed_item(item) -> FeedItemRead:
         type=item.type,
         title=item.title,
         body=item.body,
+        meta=item.meta_json,
         target_username=item.target_username,
         published_at=item.published_at,
         created_at=item.created_at,
@@ -44,4 +45,3 @@ async def list_feed_items(
     )
     data = [_serialize_feed_item(item).model_dump() for item in items]
     return success_response(data=data, request=request)
-

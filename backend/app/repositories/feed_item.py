@@ -82,6 +82,7 @@ class FeedItemRepository:
         type: str,
         title: str,
         body: str,
+        meta_json: dict | None = None,
         target_username: str | None,
         created_by_user_id: UUID | None,
         published_at: datetime | None = None,
@@ -90,6 +91,7 @@ class FeedItemRepository:
             type=type,
             title=title,
             body=body,
+            meta_json=meta_json,
             target_username=(target_username.strip().lower() or None) if isinstance(target_username, str) else None,
             created_by_user_id=created_by_user_id,
             published_at=published_at or datetime.now(timezone.utc),
@@ -105,9 +107,11 @@ class FeedItemRepository:
         type: str | None = None,
         title: str | None = None,
         body: str | None = None,
+        meta_json: dict | None | object = None,
         target_username: str | None | object = None,
         published_at: datetime | None = None,
         target_username_set: bool = False,
+        meta_json_set: bool = False,
     ) -> FeedItem:
         if type is not None:
             item.type = type
@@ -115,6 +119,8 @@ class FeedItemRepository:
             item.title = title
         if body is not None:
             item.body = body
+        if meta_json_set:
+            item.meta_json = meta_json if isinstance(meta_json, dict) else None
         if target_username_set:
             item.target_username = (target_username.strip().lower() or None) if isinstance(target_username, str) else None
         if published_at is not None:

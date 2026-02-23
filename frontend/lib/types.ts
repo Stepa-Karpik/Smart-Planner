@@ -54,13 +54,25 @@ export interface User {
   role?: UserRole
 }
 
-export type FeedItemType = "notification" | "update" | "reminder"
+export type FeedItemType = "notification" | "update" | "reminder" | "ticket"
+
+export type FeedTicketEventKind = "created" | "replied" | "closed"
+
+export interface FeedItemMeta {
+  update_points?: string[]
+  ticket_event_kind?: FeedTicketEventKind
+  ticket_id?: string
+  ticket_public_number?: number
+  ticket_topic?: string
+  ticket_subtopic?: string
+}
 
 export interface FeedItem {
   id: string
   type: FeedItemType
   title: string
   body: string
+  meta?: FeedItemMeta | null
   target_username?: string | null
   published_at: string
   created_at: string
@@ -72,6 +84,7 @@ export interface AdminFeedItemCreate {
   type: FeedItemType
   title: string
   body: string
+  meta?: FeedItemMeta | null
   target_username?: string | null
   published_at?: string | null
 }
@@ -80,6 +93,7 @@ export interface AdminFeedItemUpdate {
   type?: FeedItemType
   title?: string
   body?: string
+  meta?: FeedItemMeta | null
   target_username?: string | null
   published_at?: string | null
 }
@@ -115,6 +129,50 @@ export interface AdminUserUpdate {
   role?: UserRole
   is_active?: boolean
   new_password?: string
+}
+
+export type SupportTicketStatus = "open" | "answered" | "closed"
+
+export interface SupportTicketAttachment {
+  original_name: string
+  stored_name: string
+  content_type: string
+  size_bytes: number
+}
+
+export interface SupportTicketMessage {
+  id: string
+  ticket_id: string
+  author_user_id?: string | null
+  author_role: "user" | "admin" | "system"
+  body: string
+  attachments: SupportTicketAttachment[]
+  created_at: string
+  updated_at: string
+}
+
+export interface SupportTicket {
+  id: string
+  public_number: number
+  user_id: string
+  topic: string
+  subtopic: string
+  subject: string
+  status: SupportTicketStatus
+  closed_at?: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface SupportTicketDetail extends SupportTicket {
+  messages: SupportTicketMessage[]
+}
+
+export interface AdminSupportTicketsQuery {
+  q?: string
+  status?: SupportTicketStatus
+  limit?: number
+  offset?: number
 }
 
 export type EventStatus = "planned" | "done" | "canceled"

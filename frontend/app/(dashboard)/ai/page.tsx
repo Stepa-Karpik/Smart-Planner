@@ -469,7 +469,7 @@ export default function AiChatPage() {
   }
 
   return (
-    <div className="flex h-[calc(100svh-3.5rem)]">
+    <div className="flex h-[calc(100svh-8.5rem)] min-h-[560px] overflow-hidden rounded-2xl border border-border/50 bg-card/30 shadow-[0_20px_60px_rgba(0,0,0,0.12)]">
       <div className="hidden md:flex w-64 flex-col border-r bg-card">
         <div className="flex items-center justify-between px-3 py-3">
           <h2 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{tr("Sessions", "Сессии")}</h2>
@@ -526,36 +526,70 @@ export default function AiChatPage() {
         </ScrollArea>
       </div>
 
-      <div className="flex flex-1 flex-col">
+      <div className="flex min-w-0 flex-1 flex-col">
         <div className="border-b bg-card/60 px-4 py-3">
-          <div className="mx-auto flex w-full max-w-2xl flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{tr("Mode", "Режим")}</span>
+          <div className="mx-auto grid w-full max-w-6xl gap-3 xl:grid-cols-[minmax(0,1fr)_340px]">
+            <div className="rounded-xl border border-border/60 bg-background/70 px-3 py-2.5">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center rounded-full border border-border bg-background px-2 py-1 text-[11px] font-medium text-muted-foreground">
+                  {tr("AI workspace", "AI пространство")}
+                </span>
+                {selectedChatType && (
+                  <span className="inline-flex items-center rounded-full border border-border bg-background px-2 py-1 text-[11px] text-muted-foreground">
+                    {tr("Chat type", "Тип чата")}: {chatTypeLabel(selectedChatType, tr)}
+                  </span>
+                )}
+              </div>
+              <p className="mt-2 text-sm text-foreground">
+                {selectedSession
+                  ? tr(
+                      `Session #${selectedSession.display_index}: ${chatTypeLabel(selectedSession.chat_type, tr)}`,
+                      `Сессия #${selectedSession.display_index}: ${chatTypeLabel(selectedSession.chat_type, tr)}`,
+                    )
+                  : tr("Select a session or create a new chat", "Выберите сессию или создайте новый чат")}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {tr(
+                  "Messages are shown in a chat stream below. Mode controls are fixed on the right.",
+                  "Сообщения отображаются в потоке чата ниже. Управление режимом закреплено справа.",
+                )}
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-primary/15 bg-gradient-to-br from-primary/5 via-background to-background p-3 shadow-[0_10px_30px_rgba(0,0,0,0.06)]">
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{tr("Mode", "Режим")}</span>
+                {modeUpdating || assistantModeLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" /> : null}
+              </div>
               <ToggleGroup
                 type="single"
                 value={selectedMode}
                 onValueChange={handleModeChange}
                 disabled={modeUpdating || assistantModeLoading}
-                className="rounded-xl border bg-background p-1"
+                className="grid w-full grid-cols-2 rounded-xl border bg-background p-1"
               >
-                <ToggleGroupItem value="PLANNER" className="h-8 rounded-lg px-3 text-xs">
+                <ToggleGroupItem value="PLANNER" className="h-9 rounded-lg px-3 text-xs">
                   {tr("Planner", "Планировщик")}
                 </ToggleGroupItem>
-                <ToggleGroupItem value="COMPANION" className="h-8 rounded-lg px-3 text-xs">
+                <ToggleGroupItem value="COMPANION" className="h-9 rounded-lg px-3 text-xs">
                   {tr("Companion", "Помощник")}
                 </ToggleGroupItem>
               </ToggleGroup>
-            </div>
-            <div className="flex items-center gap-2">
-              {selectedChatType && (
-                <span className="inline-flex items-center rounded-full border border-border bg-background px-2 py-1 text-xs text-muted-foreground">
-                  {tr("Chat type", "Тип чата")}: {chatTypeLabel(selectedChatType, tr)}
-                </span>
-              )}
+              <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                {selectedMode === "PLANNER"
+                  ? tr(
+                      "Optimized for schedules, tasks, and time planning.",
+                      "Оптимизирован для расписаний, задач и планирования времени.",
+                    )
+                  : tr(
+                      "Universal assistant mode for questions, ideas and communication.",
+                      "Универсальный режим ассистента для вопросов, идей и общения.",
+                    )}
+              </p>
             </div>
           </div>
           {showModeHint && (
-            <div className="mx-auto mt-2 w-full max-w-2xl rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-xs text-muted-foreground">
+            <div className="mx-auto mt-2 w-full max-w-6xl rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-xs text-muted-foreground">
               {tr(
                 "Tip: switch mode anytime. Planner focuses on schedule, Companion is universal.",
                 "Подсказка: режим можно менять в любой момент. Планировщик фокусируется на расписании, Помощник — универсальный.",
@@ -564,7 +598,7 @@ export default function AiChatPage() {
           )}
         </div>
 
-        <ScrollArea className="flex-1 p-4">
+        <ScrollArea className="flex-1 p-3 md:p-4">
           {uiMessages.length === 0 ? (
             <div className="flex h-full flex-col items-center justify-center py-20">
               <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-muted">
@@ -579,7 +613,7 @@ export default function AiChatPage() {
               </p>
             </div>
           ) : (
-            <div className="mx-auto flex max-w-2xl flex-col gap-4">
+            <div className="mx-auto flex w-full max-w-4xl flex-col gap-4">
               {uiMessages.map((msg, i) => {
                 const options = (msg.meta?.options || [])
                   .map((item) => (typeof item === "object" && item ? readOption(item as Record<string, unknown>) : null))
@@ -664,7 +698,7 @@ export default function AiChatPage() {
         </ScrollArea>
 
         <div className="border-t bg-card/80 backdrop-blur-sm p-3">
-          <form onSubmit={handleSend} className="flex flex-col gap-2 max-w-2xl mx-auto">
+          <form onSubmit={handleSend} className="mx-auto flex w-full max-w-4xl flex-col gap-2">
             {isListening && (
               <div className="rounded-md border border-red-500/30 bg-red-500/5 px-3 py-2 text-xs text-muted-foreground">
                 <div className="inline-flex items-center gap-1.5 text-red-500">
