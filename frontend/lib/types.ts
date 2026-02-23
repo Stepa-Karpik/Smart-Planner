@@ -24,6 +24,8 @@ export interface AuthTokens {
   token_type?: string
 }
 
+export type UserRole = "user" | "admin"
+
 export type TwoFAMethod = "none" | "telegram" | "totp"
 export type TwoFALoginMethod = "telegram" | "totp"
 export type TwoFAStatus = "pending" | "approved" | "denied" | "expired"
@@ -34,6 +36,7 @@ export interface AuthPayload {
   email?: string
   username?: string
   display_name?: string | null
+  role?: UserRole
   default_route_mode?: RouteMode
   map_provider?: MapProvider
   tokens?: AuthTokens
@@ -48,6 +51,70 @@ export interface User {
   id: string
   email: string
   username: string
+  role?: UserRole
+}
+
+export type FeedItemType = "notification" | "update" | "reminder"
+
+export interface FeedItem {
+  id: string
+  type: FeedItemType
+  title: string
+  body: string
+  target_username?: string | null
+  published_at: string
+  created_at: string
+  updated_at: string
+  created_by_user_id?: string | null
+}
+
+export interface AdminFeedItemCreate {
+  type: FeedItemType
+  title: string
+  body: string
+  target_username?: string | null
+  published_at?: string | null
+}
+
+export interface AdminFeedItemUpdate {
+  type?: FeedItemType
+  title?: string
+  body?: string
+  target_username?: string | null
+  published_at?: string | null
+}
+
+export interface AdminUsersQuery {
+  q?: string
+  limit?: number
+  offset?: number
+}
+
+export interface AdminFeedQuery {
+  q?: string
+  types?: FeedItemType[]
+  target_username?: string | null
+  limit?: number
+  offset?: number
+}
+
+export interface AdminUser {
+  user_id: string
+  email: string
+  username: string
+  display_name?: string | null
+  role: UserRole
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface AdminUserUpdate {
+  username?: string
+  display_name?: string | null
+  role?: UserRole
+  is_active?: boolean
+  new_password?: string
 }
 
 export type EventStatus = "planned" | "done" | "canceled"
@@ -301,6 +368,7 @@ export interface Profile {
   email: string
   username: string
   display_name?: string | null
+  role: UserRole
   default_route_mode: RouteMode
   map_provider: MapProvider
   timezone: string

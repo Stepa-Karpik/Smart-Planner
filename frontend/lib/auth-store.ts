@@ -10,6 +10,7 @@ export interface AuthState {
     email: string
     username: string
     display_name?: string | null
+    role?: "user" | "admin"
     default_route_mode?: "walking" | "driving" | "public_transport" | "bicycle"
   } | null
 }

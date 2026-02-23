@@ -1,6 +1,13 @@
-﻿import type {
+import type {
+  AdminFeedItemCreate,
+  AdminFeedItemUpdate,
+  AdminFeedQuery,
+  AdminUser,
+  AdminUsersQuery,
+  AdminUserUpdate,
   ApiEnvelope,
   AuthPayload,
+  FeedItem,
   LoginTwoFASessionStatusPayload,
   TotpSetupPayload,
   TwoFAPendingStatusPayload,
@@ -195,6 +202,75 @@ export async function completeLoginTwofaTelegram(twofaSessionId: string) {
 
 export async function getTwofaSettings() {
   return apiRequest<TwoFASettings>("/api/v1/integrations/twofa")
+}
+
+function buildQuery(params: Record<string, string | number | boolean | null | undefined | string[]>) {
+  const qs = new URLSearchParams()
+  for (const [key, value] of Object.entries(params)) {
+    if (value === undefined || value === null) continue
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        if (item !== undefined && item !== null && item !== "") {
+          qs.append(key, String(item))
+        }
+      }
+      continue
+    }
+    if (value === "") {
+      qs.set(key, "")
+      continue
+    }
+    qs.set(key, String(value))
+  }
+
+  const text = qs.toString()
+  return text ? `?${text}` : ""
+}
+
+export async function getFeedItems(params: { types?: string[]; limit?: number; offset?: number } = {}) {
+  return apiRequest<FeedItem[]>(`/api/v1/feed${buildQuery(params)}`)
+}
+
+export async function adminListUsers(params: AdminUsersQuery = {}) {
+  return apiRequest<AdminUser[]>(`/api/v1/admin/users${buildQuery(params as Record<string, string | number | boolean | null | undefined | string[]>)}`)
+}
+
+export async function adminUpdateUser(userId: string, data: AdminUserUpdate) {
+  return apiRequest<AdminUser>(`/api/v1/admin/users/${userId}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  })
+}
+
+export async function adminListFeedItems(params: AdminFeedQuery = {}) {
+  const queryParams: Record<string, string | number | boolean | null | undefined | string[]> = {
+    q: params.q,
+    limit: params.limit,
+    offset: params.offset,
+    target_username: params.target_username,
+    types: params.types,
+  }
+  return apiRequest<FeedItem[]>(`/api/v1/admin/feed${buildQuery(queryParams)}`)
+}
+
+export async function adminCreateFeedItem(data: AdminFeedItemCreate) {
+  return apiRequest<FeedItem>("/api/v1/admin/feed", {
+    method: "POST",
+    body: JSON.stringify(data),
+  })
+}
+
+export async function adminUpdateFeedItem(itemId: string, data: AdminFeedItemUpdate) {
+  return apiRequest<FeedItem>(`/api/v1/admin/feed/${itemId}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  })
+}
+
+export async function adminDeleteFeedItem(itemId: string) {
+  return apiRequest<{ ok: boolean }>(`/api/v1/admin/feed/${itemId}`, {
+    method: "DELETE",
+  })
 }
 
 export async function requestEnableTelegramTwofa() {

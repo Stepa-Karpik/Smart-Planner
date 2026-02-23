@@ -69,43 +69,49 @@ export function TelegramLinkCard() {
   }
 
   if (isLoading) {
-    return <Skeleton className="h-44 rounded-lg" />
+    return <Skeleton className="h-52 rounded-2xl bg-white/10" />
   }
 
   return (
-    <Card className="border-border/50">
+    <Card className="rounded-2xl border-white/10 bg-black/25 backdrop-blur-sm">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-sm font-medium">Telegram</CardTitle>
+          <CardTitle className="text-sm font-medium text-white">Telegram</CardTitle>
           <Badge
             variant="outline"
             className={cn(
-              "text-[10px]",
-              status?.is_linked ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" : "bg-muted text-muted-foreground",
+              "border-white/15 bg-white/5 text-[10px]",
+              status?.is_linked ? "border-emerald-400/25 bg-emerald-400/10 text-emerald-200" : "text-white/60",
             )}
           >
             {status?.is_linked ? tr("Connected", "Подключено") : tr("Not connected", "Не подключено")}
           </Badge>
         </div>
-        <CardDescription className="text-xs">
+        <CardDescription className="text-xs text-white/50">
           {tr("Link Telegram to receive reminders and conflict alerts.", "Привяжите Telegram, чтобы получать напоминания и уведомления о конфликтах.")}
         </CardDescription>
       </CardHeader>
 
-      <CardContent className="flex flex-col gap-3">
+      <CardContent className="flex min-h-[136px] flex-col gap-3">
         {status?.is_linked ? (
           <>
             <div className="flex flex-col gap-1 text-sm">
               {status.telegram_username && (
-                <p className="text-muted-foreground">
-                  {tr("Username", "Имя пользователя")}: <span className="font-medium text-foreground">@{status.telegram_username}</span>
+                <p className="text-white/55">
+                  {tr("Username", "Имя пользователя")}: <span className="font-medium text-white">@{status.telegram_username}</span>
                 </p>
               )}
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-white/45">
                 {tr("Confirmation", "Подтверждение")}: {status.is_confirmed ? tr("yes", "да") : tr("pending", "ожидает")}
               </p>
             </div>
-            <Button variant="outline" size="sm" onClick={handleUnlink} disabled={unlinking}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-auto rounded-xl border-white/15 bg-white/[0.03] text-white hover:bg-white/10 hover:text-white"
+              onClick={handleUnlink}
+              disabled={unlinking}
+            >
               {unlinking ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Unlink className="mr-1.5 h-3.5 w-3.5" />}
               {tr("Unlink Telegram", "Отвязать Telegram")}
             </Button>
@@ -114,25 +120,25 @@ export function TelegramLinkCard() {
           <>
             {linkPayload ? (
               <div className="flex flex-col gap-2">
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-white/45">
                   {tr("Open Telegram app and press Start.", "Откройте Telegram и нажмите Start.")}
                 </p>
 
-                <div className="flex items-center gap-2 rounded-md border bg-muted/50 px-3 py-2">
-                  <a href={linkPayload.deep_link} target="_blank" rel="noopener noreferrer" className="flex-1 truncate text-xs text-accent underline underline-offset-2">
+                <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2">
+                  <a href={linkPayload.deep_link} target="_blank" rel="noopener noreferrer" className="flex-1 truncate text-xs text-sky-300 underline underline-offset-2">
                     {linkPayload.deep_link}
                   </a>
-                  <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={handleCopy}>
+                  <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0 text-white/70 hover:bg-white/10 hover:text-white" onClick={handleCopy}>
                     {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
                   </Button>
                 </div>
 
                 <div className="flex flex-wrap gap-2">
-                  <Button type="button" size="sm" onClick={handleOpenDesktop}>
+                  <Button type="button" size="sm" className="rounded-xl bg-white text-black hover:bg-white/90" onClick={handleOpenDesktop}>
                     <Smartphone className="mr-1.5 h-3.5 w-3.5" />
                     {tr("Open in Telegram app", "Открыть в приложении Telegram")}
                   </Button>
-                  <Button asChild size="sm" variant="outline">
+                  <Button asChild size="sm" variant="outline" className="rounded-xl border-white/15 bg-white/[0.03] text-white hover:bg-white/10 hover:text-white">
                     <a href={linkPayload.deep_link} target="_blank" rel="noopener noreferrer">
                       <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
                       {tr("Web fallback", "Открыть web-версию")}
@@ -141,7 +147,13 @@ export function TelegramLinkCard() {
                 </div>
               </div>
             ) : (
-              <Button variant="outline" size="sm" onClick={handleGenerateLink} disabled={linking}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-auto rounded-xl border-white/15 bg-white/[0.03] text-white hover:bg-white/10 hover:text-white"
+                onClick={handleGenerateLink}
+                disabled={linking}
+              >
                 {linking ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Link2 className="mr-1.5 h-3.5 w-3.5" />}
                 {tr("Generate link", "Сгенерировать ссылку")}
               </Button>

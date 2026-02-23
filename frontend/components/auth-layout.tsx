@@ -28,18 +28,29 @@ export function AuthLayout({ children }: AuthLayoutProps) {
       <div className="relative flex w-full max-w-[980px] overflow-hidden rounded-[20px] border border-white/25 bg-black/70 shadow-[0_30px_90px_rgba(0,0,0,0.65)] backdrop-blur-sm md:h-[610px]">
         <div className="relative hidden w-[42%] shrink-0 md:block">
           <Image
-            src="/auth/cafe-planner-scene.png"
-            alt="Workspace scene"
+            src="/auth/auth-hero.gif"
+            alt="Animated planner scene"
             fill
             priority
             sizes="(max-width: 1024px) 0px, 420px"
             className="object-cover"
+            unoptimized
           />
           <div className="absolute inset-0 bg-gradient-to-r from-black/10 via-transparent to-black/35" />
+          <div className="absolute inset-0 z-[1] flex items-center justify-center p-6">
+            <Image
+              src="/auth/auth-hero-logo.svg"
+              alt="Smart Planner"
+              width={280}
+              height={76}
+              className="h-auto w-[76%] max-w-[280px] drop-shadow-[0_8px_30px_rgba(0,0,0,0.55)]"
+              priority
+            />
+          </div>
           <div className="absolute inset-0 ring-1 ring-inset ring-white/10" />
           <button
             type="button"
-            className="absolute right-3 top-3 rounded-md border border-white/20 bg-black/35 px-2 py-1 text-[11px] font-medium tracking-[0.18em] text-white/85 backdrop-blur-sm transition hover:bg-black/55 hover:text-white"
+            className="absolute right-3 top-3 z-[2] rounded-md border border-white/20 bg-black/35 px-2 py-1 text-[11px] font-medium tracking-[0.18em] text-white/85 backdrop-blur-sm transition hover:bg-black/55 hover:text-white"
             onClick={() => setLocale(locale === "en" ? "ru" : "en")}
           >
             {locale.toUpperCase()}
@@ -77,16 +88,26 @@ export function AuthLayout({ children }: AuthLayoutProps) {
 
           <div className="relative mb-6 h-28 overflow-hidden rounded-xl border border-white/10 md:hidden">
             <Image
-              src="/auth/cafe-planner-scene.png"
-              alt="Workspace scene"
+              src="/auth/auth-hero.gif"
+              alt="Animated planner scene"
               fill
               sizes="100vw"
               className="object-cover"
+              unoptimized
             />
             <div className="absolute inset-0 bg-gradient-to-r from-black/15 via-transparent to-black/40" />
+            <div className="absolute inset-0 z-[1] flex items-center justify-center p-4">
+              <Image
+                src="/auth/auth-hero-logo.svg"
+                alt="Smart Planner"
+                width={200}
+                height={54}
+                className="h-auto w-[70%] max-w-[180px] drop-shadow-[0_8px_24px_rgba(0,0,0,0.55)]"
+              />
+            </div>
             <button
               type="button"
-              className="absolute right-2 top-2 rounded-md border border-white/20 bg-black/35 px-2 py-1 text-[11px] font-medium tracking-[0.18em] text-white/85 backdrop-blur-sm transition hover:bg-black/55 hover:text-white"
+              className="absolute right-2 top-2 z-[2] rounded-md border border-white/20 bg-black/35 px-2 py-1 text-[11px] font-medium tracking-[0.18em] text-white/85 backdrop-blur-sm transition hover:bg-black/55 hover:text-white"
               onClick={() => setLocale(locale === "en" ? "ru" : "en")}
             >
               {locale.toUpperCase()}

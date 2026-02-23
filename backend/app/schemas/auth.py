@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
-from app.core.enums import RouteMode
+from app.core.enums import RouteMode, UserRole
 
 
 class RegisterRequest(BaseModel):
@@ -44,5 +44,6 @@ class AuthResponse(BaseModel):
     username: str
     display_name: str | None = None
     default_route_mode: RouteMode
+    role: UserRole = UserRole.USER
     tokens: TokenPair
     requires_twofa: bool = False

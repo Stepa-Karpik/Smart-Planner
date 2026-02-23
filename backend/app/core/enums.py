@@ -36,6 +36,17 @@ class MapProvider(str, Enum):
     YANDEX = "yandex"
 
 
+class UserRole(str, Enum):
+    USER = "user"
+    ADMIN = "admin"
+
+
+class FeedItemType(str, Enum):
+    NOTIFICATION = "notification"
+    UPDATE = "update"
+    REMINDER = "reminder"
+
+
 class AssistantMode(str, Enum):
     AUTO = "AUTO"
     PLANNER = "PLANNER"

@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, Request, status
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_db_session, get_redis_client
+from app.api.deps import get_db_session, get_effective_user_role, get_redis_client
 from app.core.exceptions import NotFoundError, ValidationAppError
 from app.core.responses import success_response
 from app.schemas.auth import AuthResponse, LoginRequest, LogoutRequest, RefreshRequest, RegisterRequest, TokenPair
@@ -36,6 +36,7 @@ async def register(payload: RegisterRequest, request: Request, session: AsyncSes
         username=user.username,
         display_name=user.display_name,
         default_route_mode=user.default_route_mode,
+        role=get_effective_user_role(user),
         tokens=TokenPair(access_token=access_token, refresh_token=refresh_token),
     )
     return success_response(data=data.model_dump(), request=request)
@@ -67,6 +68,7 @@ async def login(
         username=user.username,
         display_name=user.display_name,
         default_route_mode=user.default_route_mode,
+        role=get_effective_user_role(user),
         tokens=TokenPair(access_token=access_token, refresh_token=refresh_token),
         requires_twofa=False,
     )
@@ -83,6 +85,7 @@ async def refresh(payload: RefreshRequest, request: Request, session: AsyncSessi
         username=user.username,
         display_name=user.display_name,
         default_route_mode=user.default_route_mode,
+        role=get_effective_user_role(user),
         tokens=TokenPair(access_token=access_token, refresh_token=refresh_token),
     )
     return success_response(data=data.model_dump(), request=request)
@@ -116,6 +119,7 @@ async def verify_login_totp(
         username=user.username,
         display_name=user.display_name,
         default_route_mode=user.default_route_mode,
+        role=get_effective_user_role(user),
         tokens=TokenPair(access_token=access_token, refresh_token=refresh_token),
         requires_twofa=False,
     )
@@ -187,6 +191,7 @@ async def complete_login_telegram_confirmation(
         username=user.username,
         display_name=user.display_name,
         default_route_mode=user.default_route_mode,
+        role=get_effective_user_role(user),
         tokens=TokenPair(access_token=access_token, refresh_token=refresh_token),
         requires_twofa=False,
     )

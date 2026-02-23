@@ -43,6 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             email: refreshRes.data.email,
             username: refreshRes.data.username,
             display_name: refreshRes.data.display_name ?? null,
+            role: refreshRes.data.role,
             default_route_mode: refreshRes.data.default_route_mode,
           },
         })
@@ -88,6 +89,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email: res.data.email,
         username: res.data.username,
         display_name: res.data.display_name ?? null,
+        role: res.data.role,
         default_route_mode: res.data.default_route_mode,
       },
     })
@@ -108,6 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email: res.data.email,
         username: res.data.username,
         display_name: res.data.display_name ?? null,
+        role: res.data.role,
         default_route_mode: res.data.default_route_mode,
       },
     })

@@ -5,7 +5,7 @@ from datetime import datetime
 from sqlalchemy import Boolean, DateTime, Float, Integer, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.core.enums import EventLocationSource, MapProvider, RouteMode
+from app.core.enums import EventLocationSource, MapProvider, RouteMode, UserRole
 from app.db.base import Base
 from app.db.types import db_enum
 from app.models.mixins import TimestampMixin, UUIDPrimaryKeyMixin
@@ -19,6 +19,12 @@ class User(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     display_name: Mapped[str | None] = mapped_column(String(128), nullable=True)
     password_hash: Mapped[str] = mapped_column(String(512), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    role: Mapped[UserRole] = mapped_column(
+        db_enum(UserRole, "user_role"),
+        default=UserRole.USER,
+        nullable=False,
+        server_default=UserRole.USER.value,
+    )
     default_route_mode: Mapped[RouteMode] = mapped_column(
         db_enum(RouteMode, "route_mode"),
         default=RouteMode.PUBLIC_TRANSPORT,
@@ -54,3 +60,4 @@ class User(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     observations = relationship("Observation", back_populates="user")
     kb_patches_proposed = relationship("AdminKbPatch", foreign_keys="AdminKbPatch.proposed_by_user_id", back_populates="proposed_by")
     kb_patches_reviewed = relationship("AdminKbPatch", foreign_keys="AdminKbPatch.reviewed_by_user_id", back_populates="reviewed_by")
+    feed_items_created = relationship("FeedItem", back_populates="created_by")

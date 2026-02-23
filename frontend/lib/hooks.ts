@@ -1,9 +1,16 @@
 "use client"
 
 import useSWR, { mutate as globalMutate } from "swr"
-import { apiRequest } from "./api-client"
 import {
+  adminCreateFeedItem,
+  adminDeleteFeedItem,
+  adminListFeedItems,
+  adminListUsers,
+  adminUpdateFeedItem,
+  adminUpdateUser,
+  apiRequest,
   completeLoginTwofaTelegram,
+  getFeedItems,
   disableTotpTwofa,
   getLoginTwofaSessionStatus,
   getTwofaPendingStatus,
@@ -16,6 +23,11 @@ import {
   verifyTotpTwofaSetup,
 } from "./api-client"
 import type {
+  AdminFeedItemCreate,
+  AdminFeedItemUpdate,
+  AdminFeedQuery,
+  AdminUser,
+  AdminUserUpdate,
   AssistantMode,
   AssistantModeState,
   AiChatResponse,
@@ -28,6 +40,8 @@ import type {
   EventCreate,
   EventsQuery,
   EventUpdate,
+  FeedItem,
+  FeedItemType,
   FeasibilityResult,
   LocationSuggestion,
   Profile,
@@ -65,6 +79,38 @@ function eventsKey(query: EventsQuery) {
   if (query.limit !== undefined) params.set("limit", String(query.limit))
   if (query.offset !== undefined) params.set("offset", String(query.offset))
   return `/api/v1/events?${params.toString()}`
+}
+
+function adminUsersKey(params?: { q?: string; limit?: number; offset?: number }) {
+  const qs = new URLSearchParams()
+  if (params?.q) qs.set("q", params.q)
+  if (params?.limit !== undefined) qs.set("limit", String(params.limit))
+  if (params?.offset !== undefined) qs.set("offset", String(params.offset))
+  return `/api/v1/admin/users${qs.toString() ? `?${qs.toString()}` : ""}`
+}
+
+function adminFeedKey(params?: AdminFeedQuery) {
+  const qs = new URLSearchParams()
+  if (params?.q) qs.set("q", params.q)
+  if (params?.limit !== undefined) qs.set("limit", String(params.limit))
+  if (params?.offset !== undefined) qs.set("offset", String(params.offset))
+  if (params?.target_username !== undefined && params.target_username !== null) {
+    qs.set("target_username", params.target_username)
+  }
+  if (params?.types) {
+    for (const type of params.types) qs.append("types", type)
+  }
+  return `/api/v1/admin/feed${qs.toString() ? `?${qs.toString()}` : ""}`
+}
+
+function feedKey(params?: { types?: FeedItemType[]; limit?: number; offset?: number }) {
+  const qs = new URLSearchParams()
+  if (params?.limit !== undefined) qs.set("limit", String(params.limit))
+  if (params?.offset !== undefined) qs.set("offset", String(params.offset))
+  if (params?.types) {
+    for (const type of params.types) qs.append("types", type)
+  }
+  return `/api/v1/feed${qs.toString() ? `?${qs.toString()}` : ""}`
 }
 
 export function useCalendars() {
@@ -311,6 +357,79 @@ export async function changePassword(currentPassword: string, newPassword: strin
       new_password: newPassword,
     }),
   })
+}
+
+export function useFeed(params?: { types?: FeedItemType[]; limit?: number; offset?: number }) {
+  const key = feedKey(params)
+  return useSWR<FeedItem[]>(key, () =>
+    getFeedItems({
+      types: params?.types,
+      limit: params?.limit,
+      offset: params?.offset,
+    }).then((envelope) => {
+      if (envelope.error) throw new Error(envelope.error.message)
+      return envelope.data ?? []
+    }),
+  )
+}
+
+export function useAdminUsers(params?: { q?: string; limit?: number; offset?: number }) {
+  const key = adminUsersKey(params)
+  return useSWR<AdminUser[]>(key, () =>
+    adminListUsers(params ?? {}).then((envelope) => {
+      if (envelope.error) throw new Error(envelope.error.message)
+      return envelope.data ?? []
+    }),
+  )
+}
+
+export async function updateAdminUser(userId: string, data: AdminUserUpdate) {
+  const res = await adminUpdateUser(userId, data)
+  if (!res.error) {
+    globalMutate((key: string) => typeof key === "string" && key.startsWith("/api/v1/admin/users"), undefined, { revalidate: true })
+    globalMutate("/api/v1/profile")
+  }
+  return res
+}
+
+export function useAdminFeed(params?: AdminFeedQuery) {
+  const key = adminFeedKey(params)
+  return useSWR<FeedItem[]>(key, () =>
+    adminListFeedItems(params ?? {}).then((envelope) => {
+      if (envelope.error) throw new Error(envelope.error.message)
+      return envelope.data ?? []
+    }),
+  )
+}
+
+export async function createAdminFeedItem(data: AdminFeedItemCreate) {
+  const res = await adminCreateFeedItem(data)
+  if (!res.error) {
+    globalMutate((key: string) => typeof key === "string" && (key.startsWith("/api/v1/admin/feed") || key.startsWith("/api/v1/feed")), undefined, {
+      revalidate: true,
+    })
+  }
+  return res
+}
+
+export async function patchAdminFeedItem(itemId: string, data: AdminFeedItemUpdate) {
+  const res = await adminUpdateFeedItem(itemId, data)
+  if (!res.error) {
+    globalMutate((key: string) => typeof key === "string" && (key.startsWith("/api/v1/admin/feed") || key.startsWith("/api/v1/feed")), undefined, {
+      revalidate: true,
+    })
+  }
+  return res
+}
+
+export async function removeAdminFeedItem(itemId: string) {
+  const res = await adminDeleteFeedItem(itemId)
+  if (!res.error) {
+    globalMutate((key: string) => typeof key === "string" && (key.startsWith("/api/v1/admin/feed") || key.startsWith("/api/v1/feed")), undefined, {
+      revalidate: true,
+    })
+  }
+  return res
 }
 
 export function useAiSessions() {

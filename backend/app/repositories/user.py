@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from sqlalchemy import or_, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.enums import EventLocationSource, MapProvider, RouteMode
+from app.core.enums import EventLocationSource, MapProvider, RouteMode, UserRole
 from app.models import User
 
 
@@ -29,6 +29,22 @@ class UserRepository:
         normalized = login.lower()
         stmt = select(User).where(or_(User.email == normalized, User.username == normalized))
         return await self.session.scalar(stmt)
+
+    async def list_users(self, q: str | None = None, limit: int = 50, offset: int = 0) -> list[User]:
+        stmt = select(User).order_by(User.created_at.desc()).limit(limit).offset(offset)
+        if q:
+            pattern = f"%{q.strip().lower()}%"
+            stmt = stmt.where(or_(func.lower(User.email).like(pattern), func.lower(User.username).like(pattern)))
+        result = await self.session.scalars(stmt)
+        return list(result.all())
+
+    async def count_users(self, q: str | None = None) -> int:
+        stmt = select(func.count()).select_from(User)
+        if q:
+            pattern = f"%{q.strip().lower()}%"
+            stmt = stmt.where(or_(func.lower(User.email).like(pattern), func.lower(User.username).like(pattern)))
+        value = await self.session.scalar(stmt)
+        return int(value or 0)
 
     async def create(self, email: str, username: str, password_hash: str) -> User:
         normalized_username = username.lower()
@@ -70,6 +86,27 @@ class UserRepository:
 
     async def set_password_hash(self, user: User, password_hash: str) -> User:
         user.password_hash = password_hash
+        await self.session.flush()
+        return user
+
+    async def admin_update_user(
+        self,
+        user: User,
+        *,
+        username: str | None = None,
+        display_name: str | None = None,
+        display_name_set: bool = False,
+        role: UserRole | None = None,
+        is_active: bool | None = None,
+    ) -> User:
+        if username is not None:
+            user.username = username.strip().lower()
+        if display_name_set:
+            user.display_name = (str(display_name).strip() or None) if isinstance(display_name, str) else None
+        if role is not None:
+            user.role = role
+        if is_active is not None:
+            user.is_active = is_active
         await self.session.flush()
         return user
 

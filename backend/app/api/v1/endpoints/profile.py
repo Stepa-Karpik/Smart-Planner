@@ -3,7 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user, get_db_session
+from app.api.deps import get_current_user, get_db_session, get_effective_user_role
 from app.core.responses import success_response
 from app.schemas.profile import PasswordChangeRequest, ProfileRead, ProfileUpdate
 from app.services.profile import ProfileService
@@ -24,6 +24,7 @@ async def get_profile(
         email=user.email,
         username=user.username,
         display_name=user.display_name,
+        role=get_effective_user_role(user),
         default_route_mode=user.default_route_mode,
         map_provider=user.map_provider,
         home_location_text=user.home_location_text,
@@ -48,6 +49,7 @@ async def update_profile(
         email=user.email,
         username=user.username,
         display_name=user.display_name,
+        role=get_effective_user_role(user),
         default_route_mode=user.default_route_mode,
         map_provider=user.map_provider,
         home_location_text=user.home_location_text,

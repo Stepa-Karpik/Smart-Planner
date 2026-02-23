@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
-from app.core.enums import EventLocationSource, MapProvider, RouteMode
+from app.core.enums import EventLocationSource, MapProvider, RouteMode, UserRole
 
 
 class ProfileRead(BaseModel):
@@ -10,6 +10,7 @@ class ProfileRead(BaseModel):
     email: str
     username: str
     display_name: str | None
+    role: UserRole = UserRole.USER
     default_route_mode: RouteMode
     map_provider: MapProvider
     home_location_text: str | None = None
