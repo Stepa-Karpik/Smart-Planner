@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import { ThemeProvider } from 'next-themes'
-import { Toaster } from 'sonner'
+import { AppToaster } from '@/components/app-toaster'
 import { AuthProvider } from '@/components/auth-provider'
 import { I18nProvider } from '@/lib/i18n'
 
@@ -33,7 +33,7 @@ export default function RootLayout({
           <I18nProvider>
             <AuthProvider>
               {children}
-              <Toaster position="bottom-right" richColors closeButton />
+              <AppToaster />
             </AuthProvider>
           </I18nProvider>
         </ThemeProvider>
