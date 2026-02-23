@@ -28,6 +28,16 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
+  useEffect(() => {
+    if (typeof document === "undefined") return
+
+    const html = document.documentElement
+    html.lang = locale
+    html.setAttribute("translate", "no")
+    html.classList.add("notranslate")
+    document.body?.classList.add("notranslate")
+  }, [locale])
+
   const value = useMemo<I18nContextValue>(
     () => ({
       locale,

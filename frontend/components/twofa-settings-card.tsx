@@ -215,8 +215,8 @@ export function TwoFactorSettingsCard() {
               >
                 {telegramSubmitting && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
                 {telegramEnabled
-                  ? tr("Disable via Telegram confirmation", "Отключить с подтверждением в Telegram")
-                  : tr("Enable via Telegram confirmation", "Включить с подтверждением в Telegram")}
+                  ? tr("Disable via Telegram confirmation", "Отключить Telegram")
+                  : tr("Enable via Telegram confirmation", "Подтверждать в Telegram")}
               </Button>
 
               {telegramPending && (

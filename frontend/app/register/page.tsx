@@ -23,6 +23,12 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
 
+  const authInputClassName =
+    "h-11 rounded-xl border-white/25 bg-white/[0.02] px-3.5 text-white placeholder:text-white/30 ring-offset-black focus-visible:border-white/40 focus-visible:ring-[#3b82f6]/70 focus-visible:ring-offset-0"
+  const authLabelClassName = "text-[12px] font-medium tracking-wide text-white/85"
+  const authPrimaryButtonClassName =
+    "mt-1 h-11 rounded-xl border border-white/80 bg-white text-black shadow-[0_8px_30px_rgba(255,255,255,0.08)] transition hover:bg-white/90 hover:text-black"
+
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
     setLoading(true)
@@ -33,21 +39,31 @@ export default function RegisterPage() {
       toast.error(error || tr("Registration failed", "Ошибка регистрации"))
       return
     }
+
     toast.success(tr("Account created", "Аккаунт создан"))
     router.push("/today")
   }
 
   return (
     <AuthLayout>
-      <div className="flex flex-col gap-6">
+      <div className="mx-auto flex w-full max-w-[360px] flex-col gap-6 md:min-h-[440px]">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">{tr("Create account", "Создать аккаунт")}</h1>
-          <p className="mt-1.5 text-sm text-muted-foreground">{tr("Register to start planning your schedule", "Зарегистрируйтесь, чтобы начать планировать расписание")}</p>
+          <h1 className="text-3xl font-semibold tracking-tight text-white">
+            {tr("Create account", "Создать аккаунт")}
+          </h1>
+          <p className="mt-1.5 text-sm text-white/40">
+            {tr(
+              "Register to start planning your schedule",
+              "Зарегистрируйтесь, чтобы начать планировать расписание",
+            )}
+          </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-2">
-            <Label htmlFor="email">{tr("Email", "Email")}</Label>
+            <Label htmlFor="email" className={authLabelClassName}>
+              {tr("Email", "Email")}
+            </Label>
             <Input
               id="email"
               type="email"
@@ -55,12 +71,14 @@ export default function RegisterPage() {
               onChange={(event) => setEmail(event.target.value)}
               required
               autoComplete="email"
-              className="h-11 rounded-lg border-border bg-muted/50 px-3.5"
+              className={authInputClassName}
             />
           </div>
 
           <div className="flex flex-col gap-2">
-            <Label htmlFor="username">{tr("Username", "Username")}</Label>
+            <Label htmlFor="username" className={authLabelClassName}>
+              {tr("Username", "Username")}
+            </Label>
             <Input
               id="username"
               type="text"
@@ -68,12 +86,14 @@ export default function RegisterPage() {
               onChange={(event) => setUsername(event.target.value)}
               required
               autoComplete="username"
-              className="h-11 rounded-lg border-border bg-muted/50 px-3.5"
+              className={authInputClassName}
             />
           </div>
 
           <div className="flex flex-col gap-2">
-            <Label htmlFor="password">{tr("Password", "Пароль")}</Label>
+            <Label htmlFor="password" className={authLabelClassName}>
+              {tr("Password", "Пароль")}
+            </Label>
             <div className="relative">
               <Input
                 id="password"
@@ -83,12 +103,12 @@ export default function RegisterPage() {
                 required
                 minLength={8}
                 autoComplete="new-password"
-                className="h-11 rounded-lg border-border bg-muted/50 px-3.5 pr-10"
+                className={`${authInputClassName} pr-10`}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword((value) => !value)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-white/45 transition hover:text-white/85"
                 aria-label={showPassword ? tr("Hide password", "Скрыть пароль") : tr("Show password", "Показать пароль")}
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -96,15 +116,18 @@ export default function RegisterPage() {
             </div>
           </div>
 
-          <Button type="submit" disabled={loading} className="mt-1 h-11 rounded-lg bg-foreground text-background hover:bg-foreground/90">
+          <Button type="submit" disabled={loading} className={authPrimaryButtonClassName}>
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {tr("Create account", "Создать аккаунт")}
           </Button>
         </form>
 
-        <p className="text-center text-sm text-muted-foreground">
+        <p className="text-center text-sm text-white/40">
           {tr("Already have an account?", "Уже есть аккаунт?")}{" "}
-          <Link href="/login" className="font-medium text-accent underline-offset-4 hover:underline">
+          <Link
+            href="/login"
+            className="font-medium text-[#3b82f6] underline-offset-4 transition hover:text-[#60a5fa] hover:underline"
+          >
             {tr("Sign in", "Войти")}
           </Link>
         </p>
