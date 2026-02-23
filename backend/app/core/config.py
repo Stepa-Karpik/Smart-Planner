@@ -2,7 +2,7 @@ import json
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     telegram_bot_username: str = ""
 
     app_base_url: str = "http://localhost:3000"
-    frontend_origins: list[str] = Field(default_factory=lambda: ["http://localhost:3000"])
+    frontend_origins: list[str] = Field(default_factory=list)
     admin_usernames: list[str] = Field(default_factory=list)
 
     worker_poll_interval_sec: int = 10
@@ -70,6 +70,13 @@ class Settings(BaseSettings):
     @field_validator("frontend_origins", mode="before")
     @classmethod
     def parse_origins(cls, value: object) -> list[str]:
+        def _normalize_origin(origin_value: object) -> str:
+            origin = str(origin_value).strip()
+            if not origin:
+                return ""
+            # Browser `Origin` header never includes a trailing slash.
+            return origin.rstrip("/")
+
         if isinstance(value, str):
             if not value.strip():
                 return []
@@ -77,13 +84,29 @@ class Settings(BaseSettings):
                 try:
                     parsed = json.loads(value)
                     if isinstance(parsed, list):
-                        return [str(origin).strip() for origin in parsed if str(origin).strip()]
+                        return [_normalize_origin(origin) for origin in parsed if _normalize_origin(origin)]
                 except json.JSONDecodeError:
                     pass
-            return [origin.strip() for origin in value.split(",") if origin.strip()]
+            return [_normalize_origin(origin) for origin in value.split(",") if _normalize_origin(origin)]
         if isinstance(value, list):
-            return [str(item).strip() for item in value if str(item).strip()]
+            return [_normalize_origin(item) for item in value if _normalize_origin(item)]
         return []
+
+    @model_validator(mode="after")
+    def apply_frontend_origin_defaults(self) -> "Settings":
+        if self.frontend_origins:
+            # Preserve order but drop duplicates.
+            self.frontend_origins = list(dict.fromkeys(self.frontend_origins))
+            return self
+
+        if self.env == "dev":
+            self.frontend_origins = [
+                "http://localhost:3000",
+                "http://127.0.0.1:3000",
+            ]
+        else:
+            self.frontend_origins = []
+        return self
 
     @field_validator("admin_usernames", mode="before")
     @classmethod

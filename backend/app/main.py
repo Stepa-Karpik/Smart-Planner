@@ -35,6 +35,7 @@ def _sanitize_json(value):
 async def lifespan(app: FastAPI):
     configure_logging()
     logger.info("Application startup")
+    logger.info("CORS enabled origins: %s", settings.frontend_origins or ["<none>"])
     yield
     await close_redis()
     logger.info("Application shutdown")
@@ -63,8 +64,9 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.frontend_origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["*"],
+    max_age=600,
 )
 
 app.include_router(api_router, prefix=settings.api_v1_prefix)
