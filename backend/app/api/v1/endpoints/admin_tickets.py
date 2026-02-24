@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query, Request
@@ -9,12 +10,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import get_current_admin_user, get_db_session
 from app.core.enums import SupportTicketStatus
 from app.core.exceptions import NotFoundError, ValidationAppError
+from app.models import User
 from app.core.responses import success_response
 from app.repositories.support_ticket import SupportTicketRepository
 from app.schemas.support import AdminSupportTicketReplyCreate
 from app.services.support import publish_ticket_feed_event, resolve_support_attachment_path
 
 router = APIRouter(prefix="/admin/tickets", tags=["Admin Tickets"])
+logger = logging.getLogger(__name__)
 
 
 def _serialize_attachment(item: dict) -> dict:
@@ -105,26 +108,29 @@ async def admin_reply_support_ticket(
 
     message = await repo.add_message(ticket, author_user_id=admin_user.id, author_role="admin", body=payload.message)
 
-    # ticket.user may not be loaded; resolve from relationship if present via ticket.user_id and admin session.
-    user = ticket.user
-    if user is None:
-        # lazy load through scalar refresh
-        await session.refresh(ticket, attribute_names=["user"])
-        user = ticket.user
-    if user is not None:
-        await publish_ticket_feed_event(
-            session,
-            user=user,
-            ticket_id=str(ticket.id),
-            ticket_number=ticket.public_number,
-            topic=ticket.topic,
-            subtopic=ticket.subtopic,
-            event_kind="replied",
-            body=payload.message,
-            created_by_user_id=admin_user.id,
-        )
-
     await session.commit()
+    user = await session.get(User, ticket.user_id)
+    if user is not None:
+        try:
+            await publish_ticket_feed_event(
+                session,
+                user=user,
+                ticket_id=str(ticket.id),
+                ticket_number=ticket.public_number,
+                topic=ticket.topic,
+                subtopic=ticket.subtopic,
+                event_kind="replied",
+                body=payload.message,
+                created_by_user_id=admin_user.id,
+            )
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            logger.exception(
+                "Failed to publish support ticket reply feed event",
+                extra={"ticket_id": str(ticket.id), "message_id": str(message.id), "admin_user_id": str(admin_user.id)},
+            )
+
     ticket = await repo.get_ticket_by_id(ticket_id, with_messages=True)
     return success_response(data=_serialize_ticket(ticket, include_messages=True), request=request)
 
@@ -146,24 +152,29 @@ async def admin_close_support_ticket(
     await repo.close_ticket(ticket)
     await repo.add_message(ticket, author_user_id=admin_user.id, author_role="system", body="Ticket closed by administrator")
 
-    user = ticket.user
-    if user is None:
-        await session.refresh(ticket, attribute_names=["user"])
-        user = ticket.user
-    if user is not None:
-        await publish_ticket_feed_event(
-            session,
-            user=user,
-            ticket_id=str(ticket.id),
-            ticket_number=ticket.public_number,
-            topic=ticket.topic,
-            subtopic=ticket.subtopic,
-            event_kind="closed",
-            body="Ticket closed by administrator",
-            created_by_user_id=admin_user.id,
-        )
-
     await session.commit()
+    user = await session.get(User, ticket.user_id)
+    if user is not None:
+        try:
+            await publish_ticket_feed_event(
+                session,
+                user=user,
+                ticket_id=str(ticket.id),
+                ticket_number=ticket.public_number,
+                topic=ticket.topic,
+                subtopic=ticket.subtopic,
+                event_kind="closed",
+                body="Ticket closed by administrator",
+                created_by_user_id=admin_user.id,
+            )
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            logger.exception(
+                "Failed to publish support ticket close feed event",
+                extra={"ticket_id": str(ticket.id), "admin_user_id": str(admin_user.id)},
+            )
+
     ticket = await repo.get_ticket_by_id(ticket_id, with_messages=True)
     return success_response(data=_serialize_ticket(ticket, include_messages=True), request=request)
 
