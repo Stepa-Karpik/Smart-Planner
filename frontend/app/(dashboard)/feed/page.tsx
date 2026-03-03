@@ -92,7 +92,7 @@ export default function FeedPage() {
 
   const isAdmin = isAdminRole(profile?.role ?? user?.role ?? null)
   const visibleTypes = useMemo<FeedItemType[]>(
-    () => (isAdmin ? ["notification", "update", "reminder", "ticket"] : ["notification", "update", "reminder"]),
+    () => ["notification", "update", "reminder", "ticket"],
     [isAdmin],
   )
 
@@ -109,13 +109,8 @@ export default function FeedPage() {
 
   const visibleItems = useMemo(
     () =>
-      items.filter((item) => {
-        if (item.type === "ticket" && !isAdmin) {
-          return filters.notification
-        }
-        return filters[item.type]
-      }),
-    [filters, isAdmin, items],
+      items.filter((item) => filters[item.type]),
+    [filters, items],
   )
   const activeFilterCount = visibleTypes.filter((type) => filters[type]).length
 
@@ -212,7 +207,7 @@ export default function FeedPage() {
               </Card>
             ) : (
               visibleItems.map((item) => {
-                const displayType = !isAdmin && item.type === "ticket" ? "notification" : item.type
+                const displayType = item.type
                 const meta = TYPE_META[displayType]
                 const Icon = meta.icon
                 const updatePoints = item.type === "update" && Array.isArray(item.meta?.update_points)
@@ -220,7 +215,7 @@ export default function FeedPage() {
                   : []
                 const ticketEventKind = item.type === "ticket" ? item.meta?.ticket_event_kind : undefined
                 const ticketNumber = item.type === "ticket" ? item.meta?.ticket_public_number : undefined
-                const showTicketDetails = isAdmin && item.type === "ticket"
+                const showTicketDetails = item.type === "ticket"
                 const ticketDisplayTitle =
                   item.type === "ticket"
                     ? ticketEventKind
@@ -359,7 +354,7 @@ export default function FeedPage() {
                     const meta = TYPE_META[type]
                     const Icon = meta.icon
                     const active = filters[type]
-                    const displayCount = !isAdmin && type === "notification" ? counts.notification + counts.ticket : counts[type]
+                    const displayCount = counts[type]
                     return (
                       <button
                         key={type}

@@ -1,18 +1,14 @@
 "use client"
 
-import { useDeferredValue, useEffect, useState } from "react"
-import { CheckCircle2, Loader2, MessageSquare, RefreshCw, Send, Ticket } from "lucide-react"
-import { toast } from "sonner"
-import { TicketChatMessage } from "@/components/support/ticket-chat-message"
+import Link from "next/link"
+import { useDeferredValue, useMemo, useState } from "react"
+import { ArrowRight, Loader2, RefreshCw, Search, Ticket } from "lucide-react"
 import { AdminPageShell } from "@/components/admin/admin-page-shell"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Textarea } from "@/components/ui/textarea"
-import { closeAdminSupportTicketById, replyToAdminSupportTicket, useAdminSupportTicket, useAdminSupportTickets } from "@/lib/hooks"
+import { useAdminSupportTickets } from "@/lib/hooks"
 import { useI18n } from "@/lib/i18n"
 import { supportStatusLabel, supportSubtopicLabel, supportTopicLabel } from "@/lib/support-topics"
 import type { SupportTicketStatus } from "@/lib/types"
@@ -47,10 +43,6 @@ export default function AdminTicketsPage() {
   const { tr, locale } = useI18n()
   const [query, setQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all")
-  const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [replyText, setReplyText] = useState("")
-  const [sendingReply, setSendingReply] = useState(false)
-  const [closing, setClosing] = useState(false)
   const deferredQuery = useDeferredValue(query)
 
   const listQuery = useAdminSupportTickets({
@@ -59,239 +51,164 @@ export default function AdminTicketsPage() {
     limit: 200,
     offset: 0,
   })
-  const tickets = listQuery.data ?? []
 
-  useEffect(() => {
-    if (!tickets.length) {
-      setSelectedId(null)
-      return
-    }
-    if (!selectedId || !tickets.some((ticket) => ticket.id === selectedId)) {
-      setSelectedId(tickets[0].id)
-    }
-  }, [selectedId, tickets])
+  const tickets = useMemo(() => {
+    return [...(listQuery.data ?? [])].sort((a, b) => +new Date(b.updated_at) - +new Date(a.updated_at))
+  }, [listQuery.data])
 
-  const detailQuery = useAdminSupportTicket(selectedId ?? undefined)
-  const detail = detailQuery.data
-
-  async function handleReply() {
-    if (!selectedId) return
-    const message = replyText.trim()
-    if (!message) {
-      toast.error(tr("Reply message is required", "РўРµРєСЃС‚ РѕС‚РІРµС‚Р° РѕР±СЏР·Р°С‚РµР»РµРЅ"))
-      return
-    }
-    if (detail?.status === "closed") {
-      toast.error(tr("Ticket is closed", "РўРёРєРµС‚ Р·Р°РєСЂС‹С‚"))
-      return
-    }
-
-    setSendingReply(true)
-    const response = await replyToAdminSupportTicket(selectedId, message)
-    setSendingReply(false)
-
-    if (response.error || !response.data) {
-      toast.error(response.error?.message || tr("Failed to send reply", "РќРµ СѓРґР°Р»РѕСЃСЊ РѕС‚РїСЂР°РІРёС‚СЊ РѕС‚РІРµС‚"))
-      return
-    }
-
-    toast.success(tr("Reply sent", "РћС‚РІРµС‚ РѕС‚РїСЂР°РІР»РµРЅ"))
-    setReplyText("")
-    await listQuery.mutate()
-    await detailQuery.mutate()
-  }
-
-  async function handleCloseTicket() {
-    if (!selectedId) return
-    setClosing(true)
-    const response = await closeAdminSupportTicketById(selectedId)
-    setClosing(false)
-
-    if (response.error || !response.data) {
-      toast.error(response.error?.message || tr("Failed to close ticket", "РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РєСЂС‹С‚СЊ С‚РёРєРµС‚"))
-      return
-    }
-
-    toast.success(tr("Ticket closed", "РўРёРєРµС‚ Р·Р°РєСЂС‹С‚"))
-    await listQuery.mutate()
-    await detailQuery.mutate()
-  }
+  const stats = useMemo(() => {
+    return tickets.reduce(
+      (acc, ticket) => {
+        acc.all += 1
+        acc[ticket.status] += 1
+        return acc
+      },
+      { all: 0, open: 0, answered: 0, closed: 0 } as Record<"all" | SupportTicketStatus, number>,
+    )
+  }, [tickets])
 
   return (
     <AdminPageShell
       titleEn="Tickets"
-      titleRu="РўРёРєРµС‚С‹"
-      descriptionEn="Support queue for reviewing tickets, replying to users, and closing resolved requests."
-      descriptionRu="РћС‡РµСЂРµРґСЊ РїРѕРґРґРµСЂР¶РєРё РґР»СЏ РїСЂРѕСЃРјРѕС‚СЂР° С‚РёРєРµС‚РѕРІ, РѕС‚РІРµС‚РѕРІ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏРј Рё Р·Р°РєСЂС‹С‚РёСЏ СЂРµС€С‘РЅРЅС‹С… РѕР±СЂР°С‰РµРЅРёР№."
+      titleRu="Тикеты"
+      descriptionEn="Support queue with search and triage. Open each ticket in a dedicated chat workspace."
+      descriptionRu="Очередь поддержки с поиском и разбором. Каждый тикет открывается в отдельном рабочем чате."
       actions={
         <Button
           type="button"
           variant="outline"
           size="sm"
           className="rounded-xl border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white"
-          onClick={() => void Promise.all([listQuery.mutate(), detailQuery.mutate()])}
+          onClick={() => void listQuery.mutate()}
           disabled={listQuery.isLoading}
         >
           <RefreshCw className={cn("mr-1.5 h-4 w-4", listQuery.isLoading && "animate-spin")} />
-          {tr("Refresh", "РћР±РЅРѕРІРёС‚СЊ")}
+          {tr("Refresh", "Обновить")}
         </Button>
       }
     >
-      <Card className="rounded-2xl border-white/10 bg-black/30 backdrop-blur-sm">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm text-white">{tr("Support tickets", "РўРёРєРµС‚С‹ РїРѕРґРґРµСЂР¶РєРё")}</CardTitle>
-          <CardDescription className="text-white/45">
-            {tr("Open a ticket to review the chat and manage status.", "РћС‚РєСЂРѕР№С‚Рµ С‚РёРєРµС‚, С‡С‚РѕР±С‹ РїСЂРѕСЃРјРѕС‚СЂРµС‚СЊ С‡Р°С‚ Рё СѓРїСЂР°РІР»СЏС‚СЊ СЃС‚Р°С‚СѓСЃРѕРј.")}
-          </CardDescription>
+      <Card className="rounded-3xl border-white/10 bg-gradient-to-br from-black/35 via-black/25 to-black/30 backdrop-blur-sm">
+        <CardHeader className="pb-4">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <CardTitle className="text-base text-white">{tr("Support queue", "Очередь поддержки")}</CardTitle>
+              <CardDescription className="mt-1 text-white/50">
+                {tr(
+                  "Newest tickets stay on top. Open a dedicated chat workspace to reply and close requests.",
+                  "Новые тикеты сверху. Откройте отдельное рабочее окно чата, чтобы ответить и закрыть обращение.",
+                )}
+              </CardDescription>
+            </div>
+            <div className="grid w-full grid-cols-2 gap-2 sm:grid-cols-4 lg:w-auto lg:min-w-[420px]">
+              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+                <p className="text-[11px] uppercase tracking-wider text-white/45">{tr("All", "Всего")}</p>
+                <p className="mt-1 text-xl font-semibold text-white">{stats.all}</p>
+              </div>
+              <div className="rounded-2xl border border-sky-400/15 bg-sky-400/5 p-3">
+                <p className="text-[11px] uppercase tracking-wider text-sky-200/70">{tr("Needs reply", "Ждут ответа")}</p>
+                <p className="mt-1 text-xl font-semibold text-sky-100">{stats.open}</p>
+              </div>
+              <div className="rounded-2xl border border-emerald-400/15 bg-emerald-400/5 p-3">
+                <p className="text-[11px] uppercase tracking-wider text-emerald-200/70">{tr("Answered", "Отвечены")}</p>
+                <p className="mt-1 text-xl font-semibold text-emerald-100">{stats.answered}</p>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+                <p className="text-[11px] uppercase tracking-wider text-white/45">{tr("Closed", "Закрыты")}</p>
+                <p className="mt-1 text-xl font-semibold text-white">{stats.closed}</p>
+              </div>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 gap-2 md:grid-cols-[minmax(0,1fr)_220px]">
-            <Input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder={tr("Search by subject, topic or subtopic", "РџРѕРёСЃРє РїРѕ С‚РµРјРµ, С‚РµРјРµ РѕР±СЂР°С‰РµРЅРёСЏ РёР»Рё РїРѕРґС‚РµРјРµ")}
-              className="h-10 rounded-xl border-white/15 bg-white/5 text-white placeholder:text-white/30"
-            />
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/35" />
+              <Input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder={tr("Search by subject, topic or subtopic", "Поиск по теме, категории или подкатегории")}
+                className="h-11 rounded-xl border-white/15 bg-white/5 pl-10 text-white placeholder:text-white/30"
+              />
+            </div>
             <select
               value={statusFilter}
               onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}
-              className="h-10 rounded-xl border border-white/15 bg-white/5 px-3 text-sm text-white outline-none focus:border-white/30"
+              className="h-11 rounded-xl border border-white/15 bg-white/5 px-3 text-sm text-white outline-none focus:border-white/30"
             >
-              <option value="all" className="bg-[#0b0f17]">{tr("All statuses", "Р’СЃРµ СЃС‚Р°С‚СѓСЃС‹")}</option>
-              <option value="open" className="bg-[#0b0f17]">{tr("Open", "РћС‚РєСЂС‹С‚")}</option>
-              <option value="answered" className="bg-[#0b0f17]">{tr("Answered", "Р•СЃС‚СЊ РѕС‚РІРµС‚")}</option>
-              <option value="closed" className="bg-[#0b0f17]">{tr("Closed", "Р—Р°РєСЂС‹С‚")}</option>
+              <option value="all" className="bg-[#0b0f17]">{tr("All statuses", "Все статусы")}</option>
+              <option value="open" className="bg-[#0b0f17]">{tr("Open", "Открыт")}</option>
+              <option value="answered" className="bg-[#0b0f17]">{tr("Answered", "Есть ответ")}</option>
+              <option value="closed" className="bg-[#0b0f17]">{tr("Closed", "Закрыт")}</option>
             </select>
           </div>
         </CardHeader>
 
-        <CardContent className="grid grid-cols-1 gap-4 xl:grid-cols-[360px_minmax(0,1fr)]">
-          <div className="space-y-3">
-            {listQuery.isLoading && !listQuery.data ? (
-              Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-24 rounded-2xl" />)
-            ) : listQuery.error ? (
-              <div className="rounded-2xl border border-red-400/20 bg-red-500/5 p-4 text-sm text-red-200">
-                {tr("Failed to load tickets", "РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ С‚РёРєРµС‚С‹")}
+        <CardContent>
+          {listQuery.isLoading && !listQuery.data ? (
+            <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="h-36 animate-pulse rounded-2xl border border-white/10 bg-white/[0.03]" />
+              ))}
+            </div>
+          ) : listQuery.error ? (
+            <div className="rounded-2xl border border-red-400/20 bg-red-500/5 p-4 text-sm text-red-200">
+              {tr("Failed to load tickets", "Не удалось загрузить тикеты")}
+            </div>
+          ) : tickets.length === 0 ? (
+            <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6 text-center">
+              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.03] text-white/70">
+                <Ticket className="h-5 w-5" />
               </div>
-            ) : tickets.length === 0 ? (
-              <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 text-sm text-white/60">
-                {tr("No tickets found", "РўРёРєРµС‚С‹ РЅРµ РЅР°Р№РґРµРЅС‹")}
-              </div>
-            ) : (
-              tickets.map((ticket) => (
-                <button
-                  key={ticket.id}
-                  type="button"
-                  onClick={() => setSelectedId(ticket.id)}
-                  className={cn(
-                    "w-full rounded-2xl border p-4 text-left transition",
-                    ticket.id === selectedId ? "border-white/20 bg-white/[0.08]" : "border-white/10 bg-white/[0.02] hover:bg-white/[0.05]",
-                  )}
-                >
-                  <div className="mb-2 flex flex-wrap items-center gap-2">
-                    <Badge className={cn("rounded-full text-[10px]", statusBadgeClass(ticket.status))}>
-                      #{ticket.public_number} В· {supportStatusLabel(locale, ticket.status)}
-                    </Badge>
-                    <span className="text-xs text-white/40">{formatDateTime(ticket.updated_at, locale)}</span>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <div className="rounded-xl border border-white/10 bg-white/5 p-2 text-white/80">
-                      <Ticket className="h-4 w-4" />
+              <p className="text-sm font-medium text-white">{tr("No tickets found", "Тикеты не найдены")}</p>
+              <p className="mt-1 text-xs text-white/45">
+                {tr("Change filters or search query.", "Измените фильтры или поисковый запрос.")}
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
+              {tickets.map((ticket) => {
+                const needsReply = ticket.status === "open"
+                return (
+                  <Link
+                    key={ticket.id}
+                    href={`/admin/tickets/${ticket.id}`}
+                    className="group rounded-2xl border border-white/10 bg-white/[0.02] p-4 transition hover:border-white/20 hover:bg-white/[0.05]"
+                  >
+                    <div className="mb-3 flex flex-wrap items-center gap-2">
+                      <Badge className={cn("rounded-full text-[10px]", statusBadgeClass(ticket.status))}>
+                        #{ticket.public_number} · {supportStatusLabel(locale, ticket.status)}
+                      </Badge>
+                      {needsReply ? (
+                        <Badge className="rounded-full border-amber-400/20 bg-amber-400/10 text-[10px] text-amber-200">
+                          {tr("Needs reply", "Нужен ответ")}
+                        </Badge>
+                      ) : null}
+                      <span className="ml-auto text-xs text-white/40">{formatDateTime(ticket.updated_at, locale)}</span>
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="line-clamp-1 text-sm font-semibold text-white">{ticket.subject}</p>
-                      <p className="mt-1 line-clamp-1 text-xs text-white/45">
-                        {supportTopicLabel(locale, ticket.topic)} В· {supportSubtopicLabel(locale, ticket.topic, ticket.subtopic)}
-                      </p>
-                      <p className="mt-1 line-clamp-1 text-[11px] text-white/35">
-                        {tr("User ID", "ID РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ")}: {ticket.user_id}
-                      </p>
-                    </div>
-                  </div>
-                </button>
-              ))
-            )}
-          </div>
 
-          <Card className="rounded-2xl border-white/10 bg-white/[0.02]">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm text-white">
-                {detail ? `${tr("Ticket", "РўРёРєРµС‚")} #${detail.public_number}` : tr("Ticket chat", "Р§Р°С‚ С‚РёРєРµС‚Р°")}
-              </CardTitle>
-              <CardDescription className="text-white/45">
-                {detail ? detail.subject : tr("Select a ticket from the list", "Р’С‹Р±РµСЂРёС‚Рµ С‚РёРєРµС‚ РёР· СЃРїРёСЃРєР°")}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {selectedId && detailQuery.isLoading && !detailQuery.data ? (
-                Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)
-              ) : !selectedId ? (
-                <p className="text-sm text-white/55">{tr("No ticket selected", "РўРёРєРµС‚ РЅРµ РІС‹Р±СЂР°РЅ")}</p>
-              ) : detailQuery.error ? (
-                <div className="rounded-xl border border-red-400/20 bg-red-500/5 p-4 text-sm text-red-200">
-                  {tr("Failed to load ticket details", "РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ РґРµС‚Р°Р»Рё С‚РёРєРµС‚Р°")}
-                </div>
-              ) : detail ? (
-                <>
-                  <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3">
-                    <div className="mb-2 flex flex-wrap items-center gap-2">
-                      <Badge className={cn("rounded-full text-[10px]", statusBadgeClass(detail.status))}>{supportStatusLabel(locale, detail.status)}</Badge>
-                      <span className="text-xs text-white/40">{formatDateTime(detail.created_at, locale)}</span>
-                    </div>
-                    <p className="text-sm font-medium text-white">
-                      {supportTopicLabel(locale, detail.topic)} В· {supportSubtopicLabel(locale, detail.topic, detail.subtopic)}
-                    </p>
-                    <p className="mt-1 break-all text-xs text-white/45">{tr("User ID", "ID РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ")}: {detail.user_id}</p>
-                  </div>
-
-                  <div className="max-h-[56svh] space-y-2 overflow-y-auto rounded-2xl border border-white/10 bg-white/[0.02] p-2 pr-1.5">
-                    {detail.messages.length === 0 ? (
-                      <div className="px-2 py-3 text-sm text-white/50">{tr("No messages yet", "РЎРѕРѕР±С‰РµРЅРёР№ РїРѕРєР° РЅРµС‚")}</div>
-                    ) : (
-                      detail.messages.map((message) => (
-                        <TicketChatMessage key={message.id} scope="admin" ticketId={detail.id} message={message} locale={locale} viewerRole="admin" />
-                      ))
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="admin-ticket-reply" className="text-white/80">
-                      <div className="flex items-center gap-2">
-                        <MessageSquare className="h-4 w-4" />
-                        {tr("Reply to user", "РћС‚РІРµС‚ РїРѕР»СЊР·РѕРІР°С‚РµР»СЋ")}
+                    <div className="flex items-start gap-3">
+                      <div className="rounded-xl border border-white/10 bg-white/5 p-2 text-white/80">
+                        <Ticket className="h-4 w-4" />
                       </div>
-                    </Label>
-                    <Textarea
-                      id="admin-ticket-reply"
-                      value={replyText}
-                      onChange={(event) => setReplyText(event.target.value)}
-                      placeholder={tr(
-                        "Write a reply. Line breaks will be preserved.",
-                        "РќР°РїРёС€РёС‚Рµ РѕС‚РІРµС‚. РџРµСЂРµРЅРѕСЃС‹ СЃС‚СЂРѕРє Р±СѓРґСѓС‚ СЃРѕС…СЂР°РЅРµРЅС‹.",
-                      )}
-                      className="min-h-[120px] rounded-xl border-white/15 bg-white/5 text-white placeholder:text-white/30"
-                      disabled={detail.status === "closed"}
-                    />
-                  </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="line-clamp-1 text-sm font-semibold text-white">{ticket.subject}</p>
+                        <p className="mt-1 line-clamp-1 text-xs text-white/50">
+                          {supportTopicLabel(locale, ticket.topic)} · {supportSubtopicLabel(locale, ticket.topic, ticket.subtopic)}
+                        </p>
+                        <p className="mt-2 line-clamp-1 text-[11px] text-white/35">
+                          {tr("User ID", "ID пользователя")}: {ticket.user_id}
+                        </p>
+                      </div>
+                    </div>
 
-                  <div className="flex flex-wrap gap-2">
-                    <Button type="button" onClick={handleReply} disabled={sendingReply || detail.status === "closed"} className="rounded-xl">
-                      {sendingReply ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
-                      {tr("Send reply", "РћС‚РїСЂР°РІРёС‚СЊ РѕС‚РІРµС‚")}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={handleCloseTicket}
-                      disabled={closing || detail.status === "closed"}
-                      className="rounded-xl border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white"
-                    >
-                      {closing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}
-                      {detail.status === "closed" ? tr("Closed", "Р—Р°РєСЂС‹С‚") : tr("Close ticket", "Р—Р°РєСЂС‹С‚СЊ С‚РёРєРµС‚")}
-                    </Button>
-                  </div>
-                </>
-              ) : null}
-            </CardContent>
-          </Card>
+                    <div className="mt-4 inline-flex items-center gap-1.5 text-xs text-white/70 transition group-hover:text-white">
+                      {tr("Open chat workspace", "Открыть чат")}
+                      <ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
+                    </div>
+                  </Link>
+                )
+              })}
+            </div>
+          )}
         </CardContent>
       </Card>
     </AdminPageShell>
