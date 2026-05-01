@@ -65,7 +65,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const activeNav = navItems.find((item) => pathname === item.href || pathname.startsWith(item.href + "/"))
 
   return (
-    <SidebarProvider className={cn("transition-colors", isDark ? "bg-[#07090f] text-white" : "bg-slate-100 text-slate-900")}>
+    <SidebarProvider className={cn("transition-colors", isDark ? "bg-[#07090f] text-white" : "bg-[#eef3f8] text-slate-950")}>
       <Sidebar variant="floating" collapsible="icon">
         <SidebarHeader className="px-3 py-4 group-data-[collapsible=icon]:px-2 group-data-[collapsible=icon]:py-3">
           <Link href="/today" className="flex items-center gap-2.5 group-data-[collapsible=icon]:justify-center">
@@ -96,7 +96,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </SidebarHeader>
 
         <SidebarContent className="px-1 group-data-[collapsible=icon]:px-0.5">
-          <SidebarGroup className={cn("rounded-2xl border p-2 backdrop-blur-sm group-data-[collapsible=icon]:p-1.5", isDark ? "border-white/10 bg-white/[0.03]" : "border-black/10 bg-white/70")}>
+          <SidebarGroup className={cn("rounded-2xl border p-2 backdrop-blur-sm group-data-[collapsible=icon]:p-1.5", isDark ? "border-white/10 bg-white/[0.03]" : "border-slate-200/80 bg-white/75 shadow-[0_16px_48px_rgba(15,23,42,0.08)]")}>
             <SidebarGroupLabel className={cn(isDark ? "text-white/50" : "text-slate-600")}>{tr("Navigation", "Навигация")}</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
@@ -206,17 +206,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </SidebarFooter>
       </Sidebar>
 
-      <SidebarInset className={cn("h-svh overflow-hidden transition-colors", isDark ? "bg-[#07090f] text-white" : "bg-slate-50 text-slate-900")}>
+      <SidebarInset className={cn("h-svh overflow-hidden transition-colors", isDark ? "bg-[#07090f] text-white" : "bg-[#f6f8fb] text-slate-950")}>
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
-          <div className={cn("absolute left-[8%] top-[-4rem] h-52 w-52 rounded-full blur-[95px]", isDark ? "bg-blue-500/10" : "bg-blue-500/15")} />
-          <div className={cn("absolute right-[16%] top-[5rem] h-64 w-64 rounded-full blur-[110px]", isDark ? "bg-cyan-400/[0.08]" : "bg-cyan-400/[0.12]")} />
-          <div className={cn("absolute bottom-[6%] left-[35%] h-56 w-56 rounded-full blur-[120px]", isDark ? "bg-violet-500/[0.08]" : "bg-violet-500/[0.12]")} />
+          <div className={cn("absolute left-[8%] top-[-4rem] h-52 w-52 rounded-full blur-[95px]", isDark ? "bg-blue-500/10" : "bg-sky-300/20")} />
+          <div className={cn("absolute right-[16%] top-[5rem] h-64 w-64 rounded-full blur-[110px]", isDark ? "bg-cyan-400/[0.08]" : "bg-blue-400/[0.14]")} />
+          <div className={cn("absolute bottom-[6%] left-[35%] h-56 w-56 rounded-full blur-[120px]", isDark ? "bg-violet-500/[0.08]" : "bg-indigo-300/[0.12]")} />
         </div>
 
         <header
           className={cn(
             "z-10 mx-4 mt-4 flex h-14 shrink-0 items-center gap-3 rounded-2xl border px-4 shadow-[0_8px_30px_rgba(0,0,0,0.08)] backdrop-blur-sm md:mx-6",
-            isDark ? "border-white/10 bg-black/35" : "border-black/10 bg-white/70",
+            isDark ? "border-white/10 bg-black/35" : "border-slate-200/80 bg-white/80 shadow-[0_12px_34px_rgba(15,23,42,0.08)]",
           )}
         >
           <SidebarTrigger className={cn("-ml-1", isDark ? "text-white hover:bg-white/10 hover:text-white" : "text-slate-700 hover:bg-black/5 hover:text-slate-900")} />

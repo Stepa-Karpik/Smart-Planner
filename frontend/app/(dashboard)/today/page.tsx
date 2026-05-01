@@ -61,46 +61,46 @@ export default function TodayPage() {
   return (
     <div className="relative mx-auto flex max-w-6xl flex-col gap-6 p-4 md:p-6">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute left-[8%] top-12 h-44 w-44 rounded-full bg-cyan-400/10 blur-[95px]" />
-        <div className="absolute right-[12%] top-20 h-56 w-56 rounded-full bg-blue-500/10 blur-[110px]" />
+        <div className="absolute left-[8%] top-12 h-44 w-44 rounded-full bg-cyan-300/[0.18] blur-[95px] dark:bg-cyan-400/10" />
+        <div className="absolute right-[12%] top-20 h-56 w-56 rounded-full bg-blue-300/[0.16] blur-[110px] dark:bg-blue-500/10" />
       </div>
 
-      <div className="relative flex flex-col gap-4 rounded-2xl border border-white/10 bg-black/30 p-5 shadow-[0_18px_50px_rgba(0,0,0,0.25)] backdrop-blur-sm sm:flex-row sm:items-center sm:justify-between">
+      <div className="relative flex flex-col gap-4 rounded-2xl border border-slate-200/80 bg-white/80 p-5 text-slate-950 shadow-[0_18px_50px_rgba(15,23,42,0.10)] backdrop-blur-xl dark:border-white/10 dark:bg-black/30 dark:text-white dark:shadow-[0_18px_50px_rgba(0,0,0,0.25)] sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-white">{tr("Today", "Сегодня")}</h1>
-          <p className="mt-1 text-sm text-white/55">{todayLabel}</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">{tr("Today", "Сегодня")}</h1>
+          <p className="mt-1 text-sm text-slate-500 dark:text-white/55">{todayLabel}</p>
         </div>
         <div className="flex items-center gap-2">
           <Button
             asChild
             variant="outline"
             size="sm"
-            className="rounded-xl border-white/15 bg-white/[0.03] text-white hover:bg-white/10 hover:text-white"
+            className="rounded-xl border-slate-200 bg-white/75 text-slate-800 shadow-sm hover:bg-slate-50 hover:text-slate-950 dark:border-white/15 dark:bg-white/[0.03] dark:text-white dark:hover:bg-white/10 dark:hover:text-white"
           >
             <Link href="/ai">
               <MessageSquare className="mr-1.5 h-4 w-4" />
               {tr("AI Assistant", "AI помощник")}
             </Link>
           </Button>
-          <Button size="sm" className="rounded-xl bg-white text-black hover:bg-white/90" onClick={() => setEditorOpen(true)}>
+          <Button size="sm" className="rounded-xl bg-slate-950 text-white hover:bg-slate-800 dark:bg-white dark:text-black dark:hover:bg-white/90" onClick={() => setEditorOpen(true)}>
             <Plus className="mr-1.5 h-4 w-4" />
             {tr("Event", "Событие")}
           </Button>
         </div>
       </div>
 
-      <div className="relative flex flex-col gap-2 rounded-2xl border border-white/10 bg-black/25 p-3 backdrop-blur-sm sm:flex-row sm:items-center">
+      <div className="relative flex flex-col gap-2 rounded-2xl border border-slate-200/80 bg-white/75 p-3 shadow-[0_14px_42px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-white/10 dark:bg-black/25 dark:shadow-none sm:flex-row sm:items-center">
         <div className="relative max-w-xs flex-1">
-          <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/35" />
+          <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400 dark:text-white/35" />
           <Input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder={tr("Search events...", "Поиск событий...")}
-            className="h-9 rounded-xl border-white/15 bg-white/[0.03] pl-8 text-sm text-white placeholder:text-white/30"
+            className="h-9 rounded-xl border-slate-200/80 bg-white/80 pl-8 text-sm text-slate-800 shadow-sm placeholder:text-slate-400 dark:border-white/15 dark:bg-white/[0.03] dark:text-white dark:placeholder:text-white/30"
           />
         </div>
         <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as EventStatus | "all")}>
-          <SelectTrigger className="h-9 w-40 rounded-xl border-white/15 bg-white/[0.03] text-sm text-white">
+          <SelectTrigger className="h-9 w-40 rounded-xl border-slate-200/80 bg-white/80 text-sm text-slate-800 shadow-sm dark:border-white/15 dark:bg-white/[0.03] dark:text-white">
             <SelectValue placeholder={tr("Status", "Статус")} />
           </SelectTrigger>
           <SelectContent>
@@ -111,7 +111,7 @@ export default function TodayPage() {
           </SelectContent>
         </Select>
         <Select value={calendarFilter} onValueChange={setCalendarFilter}>
-          <SelectTrigger className="h-9 w-44 rounded-xl border-white/15 bg-white/[0.03] text-sm text-white">
+          <SelectTrigger className="h-9 w-44 rounded-xl border-slate-200/80 bg-white/80 text-sm text-slate-800 shadow-sm dark:border-white/15 dark:bg-white/[0.03] dark:text-white">
             <SelectValue placeholder={tr("Calendar", "Календарь")} />
           </SelectTrigger>
           <SelectContent>
@@ -128,17 +128,17 @@ export default function TodayPage() {
       {isLoading ? (
         <div className="flex flex-col gap-3">
           {Array.from({ length: 4 }).map((_, index) => (
-            <Skeleton key={index} className="h-16 rounded-xl bg-white/10" />
+            <Skeleton key={index} className="h-16 rounded-xl bg-slate-200/70 dark:bg-white/10" />
           ))}
         </div>
       ) : !events || events.length === 0 ? (
-        <div className="relative flex flex-col items-center justify-center rounded-2xl border border-white/10 bg-black/25 py-20 text-center backdrop-blur-sm">
-          <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-white/5">
-            <CalendarDays className="h-6 w-6 text-white/60" />
+        <div className="relative flex flex-col items-center justify-center rounded-2xl border border-slate-200/80 bg-white/75 py-20 text-center shadow-[0_18px_50px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-white/10 dark:bg-black/25 dark:shadow-none">
+          <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-white/60">
+            <CalendarDays className="h-6 w-6" />
           </div>
-          <h3 className="text-sm font-medium text-white">{tr("No events today", "Сегодня событий нет")}</h3>
-          <p className="mt-1 text-sm text-white/50">{tr("Create your first event to get started.", "Создайте первое событие, чтобы начать.")}</p>
-          <Button size="sm" className="mt-4 rounded-xl bg-white text-black hover:bg-white/90" onClick={() => setEditorOpen(true)}>
+          <h3 className="text-sm font-medium text-slate-950 dark:text-white">{tr("No events today", "Сегодня событий нет")}</h3>
+          <p className="mt-1 text-sm text-slate-500 dark:text-white/50">{tr("Create your first event to get started.", "Создайте первое событие, чтобы начать.")}</p>
+          <Button size="sm" className="mt-4 rounded-xl bg-slate-950 text-white hover:bg-slate-800 dark:bg-white dark:text-black dark:hover:bg-white/90" onClick={() => setEditorOpen(true)}>
             <Plus className="mr-1.5 h-4 w-4" />
             {tr("New event", "Новое событие")}
           </Button>
@@ -146,24 +146,24 @@ export default function TodayPage() {
       ) : (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           <div className="lg:col-span-2">
-            <h2 className="mb-3 text-xs font-medium uppercase tracking-wider text-white/45">{tr("Timeline", "Таймлайн")}</h2>
-            <ScrollArea className="h-[600px] rounded-2xl border border-white/10 bg-black/25 p-4 backdrop-blur-sm">
+            <h2 className="mb-3 text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-white/45">{tr("Timeline", "Таймлайн")}</h2>
+            <ScrollArea className="h-[600px] rounded-2xl border border-slate-200/80 bg-white/70 p-4 shadow-[0_18px_50px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-white/10 dark:bg-black/25 dark:shadow-none">
               <EventTimeline events={timedEvents} />
             </ScrollArea>
           </div>
 
-          <div className="rounded-2xl border border-white/10 bg-black/20 p-3 backdrop-blur-sm">
+          <div className="rounded-2xl border border-slate-200/80 bg-white/70 p-3 shadow-[0_18px_50px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-white/10 dark:bg-black/20 dark:shadow-none">
             <div className="flex flex-col gap-3">
               {allDayEvents.length > 0 && (
                 <>
-                  <h2 className="text-xs font-medium uppercase tracking-wider text-white/45">{tr("All day", "Весь день")}</h2>
+                  <h2 className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-white/45">{tr("All day", "Весь день")}</h2>
                   {allDayEvents.map((event) => (
                     <EventCard key={event.id} event={event} />
                   ))}
                 </>
               )}
 
-              <h2 className="text-xs font-medium uppercase tracking-wider text-white/45">
+              <h2 className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-white/45">
                 {tr("Events", "События")} ({events.length})
               </h2>
               {events.map((event) => (
@@ -178,4 +178,3 @@ export default function TodayPage() {
     </div>
   )
 }
-
