@@ -70,9 +70,9 @@ export default function AdminTicketsPage() {
   return (
     <AdminPageShell
       titleEn="Tickets"
-      titleRu="Тикеты"
+      titleRu="РўРёРєРµС‚С‹"
       descriptionEn="Support queue with search and triage. Open each ticket in a dedicated chat workspace."
-      descriptionRu="Очередь поддержки с поиском и разбором. Каждый тикет открывается в отдельном рабочем чате."
+      descriptionRu="РћС‡РµСЂРµРґСЊ РїРѕРґРґРµСЂР¶РєРё СЃ РїРѕРёСЃРєРѕРј Рё СЂР°Р·Р±РѕСЂРѕРј. РљР°Р¶РґС‹Р№ С‚РёРєРµС‚ РѕС‚РєСЂС‹РІР°РµС‚СЃСЏ РІ РѕС‚РґРµР»СЊРЅРѕРј СЂР°Р±РѕС‡РµРј С‡Р°С‚Рµ."
       actions={
         <Button
           type="button"
@@ -83,7 +83,7 @@ export default function AdminTicketsPage() {
           disabled={listQuery.isLoading}
         >
           <RefreshCw className={cn("mr-1.5 h-4 w-4", listQuery.isLoading && "animate-spin")} />
-          {tr("Refresh", "Обновить")}
+          {tr("Refresh", "РћР±РЅРѕРІРёС‚СЊ")}
         </Button>
       }
     >
@@ -91,29 +91,29 @@ export default function AdminTicketsPage() {
         <CardHeader className="pb-4">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <CardTitle className="text-base text-white">{tr("Support queue", "Очередь поддержки")}</CardTitle>
+              <CardTitle className="text-base text-white">{tr("Support queue", "РћС‡РµСЂРµРґСЊ РїРѕРґРґРµСЂР¶РєРё")}</CardTitle>
               <CardDescription className="mt-1 text-white/50">
                 {tr(
                   "Newest tickets stay on top. Open a dedicated chat workspace to reply and close requests.",
-                  "Новые тикеты сверху. Откройте отдельное рабочее окно чата, чтобы ответить и закрыть обращение.",
+                  "РќРѕРІС‹Рµ С‚РёРєРµС‚С‹ СЃРІРµСЂС…Сѓ. РћС‚РєСЂРѕР№С‚Рµ РѕС‚РґРµР»СЊРЅРѕРµ СЂР°Р±РѕС‡РµРµ РѕРєРЅРѕ С‡Р°С‚Р°, С‡С‚РѕР±С‹ РѕС‚РІРµС‚РёС‚СЊ Рё Р·Р°РєСЂС‹С‚СЊ РѕР±СЂР°С‰РµРЅРёРµ.",
                 )}
               </CardDescription>
             </div>
             <div className="grid w-full grid-cols-2 gap-2 sm:grid-cols-4 lg:w-auto lg:min-w-[420px]">
               <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
-                <p className="text-[11px] uppercase tracking-wider text-white/45">{tr("All", "Всего")}</p>
+                <p className="text-[11px] uppercase tracking-wider text-white/45">{tr("All", "Р’СЃРµРіРѕ")}</p>
                 <p className="mt-1 text-xl font-semibold text-white">{stats.all}</p>
               </div>
               <div className="rounded-2xl border border-sky-400/15 bg-sky-400/5 p-3">
-                <p className="text-[11px] uppercase tracking-wider text-sky-200/70">{tr("Needs reply", "Ждут ответа")}</p>
+                <p className="text-[11px] uppercase tracking-wider text-sky-200/70">{tr("Needs reply", "Р–РґСѓС‚ РѕС‚РІРµС‚Р°")}</p>
                 <p className="mt-1 text-xl font-semibold text-sky-100">{stats.open}</p>
               </div>
               <div className="rounded-2xl border border-emerald-400/15 bg-emerald-400/5 p-3">
-                <p className="text-[11px] uppercase tracking-wider text-emerald-200/70">{tr("Answered", "Отвечены")}</p>
+                <p className="text-[11px] uppercase tracking-wider text-emerald-200/70">{tr("Answered", "РћС‚РІРµС‡РµРЅС‹")}</p>
                 <p className="mt-1 text-xl font-semibold text-emerald-100">{stats.answered}</p>
               </div>
               <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
-                <p className="text-[11px] uppercase tracking-wider text-white/45">{tr("Closed", "Закрыты")}</p>
+                <p className="text-[11px] uppercase tracking-wider text-white/45">{tr("Closed", "Р—Р°РєСЂС‹С‚С‹")}</p>
                 <p className="mt-1 text-xl font-semibold text-white">{stats.closed}</p>
               </div>
             </div>
@@ -125,7 +125,7 @@ export default function AdminTicketsPage() {
               <Input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder={tr("Search by subject, topic or subtopic", "Поиск по теме, категории или подкатегории")}
+                placeholder={tr("Search by subject, topic or subtopic", "РџРѕРёСЃРє РїРѕ С‚РµРјРµ, РєР°С‚РµРіРѕСЂРёРё РёР»Рё РїРѕРґРєР°С‚РµРіРѕСЂРёРё")}
                 className="h-11 rounded-xl border-white/15 bg-white/5 pl-10 text-white placeholder:text-white/30"
               />
             </div>
@@ -134,10 +134,10 @@ export default function AdminTicketsPage() {
               onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}
               className="h-11 rounded-xl border border-white/15 bg-white/5 px-3 text-sm text-white outline-none focus:border-white/30"
             >
-              <option value="all" className="bg-[#0b0f17]">{tr("All statuses", "Все статусы")}</option>
-              <option value="open" className="bg-[#0b0f17]">{tr("Open", "Открыт")}</option>
-              <option value="answered" className="bg-[#0b0f17]">{tr("Answered", "Есть ответ")}</option>
-              <option value="closed" className="bg-[#0b0f17]">{tr("Closed", "Закрыт")}</option>
+              <option value="all" className="bg-[#0b0f17]">{tr("All statuses", "Р’СЃРµ СЃС‚Р°С‚СѓСЃС‹")}</option>
+              <option value="open" className="bg-[#0b0f17]">{tr("Open", "РћС‚РєСЂС‹С‚")}</option>
+              <option value="answered" className="bg-[#0b0f17]">{tr("Answered", "Р•СЃС‚СЊ РѕС‚РІРµС‚")}</option>
+              <option value="closed" className="bg-[#0b0f17]">{tr("Closed", "Р—Р°РєСЂС‹С‚")}</option>
             </select>
           </div>
         </CardHeader>
@@ -151,16 +151,16 @@ export default function AdminTicketsPage() {
             </div>
           ) : listQuery.error ? (
             <div className="rounded-2xl border border-red-400/20 bg-red-500/5 p-4 text-sm text-red-200">
-              {tr("Failed to load tickets", "Не удалось загрузить тикеты")}
+              {tr("Failed to load tickets", "РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ С‚РёРєРµС‚С‹")}
             </div>
           ) : tickets.length === 0 ? (
             <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6 text-center">
               <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.03] text-white/70">
                 <Ticket className="h-5 w-5" />
               </div>
-              <p className="text-sm font-medium text-white">{tr("No tickets found", "Тикеты не найдены")}</p>
+              <p className="text-sm font-medium text-white">{tr("No tickets found", "РўРёРєРµС‚С‹ РЅРµ РЅР°Р№РґРµРЅС‹")}</p>
               <p className="mt-1 text-xs text-white/45">
-                {tr("Change filters or search query.", "Измените фильтры или поисковый запрос.")}
+                {tr("Change filters or search query.", "РР·РјРµРЅРёС‚Рµ С„РёР»СЊС‚СЂС‹ РёР»Рё РїРѕРёСЃРєРѕРІС‹Р№ Р·Р°РїСЂРѕСЃ.")}
               </p>
             </div>
           ) : (
@@ -175,11 +175,11 @@ export default function AdminTicketsPage() {
                   >
                     <div className="mb-3 flex flex-wrap items-center gap-2">
                       <Badge className={cn("rounded-full text-[10px]", statusBadgeClass(ticket.status))}>
-                        #{ticket.public_number} · {supportStatusLabel(locale, ticket.status)}
+                        #{ticket.public_number} В· {supportStatusLabel(locale, ticket.status)}
                       </Badge>
                       {needsReply ? (
                         <Badge className="rounded-full border-amber-400/20 bg-amber-400/10 text-[10px] text-amber-200">
-                          {tr("Needs reply", "Нужен ответ")}
+                          {tr("Needs reply", "РќСѓР¶РµРЅ РѕС‚РІРµС‚")}
                         </Badge>
                       ) : null}
                       <span className="ml-auto text-xs text-white/40">{formatDateTime(ticket.updated_at, locale)}</span>
@@ -192,16 +192,16 @@ export default function AdminTicketsPage() {
                       <div className="min-w-0 flex-1">
                         <p className="line-clamp-1 text-sm font-semibold text-white">{ticket.subject}</p>
                         <p className="mt-1 line-clamp-1 text-xs text-white/50">
-                          {supportTopicLabel(locale, ticket.topic)} · {supportSubtopicLabel(locale, ticket.topic, ticket.subtopic)}
+                          {supportTopicLabel(locale, ticket.topic)} В· {supportSubtopicLabel(locale, ticket.topic, ticket.subtopic)}
                         </p>
                         <p className="mt-2 line-clamp-1 text-[11px] text-white/35">
-                          {tr("User ID", "ID пользователя")}: {ticket.user_id}
+                          {tr("User ID", "ID РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ")}: {ticket.user_id}
                         </p>
                       </div>
                     </div>
 
                     <div className="mt-4 inline-flex items-center gap-1.5 text-xs text-white/70 transition group-hover:text-white">
-                      {tr("Open chat workspace", "Открыть чат")}
+                      {tr("Open chat workspace", "РћС‚РєСЂС‹С‚СЊ С‡Р°С‚")}
                       <ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
                     </div>
                   </Link>

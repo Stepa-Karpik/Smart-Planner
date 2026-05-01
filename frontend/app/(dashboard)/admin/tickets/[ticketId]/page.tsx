@@ -144,11 +144,11 @@ export default function AdminTicketWorkspacePage() {
     if (!ticketIdParam) return
     const message = replyText.trim()
     if (!message) {
-      toast.error(tr("Reply message is required", "Текст ответа обязателен"))
+      toast.error(tr("Reply message is required", "РўРµРєСЃС‚ РѕС‚РІРµС‚Р° РѕР±СЏР·Р°С‚РµР»РµРЅ"))
       return
     }
     if (detail?.status === "closed") {
-      toast.error(tr("Ticket is closed", "Тикет закрыт"))
+      toast.error(tr("Ticket is closed", "РўРёРєРµС‚ Р·Р°РєСЂС‹С‚"))
       return
     }
 
@@ -157,7 +157,7 @@ export default function AdminTicketWorkspacePage() {
     setSendingReply(false)
 
     if (response.error || !response.data) {
-      toast.error(response.error?.message || tr("Failed to send reply", "Не удалось отправить ответ"))
+      toast.error(response.error?.message || tr("Failed to send reply", "РќРµ СѓРґР°Р»РѕСЃСЊ РѕС‚РїСЂР°РІРёС‚СЊ РѕС‚РІРµС‚"))
       return
     }
 
@@ -168,7 +168,7 @@ export default function AdminTicketWorkspacePage() {
       return next
     })
 
-    toast.success(tr("Reply sent", "Ответ отправлен"))
+    toast.success(tr("Reply sent", "РћС‚РІРµС‚ РѕС‚РїСЂР°РІР»РµРЅ"))
     await Promise.all([listQuery.mutate(), detailQuery.mutate()])
   }
 
@@ -179,7 +179,7 @@ export default function AdminTicketWorkspacePage() {
     setClosing(false)
 
     if (response.error || !response.data) {
-      toast.error(response.error?.message || tr("Failed to close ticket", "Не удалось закрыть тикет"))
+      toast.error(response.error?.message || tr("Failed to close ticket", "РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РєСЂС‹С‚СЊ С‚РёРєРµС‚"))
       return
     }
 
@@ -189,7 +189,7 @@ export default function AdminTicketWorkspacePage() {
       return next
     })
 
-    toast.success(tr("Ticket closed", "Тикет закрыт"))
+    toast.success(tr("Ticket closed", "РўРёРєРµС‚ Р·Р°РєСЂС‹С‚"))
     await Promise.all([listQuery.mutate(), detailQuery.mutate()])
   }
 
@@ -207,26 +207,26 @@ export default function AdminTicketWorkspacePage() {
             <div className="space-y-2">
               <Badge className="w-fit rounded-full border-white/15 bg-white/5 px-3 py-1 text-white/75">
                 <Ticket className="mr-1.5 h-3.5 w-3.5" />
-                {tr("Ticket Workspace", "Рабочее окно тикета")}
+                {tr("Ticket Workspace", "Р Р°Р±РѕС‡РµРµ РѕРєРЅРѕ С‚РёРєРµС‚Р°")}
               </Badge>
               <div>
                 <CardTitle className="text-2xl tracking-tight text-white">
-                  {detail ? `${tr("Ticket", "Тикет")} #${detail.public_number}` : tr("Tickets", "Тикеты")}
+                  {detail ? `${tr("Ticket", "РўРёРєРµС‚")} #${detail.public_number}` : tr("Tickets", "РўРёРєРµС‚С‹")}
                 </CardTitle>
                 <CardDescription className="mt-1 text-sm text-white/55">
                   {detail
                     ? detail.subject
-                    : tr("Dedicated chat screen with queue on the left.", "Отдельный экран чата с очередью слева.")}
+                    : tr("Dedicated chat screen with queue on the left.", "РћС‚РґРµР»СЊРЅС‹Р№ СЌРєСЂР°РЅ С‡Р°С‚Р° СЃ РѕС‡РµСЂРµРґСЊСЋ СЃР»РµРІР°.")}
                 </CardDescription>
               </div>
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
               <Badge className="rounded-full border-white/15 bg-white/5 px-3 py-1 text-white/80">
-                {tr("Unread", "Непрочитанные")}: {stats.unread}
+                {tr("Unread", "РќРµРїСЂРѕС‡РёС‚Р°РЅРЅС‹Рµ")}: {stats.unread}
               </Badge>
               <Badge className="rounded-full border-amber-400/20 bg-amber-400/10 px-3 py-1 text-amber-200">
-                {tr("Needs reply", "Ждут ответа")}: {stats.needsReply}
+                {tr("Needs reply", "Р–РґСѓС‚ РѕС‚РІРµС‚Р°")}: {stats.needsReply}
               </Badge>
               <Button
                 asChild
@@ -236,7 +236,7 @@ export default function AdminTicketWorkspacePage() {
               >
                 <Link href="/admin/tickets">
                   <ArrowLeft className="mr-1.5 h-4 w-4" />
-                  {tr("Queue", "Очередь")}
+                  {tr("Queue", "РћС‡РµСЂРµРґСЊ")}
                 </Link>
               </Button>
               <Button
@@ -248,7 +248,7 @@ export default function AdminTicketWorkspacePage() {
                 disabled={listQuery.isLoading || detailQuery.isLoading}
               >
                 <RefreshCw className={cn("mr-1.5 h-4 w-4", (listQuery.isLoading || detailQuery.isLoading) && "animate-spin")} />
-                {tr("Refresh", "Обновить")}
+                {tr("Refresh", "РћР±РЅРѕРІРёС‚СЊ")}
               </Button>
             </div>
           </CardHeader>
@@ -257,9 +257,9 @@ export default function AdminTicketWorkspacePage() {
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-[360px_minmax(0,1fr)]">
           <Card className="rounded-3xl border-white/10 bg-black/30 backdrop-blur-sm xl:h-[calc(100svh-15.5rem)]">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm text-white">{tr("Queue", "Очередь")}</CardTitle>
+              <CardTitle className="text-sm text-white">{tr("Queue", "РћС‡РµСЂРµРґСЊ")}</CardTitle>
               <CardDescription className="text-white/45">
-                {tr("Sorted by latest activity. Unread and unanswered are highlighted.", "Отсортировано по последней активности. Непрочитанные и без ответа подсвечены.")}
+                {tr("Sorted by latest activity. Unread and unanswered are highlighted.", "РћС‚СЃРѕСЂС‚РёСЂРѕРІР°РЅРѕ РїРѕ РїРѕСЃР»РµРґРЅРµР№ Р°РєС‚РёРІРЅРѕСЃС‚Рё. РќРµРїСЂРѕС‡РёС‚Р°РЅРЅС‹Рµ Рё Р±РµР· РѕС‚РІРµС‚Р° РїРѕРґСЃРІРµС‡РµРЅС‹.")}
               </CardDescription>
               <div className="space-y-2">
                 <div className="relative">
@@ -267,7 +267,7 @@ export default function AdminTicketWorkspacePage() {
                   <Input
                     value={query}
                     onChange={(event) => setQuery(event.target.value)}
-                    placeholder={tr("Search by subject, topic or subtopic", "Поиск по теме, категории или подкатегории")}
+                    placeholder={tr("Search by subject, topic or subtopic", "РџРѕРёСЃРє РїРѕ С‚РµРјРµ, РєР°С‚РµРіРѕСЂРёРё РёР»Рё РїРѕРґРєР°С‚РµРіРѕСЂРёРё")}
                     className="h-10 rounded-xl border-white/15 bg-white/5 pl-10 text-white placeholder:text-white/30"
                   />
                 </div>
@@ -276,10 +276,10 @@ export default function AdminTicketWorkspacePage() {
                   onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}
                   className="h-10 w-full rounded-xl border border-white/15 bg-white/5 px-3 text-sm text-white outline-none focus:border-white/30"
                 >
-                  <option value="all" className="bg-[#0b0f17]">{tr("All statuses", "Все статусы")}</option>
-                  <option value="open" className="bg-[#0b0f17]">{tr("Open", "Открыт")}</option>
-                  <option value="answered" className="bg-[#0b0f17]">{tr("Answered", "Есть ответ")}</option>
-                  <option value="closed" className="bg-[#0b0f17]">{tr("Closed", "Закрыт")}</option>
+                  <option value="all" className="bg-[#0b0f17]">{tr("All statuses", "Р’СЃРµ СЃС‚Р°С‚СѓСЃС‹")}</option>
+                  <option value="open" className="bg-[#0b0f17]">{tr("Open", "РћС‚РєСЂС‹С‚")}</option>
+                  <option value="answered" className="bg-[#0b0f17]">{tr("Answered", "Р•СЃС‚СЊ РѕС‚РІРµС‚")}</option>
+                  <option value="closed" className="bg-[#0b0f17]">{tr("Closed", "Р—Р°РєСЂС‹С‚")}</option>
                 </select>
               </div>
             </CardHeader>
@@ -291,11 +291,11 @@ export default function AdminTicketWorkspacePage() {
                     Array.from({ length: 7 }).map((_, i) => <div key={i} className="h-24 animate-pulse rounded-2xl border border-white/10 bg-white/[0.03]" />)
                   ) : listQuery.error ? (
                     <div className="rounded-2xl border border-red-400/20 bg-red-500/5 p-3 text-sm text-red-200">
-                      {tr("Failed to load tickets", "Не удалось загрузить тикеты")}
+                      {tr("Failed to load tickets", "РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ С‚РёРєРµС‚С‹")}
                     </div>
                   ) : tickets.length === 0 ? (
                     <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 text-sm text-white/60">
-                      {tr("No tickets found", "Тикеты не найдены")}
+                      {tr("No tickets found", "РўРёРєРµС‚С‹ РЅРµ РЅР°Р№РґРµРЅС‹")}
                     </div>
                   ) : (
                     tickets.map((ticket) => {
@@ -321,12 +321,12 @@ export default function AdminTicketWorkspacePage() {
                             </Badge>
                             {unread ? (
                               <Badge className="rounded-full border-cyan-300/20 bg-cyan-300/10 text-[10px] text-cyan-100">
-                                {tr("Unread", "Непрочитан")}
+                                {tr("Unread", "РќРµРїСЂРѕС‡РёС‚Р°РЅ")}
                               </Badge>
                             ) : null}
                             {needsReply ? (
                               <Badge className="rounded-full border-amber-400/20 bg-amber-400/10 text-[10px] text-amber-200">
-                                {tr("Needs reply", "Без ответа")}
+                                {tr("Needs reply", "Р‘РµР· РѕС‚РІРµС‚Р°")}
                               </Badge>
                             ) : null}
                             <span className="ml-auto text-[11px] text-white/40">{formatDateTime(ticket.updated_at, locale)}</span>
@@ -334,10 +334,10 @@ export default function AdminTicketWorkspacePage() {
 
                           <p className="line-clamp-1 text-sm font-semibold text-white">{ticket.subject}</p>
                           <p className="mt-1 line-clamp-1 text-xs text-white/45">
-                            {supportTopicLabel(locale, ticket.topic)} · {supportSubtopicLabel(locale, ticket.topic, ticket.subtopic)}
+                            {supportTopicLabel(locale, ticket.topic)} В· {supportSubtopicLabel(locale, ticket.topic, ticket.subtopic)}
                           </p>
                           <p className="mt-1 line-clamp-1 text-[11px] text-white/35">
-                            {supportStatusLabel(locale, ticket.status)} · {ticket.user_id}
+                            {supportStatusLabel(locale, ticket.status)} В· {ticket.user_id}
                           </p>
                         </button>
                       )
@@ -353,17 +353,17 @@ export default function AdminTicketWorkspacePage() {
               <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                 <div>
                   <CardTitle className="text-base text-white">
-                    {detail ? `${tr("Ticket", "Тикет")} #${detail.public_number}` : tr("Ticket chat", "Чат тикета")}
+                    {detail ? `${tr("Ticket", "РўРёРєРµС‚")} #${detail.public_number}` : tr("Ticket chat", "Р§Р°С‚ С‚РёРєРµС‚Р°")}
                   </CardTitle>
                   <CardDescription className="mt-1 text-white/45">
-                    {detail ? detail.subject : tr("Loading ticket details...", "Загрузка деталей тикета...")}
+                    {detail ? detail.subject : tr("Loading ticket details...", "Р—Р°РіСЂСѓР·РєР° РґРµС‚Р°Р»РµР№ С‚РёРєРµС‚Р°...")}
                   </CardDescription>
                 </div>
                 {detail ? (
                   <div className="flex flex-wrap items-center gap-2">
                     <Badge className={cn("rounded-full text-[10px]", statusBadgeClass(detail.status))}>{supportStatusLabel(locale, detail.status)}</Badge>
                     <Badge className="rounded-full border-white/15 bg-white/5 text-[10px] text-white/70">
-                      {tr("User", "Пользователь")}: {detail.user_id.slice(0, 8)}…
+                      {tr("User", "РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ")}: {detail.user_id.slice(0, 8)}вЂ¦
                     </Badge>
                     <Badge className="rounded-full border-white/15 bg-white/5 text-[10px] text-white/70">
                       {formatDateTime(detail.updated_at, locale)}
@@ -376,10 +376,10 @@ export default function AdminTicketWorkspacePage() {
                 <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-3 text-xs text-white/55">
                   <div className="flex flex-wrap items-center gap-2">
                     <span>{supportTopicLabel(locale, detail.topic)}</span>
-                    <span className="text-white/25">•</span>
+                    <span className="text-white/25">вЂў</span>
                     <span>{supportSubtopicLabel(locale, detail.topic, detail.subtopic)}</span>
-                    <span className="text-white/25">•</span>
-                    <span>{tr("Created", "Создан")}: {formatDateTime(detail.created_at, locale)}</span>
+                    <span className="text-white/25">вЂў</span>
+                    <span>{tr("Created", "РЎРѕР·РґР°РЅ")}: {formatDateTime(detail.created_at, locale)}</span>
                   </div>
                 </div>
               ) : null}
@@ -392,14 +392,14 @@ export default function AdminTicketWorkspacePage() {
                 </div>
               ) : detailQuery.error ? (
                 <div className="rounded-2xl border border-red-400/20 bg-red-500/5 p-4 text-sm text-red-200">
-                  {tr("Failed to load ticket details", "Не удалось загрузить детали тикета")}
+                  {tr("Failed to load ticket details", "РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ РґРµС‚Р°Р»Рё С‚РёРєРµС‚Р°")}
                 </div>
               ) : detail ? (
                 <>
                   <ScrollArea className="min-h-0 flex-1 rounded-2xl border border-white/10 bg-white/[0.02] p-2.5 pr-3">
                     <div className="space-y-2">
                       {detail.messages.length === 0 ? (
-                        <div className="px-2 py-3 text-sm text-white/55">{tr("No messages yet", "Сообщений пока нет")}</div>
+                        <div className="px-2 py-3 text-sm text-white/55">{tr("No messages yet", "РЎРѕРѕР±С‰РµРЅРёР№ РїРѕРєР° РЅРµС‚")}</div>
                       ) : (
                         detail.messages.map((message) => (
                           <TicketChatMessage key={message.id} scope="admin" ticketId={detail.id} message={message} locale={locale} viewerRole="admin" />
@@ -414,7 +414,7 @@ export default function AdminTicketWorkspacePage() {
                       <Label htmlFor="admin-ticket-reply" className="text-white/80">
                         <div className="flex items-center gap-2">
                           <MessageSquare className="h-4 w-4" />
-                          {tr("Reply to user", "Ответ пользователю")}
+                          {tr("Reply to user", "РћС‚РІРµС‚ РїРѕР»СЊР·РѕРІР°С‚РµР»СЋ")}
                         </div>
                       </Label>
                       <Textarea
@@ -423,7 +423,7 @@ export default function AdminTicketWorkspacePage() {
                         onChange={(event) => setReplyText(event.target.value)}
                         placeholder={tr(
                           "Write a reply. Line breaks will be preserved.",
-                          "Напишите ответ. Переносы строк будут сохранены.",
+                          "РќР°РїРёС€РёС‚Рµ РѕС‚РІРµС‚. РџРµСЂРµРЅРѕСЃС‹ СЃС‚СЂРѕРє Р±СѓРґСѓС‚ СЃРѕС…СЂР°РЅРµРЅС‹.",
                         )}
                         className="min-h-[120px] rounded-xl border-white/15 bg-white/5 text-white placeholder:text-white/30"
                         disabled={detail.status === "closed"}
@@ -433,7 +433,7 @@ export default function AdminTicketWorkspacePage() {
                     <div className="mt-3 flex flex-wrap gap-2">
                       <Button type="button" onClick={handleReply} disabled={sendingReply || detail.status === "closed"} className="rounded-xl">
                         {sendingReply ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
-                        {tr("Send reply", "Отправить ответ")}
+                        {tr("Send reply", "РћС‚РїСЂР°РІРёС‚СЊ РѕС‚РІРµС‚")}
                       </Button>
                       <Button
                         type="button"
@@ -443,11 +443,11 @@ export default function AdminTicketWorkspacePage() {
                         className="rounded-xl border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white"
                       >
                         {closing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}
-                        {detail.status === "closed" ? tr("Closed", "Закрыт") : tr("Close ticket", "Закрыть тикет")}
+                        {detail.status === "closed" ? tr("Closed", "Р—Р°РєСЂС‹С‚") : tr("Close ticket", "Р—Р°РєСЂС‹С‚СЊ С‚РёРєРµС‚")}
                       </Button>
                       {detail.status === "closed" ? (
                         <Badge className="rounded-full border-white/15 bg-white/5 px-3 py-1 text-white/70">
-                          {tr("Read-only", "Только чтение")}
+                          {tr("Read-only", "РўРѕР»СЊРєРѕ С‡С‚РµРЅРёРµ")}
                         </Badge>
                       ) : null}
                     </div>
@@ -455,7 +455,7 @@ export default function AdminTicketWorkspacePage() {
                 </>
               ) : (
                 <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 text-sm text-white/55">
-                  {tr("Ticket not found", "Тикет не найден")}
+                  {tr("Ticket not found", "РўРёРєРµС‚ РЅРµ РЅР°Р№РґРµРЅ")}
                 </div>
               )}
             </CardContent>
