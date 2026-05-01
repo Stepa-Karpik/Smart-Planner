@@ -1,9 +1,8 @@
 "use client"
 
 import Link from "next/link"
-import { Bell, Bot, Shield, Ticket, Users } from "lucide-react"
+import { Bell, Bot, Ticket, Users } from "lucide-react"
 import { AdminPageShell } from "@/components/admin/admin-page-shell"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useI18n } from "@/lib/i18n"
@@ -63,21 +62,17 @@ export default function AdminOverviewPage() {
           return (
             <Card
               key={block.href}
-              className={`group flex h-full min-h-[240px] flex-col rounded-2xl border-white/10 bg-gradient-to-br ${block.accent} bg-black/25 shadow-[0_14px_40px_rgba(0,0,0,0.22)] backdrop-blur-sm transition hover:border-white/20 hover:bg-black/30`}
+              className={`group flex h-full min-h-[240px] flex-col rounded-2xl border-slate-200/80 bg-gradient-to-br ${block.accent} bg-white/75 shadow-[0_16px_42px_rgba(15,23,42,0.08)] backdrop-blur-xl transition hover:border-slate-300 hover:bg-white/90 dark:border-white/10 dark:bg-black/25 dark:shadow-[0_14px_40px_rgba(0,0,0,0.22)] dark:hover:border-white/20 dark:hover:bg-black/30`}
             >
               <CardHeader className="flex-1 space-y-3">
                 <div className="flex items-center justify-between">
-                  <div className="rounded-2xl border border-white/10 bg-white/5 p-3 text-white transition group-hover:scale-[1.02]">
+                  <div className="rounded-2xl border border-slate-200 bg-white/80 p-3 text-slate-700 transition group-hover:scale-[1.02] dark:border-white/10 dark:bg-white/5 dark:text-white">
                     <Icon className="h-5 w-5" />
                   </div>
-                  <Badge className="rounded-full border-white/15 bg-white/5 text-white/75">
-                    <Shield className="mr-1 h-3 w-3" />
-                    {tr("Admin", "Админ")}
-                  </Badge>
                 </div>
                 <div>
-                  <CardTitle className="text-lg text-white">{tr(block.titleEn, block.titleRu)}</CardTitle>
-                  <CardDescription className="mt-1 text-white/55">{tr(block.descEn, block.descRu)}</CardDescription>
+                  <CardTitle className="text-lg text-slate-950 dark:text-white">{tr(block.titleEn, block.titleRu)}</CardTitle>
+                  <CardDescription className="mt-1 text-slate-500 dark:text-white/55">{tr(block.descEn, block.descRu)}</CardDescription>
                 </div>
               </CardHeader>
               <CardContent className="mt-auto pt-0">
@@ -90,10 +85,10 @@ export default function AdminOverviewPage() {
         })}
       </div>
 
-      <Card className="rounded-2xl border-white/10 bg-black/30 backdrop-blur-sm">
+      <Card className="rounded-2xl border-slate-200/80 bg-white/75 shadow-[0_18px_50px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-white/10 dark:bg-black/30 dark:shadow-none">
         <CardHeader>
-          <CardTitle className="text-base text-white">{tr("Security", "Безопасность")}</CardTitle>
-          <CardDescription className="text-white/55">
+          <CardTitle className="text-base text-slate-950 dark:text-white">{tr("Security", "Безопасность")}</CardTitle>
+          <CardDescription className="text-slate-500 dark:text-white/55">
             {tr(
               "All admin API routes are protected on the backend. Non-admin users cannot access users/feed admin endpoints even if they know the route.",
               "Все admin API роуты защищены на backend. Не-админы не смогут использовать admin endpoints пользователей/ленты, даже если знают путь.",

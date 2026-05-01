@@ -36,8 +36,8 @@ function makeDraft(user: AdminUser): UserEditorState {
 
 function roleBadgeClass(role: UserRole) {
   return role === "admin"
-    ? "border-violet-400/30 bg-violet-400/10 text-violet-200"
-    : "border-white/15 bg-white/5 text-white/70"
+    ? "border-violet-500/25 bg-violet-500/10 text-violet-700 dark:border-violet-400/30 dark:bg-violet-400/10 dark:text-violet-200"
+    : "border-slate-200 bg-white/80 text-slate-600 dark:border-white/15 dark:bg-white/5 dark:text-white/70"
 }
 
 export default function AdminUsersPage() {
@@ -108,7 +108,7 @@ export default function AdminUsersPage() {
           type="button"
           variant="outline"
           size="sm"
-          className="rounded-xl border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white"
+          className="rounded-xl border-slate-200 bg-white/75 text-slate-800 shadow-sm hover:bg-slate-50 hover:text-slate-950 dark:border-white/15 dark:bg-white/5 dark:text-white dark:hover:bg-white/10 dark:hover:text-white"
           onClick={() => void usersQuery.mutate()}
           disabled={usersQuery.isLoading}
         >
@@ -117,10 +117,10 @@ export default function AdminUsersPage() {
         </Button>
       }
     >
-      <Card className="rounded-2xl border-white/10 bg-black/30 backdrop-blur-sm">
+      <Card className="rounded-2xl border-slate-200/80 bg-white/75 shadow-[0_18px_50px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-white/10 dark:bg-black/30 dark:shadow-none">
         <CardHeader className="pb-3">
-          <CardTitle className="text-sm text-white">{tr("Users list", "Список пользователей")}</CardTitle>
-          <CardDescription className="text-white/45">
+          <CardTitle className="text-sm text-slate-950 dark:text-white">{tr("Users list", "Список пользователей")}</CardTitle>
+          <CardDescription className="text-slate-500 dark:text-white/45">
             {tr("Select a user to edit account settings", "Выберите пользователя для редактирования параметров аккаунта")}
           </CardDescription>
           <div className="pt-1">
@@ -128,12 +128,12 @@ export default function AdminUsersPage() {
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder={tr("Search by email or username", "Поиск по email или username")}
-              className="h-10 rounded-xl border-white/15 bg-white/5 text-white placeholder:text-white/30"
+              className="h-10 rounded-xl border-slate-200 bg-white/80 text-slate-800 placeholder:text-slate-400 dark:border-white/15 dark:bg-white/5 dark:text-white dark:placeholder:text-white/30"
             />
           </div>
         </CardHeader>
         <CardContent className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
-          <div className="rounded-2xl border border-white/10 bg-white/[0.02]">
+          <div className="rounded-2xl border border-slate-200 bg-slate-50/80 dark:border-white/10 dark:bg-white/[0.02]">
             {usersQuery.isLoading && !usersQuery.data ? (
               <div className="space-y-2 p-3">
                 {Array.from({ length: 6 }).map((_, i) => (
@@ -141,11 +141,11 @@ export default function AdminUsersPage() {
                 ))}
               </div>
             ) : usersQuery.error ? (
-              <div className="p-4 text-sm text-red-200">
+              <div className="p-4 text-sm text-red-700 dark:text-red-200">
                 {tr("Failed to load users.", "Не удалось загрузить пользователей.")}
               </div>
             ) : users.length === 0 ? (
-              <div className="p-4 text-sm text-white/60">{tr("No users found", "Пользователи не найдены")}</div>
+              <div className="p-4 text-sm text-slate-500 dark:text-white/60">{tr("No users found", "Пользователи не найдены")}</div>
             ) : (
               <div className="space-y-2 p-2">
                 {users.map((user) => {
@@ -156,7 +156,9 @@ export default function AdminUsersPage() {
                       type="button"
                       className={cn(
                         "w-full rounded-2xl border p-3 text-left transition",
-                        active ? "border-white/20 bg-white/[0.08]" : "border-white/10 bg-white/[0.02] hover:bg-white/[0.05]",
+                        active
+                          ? "border-slate-300 bg-slate-100/80 dark:border-white/20 dark:bg-white/[0.08]"
+                          : "border-slate-200 bg-white/70 hover:bg-white/90 dark:border-white/10 dark:bg-white/[0.02] dark:hover:bg-white/[0.05]",
                       )}
                       onClick={() => {
                         setSelectedId(user.user_id)
@@ -164,12 +166,12 @@ export default function AdminUsersPage() {
                       }}
                     >
                       <div className="flex items-start gap-3">
-                        <div className="rounded-xl border border-white/10 bg-white/5 p-2 text-white/80">
+                        <div className="rounded-xl border border-slate-200 bg-white/80 p-2 text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-white/80">
                           <UserRound className="h-4 w-4" />
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="flex flex-col gap-1 md:flex-row md:items-start md:justify-between">
-                            <p className="break-words text-sm font-medium text-white">{user.display_name || user.username}</p>
+                            <p className="break-words text-sm font-medium text-slate-950 dark:text-white">{user.display_name || user.username}</p>
                             <div className="flex flex-wrap items-center gap-2 md:justify-end">
                               <Badge variant="outline" className={cn("rounded-full text-[10px]", roleBadgeClass(user.role))}>
                                 {user.role === "admin" ? (
@@ -181,12 +183,12 @@ export default function AdminUsersPage() {
                                   tr("User", "Пользователь")
                                 )}
                               </Badge>
-                              <span className={cn("text-xs", user.is_active ? "text-emerald-300" : "text-red-300")}>
+                              <span className={cn("text-xs", user.is_active ? "text-emerald-600 dark:text-emerald-300" : "text-red-600 dark:text-red-300")}>
                                 {user.is_active ? tr("Active", "Активен") : tr("Disabled", "Отключен")}
                               </span>
                             </div>
                           </div>
-                          <div className="mt-1.5 flex flex-col gap-0.5 text-xs text-white/45">
+                          <div className="mt-1.5 flex flex-col gap-0.5 text-xs text-slate-500 dark:text-white/45">
                             <p className="break-all">@{user.username}</p>
                             <p className="break-all">{user.email}</p>
                           </div>
@@ -199,10 +201,10 @@ export default function AdminUsersPage() {
             )}
           </div>
 
-          <Card className="rounded-2xl border-white/10 bg-white/[0.02]">
+          <Card className="rounded-2xl border-slate-200 bg-white/70 dark:border-white/10 dark:bg-white/[0.02]">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm text-white">{tr("User editor", "Редактор пользователя")}</CardTitle>
-              <CardDescription className="text-white/45">
+              <CardTitle className="text-sm text-slate-950 dark:text-white">{tr("User editor", "Редактор пользователя")}</CardTitle>
+              <CardDescription className="text-slate-500 dark:text-white/45">
                 {selectedUser
                   ? `${selectedUser.email}`
                   : tr("Select a user from the list", "Выберите пользователя из списка")}
@@ -210,35 +212,35 @@ export default function AdminUsersPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               {!selectedUser || !draft ? (
-                <p className="text-sm text-white/50">{tr("No user selected", "Пользователь не выбран")}</p>
+                <p className="text-sm text-slate-500 dark:text-white/50">{tr("No user selected", "Пользователь не выбран")}</p>
               ) : (
                 <>
                   <div className="space-y-2">
-                    <Label htmlFor="admin-user-username" className="text-white/80">
+                    <Label htmlFor="admin-user-username" className="text-slate-700 dark:text-white/80">
                       {tr("Username", "Username")}
                     </Label>
                     <Input
                       id="admin-user-username"
                       value={draft.username}
                       onChange={(event) => setDraft((prev) => (prev ? { ...prev, username: event.target.value } : prev))}
-                      className="h-10 rounded-xl border-white/15 bg-white/5 text-white"
+                      className="h-10 rounded-xl border-slate-200 bg-white/80 text-slate-800 dark:border-white/15 dark:bg-white/5 dark:text-white"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="admin-user-display" className="text-white/80">
+                    <Label htmlFor="admin-user-display" className="text-slate-700 dark:text-white/80">
                       {tr("Display name", "Отображаемое имя")}
                     </Label>
                     <Input
                       id="admin-user-display"
                       value={draft.display_name}
                       onChange={(event) => setDraft((prev) => (prev ? { ...prev, display_name: event.target.value } : prev))}
-                      className="h-10 rounded-xl border-white/15 bg-white/5 text-white"
+                      className="h-10 rounded-xl border-slate-200 bg-white/80 text-slate-800 dark:border-white/15 dark:bg-white/5 dark:text-white"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="admin-user-role" className="text-white/80">
+                    <Label htmlFor="admin-user-role" className="text-slate-700 dark:text-white/80">
                       {tr("Role", "Роль")}
                     </Label>
                     <select
@@ -247,21 +249,21 @@ export default function AdminUsersPage() {
                       onChange={(event) =>
                         setDraft((prev) => (prev ? { ...prev, role: event.target.value as UserRole } : prev))
                       }
-                      className="h-10 w-full rounded-xl border border-white/15 bg-white/5 px-3 text-sm text-white outline-none focus:border-white/30"
+                      className="h-10 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm text-slate-800 outline-none focus:border-slate-300 dark:border-white/15 dark:bg-white/5 dark:text-white dark:focus:border-white/30"
                     >
-                      <option value="user" className="bg-[#0b0f17]">
+                      <option value="user" className="bg-white text-slate-950 dark:bg-[#0b0f17] dark:text-white">
                         {tr("User", "Пользователь")}
                       </option>
-                      <option value="admin" className="bg-[#0b0f17]">
+                      <option value="admin" className="bg-white text-slate-950 dark:bg-[#0b0f17] dark:text-white">
                         {tr("Admin", "Администратор")}
                       </option>
                     </select>
                   </div>
 
-                  <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2.5">
+                  <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-2.5 dark:border-white/10 dark:bg-white/[0.02]">
                     <div>
-                      <p className="text-sm font-medium text-white">{tr("Account active", "Аккаунт активен")}</p>
-                      <p className="text-xs text-white/45">
+                      <p className="text-sm font-medium text-slate-950 dark:text-white">{tr("Account active", "Аккаунт активен")}</p>
+                      <p className="text-xs text-slate-500 dark:text-white/45">
                         {tr("Disable to block sign in", "Отключите, чтобы запретить вход")}
                       </p>
                     </div>
@@ -272,7 +274,7 @@ export default function AdminUsersPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="admin-user-password" className="text-white/80">
+                    <Label htmlFor="admin-user-password" className="text-slate-700 dark:text-white/80">
                       {tr("New password (optional)", "Новый пароль (необязательно)")}
                     </Label>
                     <Input
@@ -281,7 +283,7 @@ export default function AdminUsersPage() {
                       value={draft.new_password}
                       onChange={(event) => setDraft((prev) => (prev ? { ...prev, new_password: event.target.value } : prev))}
                       placeholder={tr("Leave empty to keep current password", "Оставьте пустым, чтобы не менять пароль")}
-                      className="h-10 rounded-xl border-white/15 bg-white/5 text-white placeholder:text-white/30"
+                      className="h-10 rounded-xl border-slate-200 bg-white/80 text-slate-800 placeholder:text-slate-400 dark:border-white/15 dark:bg-white/5 dark:text-white dark:placeholder:text-white/30"
                     />
                   </div>
 

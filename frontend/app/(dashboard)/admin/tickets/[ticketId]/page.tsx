@@ -38,13 +38,13 @@ function formatDateTime(value: string, locale: "en" | "ru") {
 function statusBadgeClass(status: SupportTicketStatus) {
   switch (status) {
     case "open":
-      return "border-sky-400/30 bg-sky-400/10 text-sky-200"
+      return "border-sky-500/25 bg-sky-500/10 text-sky-700 dark:border-sky-400/30 dark:bg-sky-400/10 dark:text-sky-200"
     case "answered":
-      return "border-emerald-400/30 bg-emerald-400/10 text-emerald-200"
+      return "border-emerald-500/25 bg-emerald-500/10 text-emerald-700 dark:border-emerald-400/30 dark:bg-emerald-400/10 dark:text-emerald-200"
     case "closed":
-      return "border-white/15 bg-white/5 text-white/70"
+      return "border-slate-200 bg-white/80 text-slate-600 dark:border-white/15 dark:bg-white/5 dark:text-white/70"
     default:
-      return "border-white/15 bg-white/5 text-white/70"
+      return "border-slate-200 bg-white/80 text-slate-600 dark:border-white/15 dark:bg-white/5 dark:text-white/70"
   }
 }
 
@@ -196,24 +196,24 @@ export default function AdminTicketWorkspacePage() {
   return (
     <div className="relative min-h-full">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute left-[8%] top-[-4rem] h-64 w-64 rounded-full bg-sky-400/10 blur-[100px]" />
-        <div className="absolute right-[10%] top-[8rem] h-72 w-72 rounded-full bg-violet-500/10 blur-[120px]" />
-        <div className="absolute bottom-[6%] left-[45%] h-60 w-60 rounded-full bg-cyan-500/10 blur-[120px]" />
+        <div className="absolute left-[8%] top-[-4rem] h-64 w-64 rounded-full bg-sky-300/[0.18] blur-[100px] dark:bg-sky-400/10" />
+        <div className="absolute right-[10%] top-[8rem] h-72 w-72 rounded-full bg-violet-300/[0.14] blur-[120px] dark:bg-violet-500/10" />
+        <div className="absolute bottom-[6%] left-[45%] h-60 w-60 rounded-full bg-cyan-300/[0.16] blur-[120px] dark:bg-cyan-500/10" />
       </div>
 
       <div className="relative mx-auto flex max-w-[1600px] flex-col gap-4 p-4 md:p-6">
-        <Card className="rounded-3xl border-white/10 bg-gradient-to-br from-black/35 via-black/25 to-black/30 shadow-[0_24px_70px_rgba(0,0,0,0.38)] backdrop-blur-sm">
+        <Card className="rounded-3xl border-slate-200/80 bg-gradient-to-br from-white/90 via-white/[0.78] to-slate-50/80 shadow-[0_22px_60px_rgba(15,23,42,0.10)] backdrop-blur-xl dark:border-white/10 dark:bg-gradient-to-br dark:from-black/35 dark:via-black/25 dark:to-black/30 dark:shadow-[0_24px_70px_rgba(0,0,0,0.38)]">
           <CardHeader className="gap-3 md:flex-row md:items-end md:justify-between">
             <div className="space-y-2">
-              <Badge className="w-fit rounded-full border-white/15 bg-white/5 px-3 py-1 text-white/75">
+              <Badge className="w-fit rounded-full border-slate-200 bg-slate-50/80 px-3 py-1 text-slate-700 dark:border-white/15 dark:bg-white/5 dark:text-white/75">
                 <Ticket className="mr-1.5 h-3.5 w-3.5" />
                 {tr("Ticket Workspace", "Рабочее окно тикета")}
               </Badge>
               <div>
-                <CardTitle className="text-2xl tracking-tight text-white">
+                <CardTitle className="text-2xl tracking-tight text-slate-950 dark:text-white">
                   {detail ? `${tr("Ticket", "Тикет")} #${detail.public_number}` : tr("Tickets", "Тикеты")}
                 </CardTitle>
-                <CardDescription className="mt-1 text-sm text-white/55">
+                <CardDescription className="mt-1 text-sm text-slate-500 dark:text-white/55">
                   {detail
                     ? detail.subject
                     : tr("Dedicated chat screen with queue on the left.", "Отдельный экран чата с очередью слева.")}
@@ -222,17 +222,17 @@ export default function AdminTicketWorkspacePage() {
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
-              <Badge className="rounded-full border-white/15 bg-white/5 px-3 py-1 text-white/80">
+              <Badge className="rounded-full border-slate-200 bg-slate-50/80 px-3 py-1 text-slate-700 dark:border-white/15 dark:bg-white/5 dark:text-white/80">
                 {tr("Unread", "Непрочитанные")}: {stats.unread}
               </Badge>
-              <Badge className="rounded-full border-amber-400/20 bg-amber-400/10 px-3 py-1 text-amber-200">
+              <Badge className="rounded-full border-amber-500/25 bg-amber-500/10 px-3 py-1 text-amber-700 dark:border-amber-400/20 dark:bg-amber-400/10 dark:text-amber-200">
                 {tr("Needs reply", "Ждут ответа")}: {stats.needsReply}
               </Badge>
               <Button
                 asChild
                 variant="outline"
                 size="sm"
-                className="rounded-xl border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white"
+                className="rounded-xl border-slate-200 bg-white/75 text-slate-800 shadow-sm hover:bg-slate-50 hover:text-slate-950 dark:border-white/15 dark:bg-white/5 dark:text-white dark:hover:bg-white/10 dark:hover:text-white"
               >
                 <Link href="/admin/tickets">
                   <ArrowLeft className="mr-1.5 h-4 w-4" />
@@ -243,7 +243,7 @@ export default function AdminTicketWorkspacePage() {
                 type="button"
                 variant="outline"
                 size="sm"
-                className="rounded-xl border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white"
+                className="rounded-xl border-slate-200 bg-white/75 text-slate-800 shadow-sm hover:bg-slate-50 hover:text-slate-950 dark:border-white/15 dark:bg-white/5 dark:text-white dark:hover:bg-white/10 dark:hover:text-white"
                 onClick={() => void Promise.all([listQuery.mutate(), detailQuery.mutate()])}
                 disabled={listQuery.isLoading || detailQuery.isLoading}
               >
@@ -255,31 +255,31 @@ export default function AdminTicketWorkspacePage() {
         </Card>
 
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-[360px_minmax(0,1fr)]">
-          <Card className="rounded-3xl border-white/10 bg-black/30 backdrop-blur-sm xl:h-[calc(100svh-15.5rem)]">
+          <Card className="rounded-3xl border-slate-200/80 bg-white/75 shadow-[0_18px_50px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-white/10 dark:bg-black/30 dark:shadow-none xl:h-[calc(100svh-15.5rem)]">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm text-white">{tr("Queue", "Очередь")}</CardTitle>
-              <CardDescription className="text-white/45">
+              <CardTitle className="text-sm text-slate-950 dark:text-white">{tr("Queue", "Очередь")}</CardTitle>
+              <CardDescription className="text-slate-500 dark:text-white/45">
                 {tr("Sorted by latest activity. Unread and unanswered are highlighted.", "Отсортировано по последней активности. Непрочитанные и без ответа подсвечены.")}
               </CardDescription>
               <div className="space-y-2">
                 <div className="relative">
-                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/35" />
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-white/35" />
                   <Input
                     value={query}
                     onChange={(event) => setQuery(event.target.value)}
                     placeholder={tr("Search by subject, topic or subtopic", "Поиск по теме, категории или подкатегории")}
-                    className="h-10 rounded-xl border-white/15 bg-white/5 pl-10 text-white placeholder:text-white/30"
+                    className="h-10 rounded-xl border-slate-200 bg-white/80 pl-10 text-slate-800 placeholder:text-slate-400 dark:border-white/15 dark:bg-white/5 dark:text-white dark:placeholder:text-white/30"
                   />
                 </div>
                 <select
                   value={statusFilter}
                   onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}
-                  className="h-10 w-full rounded-xl border border-white/15 bg-white/5 px-3 text-sm text-white outline-none focus:border-white/30"
+                  className="h-10 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm text-slate-800 outline-none focus:border-slate-300 dark:border-white/15 dark:bg-white/5 dark:text-white dark:focus:border-white/30"
                 >
-                  <option value="all" className="bg-[#0b0f17]">{tr("All statuses", "Все статусы")}</option>
-                  <option value="open" className="bg-[#0b0f17]">{tr("Open", "Открыт")}</option>
-                  <option value="answered" className="bg-[#0b0f17]">{tr("Answered", "Есть ответ")}</option>
-                  <option value="closed" className="bg-[#0b0f17]">{tr("Closed", "Закрыт")}</option>
+                  <option value="all" className="bg-white text-slate-950 dark:bg-[#0b0f17] dark:text-white">{tr("All statuses", "Все статусы")}</option>
+                  <option value="open" className="bg-white text-slate-950 dark:bg-[#0b0f17] dark:text-white">{tr("Open", "Открыт")}</option>
+                  <option value="answered" className="bg-white text-slate-950 dark:bg-[#0b0f17] dark:text-white">{tr("Answered", "Есть ответ")}</option>
+                  <option value="closed" className="bg-white text-slate-950 dark:bg-[#0b0f17] dark:text-white">{tr("Closed", "Закрыт")}</option>
                 </select>
               </div>
             </CardHeader>
@@ -288,13 +288,13 @@ export default function AdminTicketWorkspacePage() {
               <ScrollArea className="h-full pr-2">
                 <div className="space-y-2">
                   {listQuery.isLoading && !listQuery.data ? (
-                    Array.from({ length: 7 }).map((_, i) => <div key={i} className="h-24 animate-pulse rounded-2xl border border-white/10 bg-white/[0.03]" />)
+                    Array.from({ length: 7 }).map((_, i) => <div key={i} className="h-24 animate-pulse rounded-2xl border border-slate-200 bg-slate-200/70 dark:border-white/10 dark:bg-white/[0.03]" />)
                   ) : listQuery.error ? (
-                    <div className="rounded-2xl border border-red-400/20 bg-red-500/5 p-3 text-sm text-red-200">
+                    <div className="rounded-2xl border border-red-500/20 bg-red-500/5 p-3 text-sm text-red-700 dark:border-red-400/20 dark:text-red-200">
                       {tr("Failed to load tickets", "Не удалось загрузить тикеты")}
                     </div>
                   ) : tickets.length === 0 ? (
-                    <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 text-sm text-white/60">
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 text-sm text-slate-500 dark:border-white/10 dark:bg-white/[0.02] dark:text-white/60">
                       {tr("No tickets found", "Тикеты не найдены")}
                     </div>
                   ) : (
@@ -310,8 +310,8 @@ export default function AdminTicketWorkspacePage() {
                           className={cn(
                             "w-full rounded-2xl border p-3 text-left transition",
                             active
-                              ? "border-white/20 bg-white/[0.09] shadow-[0_12px_30px_rgba(0,0,0,0.18)]"
-                              : "border-white/10 bg-white/[0.02] hover:bg-white/[0.05]",
+                              ? "border-slate-300 bg-slate-100/80 shadow-[0_12px_30px_rgba(15,23,42,0.08)] dark:border-white/20 dark:bg-white/[0.09] dark:shadow-[0_12px_30px_rgba(0,0,0,0.18)]"
+                              : "border-slate-200 bg-white/70 hover:bg-white/90 dark:border-white/10 dark:bg-white/[0.02] dark:hover:bg-white/[0.05]",
                           )}
                         >
                           <div className="mb-2 flex flex-wrap items-center gap-1.5">
@@ -320,23 +320,23 @@ export default function AdminTicketWorkspacePage() {
                               #{ticket.public_number}
                             </Badge>
                             {unread ? (
-                              <Badge className="rounded-full border-cyan-300/20 bg-cyan-300/10 text-[10px] text-cyan-100">
+                              <Badge className="rounded-full border-cyan-500/25 bg-cyan-500/10 text-[10px] text-cyan-700 dark:border-cyan-300/20 dark:bg-cyan-300/10 dark:text-cyan-100">
                                 {tr("Unread", "Непрочитан")}
                               </Badge>
                             ) : null}
                             {needsReply ? (
-                              <Badge className="rounded-full border-amber-400/20 bg-amber-400/10 text-[10px] text-amber-200">
+                              <Badge className="rounded-full border-amber-500/25 bg-amber-500/10 text-[10px] text-amber-700 dark:border-amber-400/20 dark:bg-amber-400/10 dark:text-amber-200">
                                 {tr("Needs reply", "Без ответа")}
                               </Badge>
                             ) : null}
-                            <span className="ml-auto text-[11px] text-white/40">{formatDateTime(ticket.updated_at, locale)}</span>
+                            <span className="ml-auto text-[11px] text-slate-400 dark:text-white/40">{formatDateTime(ticket.updated_at, locale)}</span>
                           </div>
 
-                          <p className="line-clamp-1 text-sm font-semibold text-white">{ticket.subject}</p>
-                          <p className="mt-1 line-clamp-1 text-xs text-white/45">
+                          <p className="line-clamp-1 text-sm font-semibold text-slate-950 dark:text-white">{ticket.subject}</p>
+                          <p className="mt-1 line-clamp-1 text-xs text-slate-500 dark:text-white/45">
                             {supportTopicLabel(locale, ticket.topic)} · {supportSubtopicLabel(locale, ticket.topic, ticket.subtopic)}
                           </p>
-                          <p className="mt-1 line-clamp-1 text-[11px] text-white/35">
+                          <p className="mt-1 line-clamp-1 text-[11px] text-slate-400 dark:text-white/35">
                             {supportStatusLabel(locale, ticket.status)} · {ticket.user_id}
                           </p>
                         </button>
@@ -348,24 +348,24 @@ export default function AdminTicketWorkspacePage() {
             </CardContent>
           </Card>
 
-          <Card className="flex min-h-[62svh] flex-col rounded-3xl border-white/10 bg-black/30 backdrop-blur-sm xl:h-[calc(100svh-15.5rem)]">
+          <Card className="flex min-h-[62svh] flex-col rounded-3xl border-slate-200/80 bg-white/75 shadow-[0_18px_50px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-white/10 dark:bg-black/30 dark:shadow-none xl:h-[calc(100svh-15.5rem)]">
             <CardHeader className="pb-3">
               <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                 <div>
-                  <CardTitle className="text-base text-white">
+                  <CardTitle className="text-base text-slate-950 dark:text-white">
                     {detail ? `${tr("Ticket", "Тикет")} #${detail.public_number}` : tr("Ticket chat", "Чат тикета")}
                   </CardTitle>
-                  <CardDescription className="mt-1 text-white/45">
+                  <CardDescription className="mt-1 text-slate-500 dark:text-white/45">
                     {detail ? detail.subject : tr("Loading ticket details...", "Загрузка деталей тикета...")}
                   </CardDescription>
                 </div>
                 {detail ? (
                   <div className="flex flex-wrap items-center gap-2">
                     <Badge className={cn("rounded-full text-[10px]", statusBadgeClass(detail.status))}>{supportStatusLabel(locale, detail.status)}</Badge>
-                    <Badge className="rounded-full border-white/15 bg-white/5 text-[10px] text-white/70">
+                    <Badge className="rounded-full border-slate-200 bg-white/80 text-[10px] text-slate-600 dark:border-white/15 dark:bg-white/5 dark:text-white/70">
                       {tr("User", "Пользователь")}: {detail.user_id.slice(0, 8)}…
                     </Badge>
-                    <Badge className="rounded-full border-white/15 bg-white/5 text-[10px] text-white/70">
+                    <Badge className="rounded-full border-slate-200 bg-white/80 text-[10px] text-slate-600 dark:border-white/15 dark:bg-white/5 dark:text-white/70">
                       {formatDateTime(detail.updated_at, locale)}
                     </Badge>
                   </div>
@@ -373,12 +373,12 @@ export default function AdminTicketWorkspacePage() {
               </div>
 
               {detail ? (
-                <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-3 text-xs text-white/55">
+                <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-3 text-xs text-slate-600 dark:border-white/10 dark:bg-white/[0.02] dark:text-white/55">
                   <div className="flex flex-wrap items-center gap-2">
                     <span>{supportTopicLabel(locale, detail.topic)}</span>
-                    <span className="text-white/25">•</span>
+                    <span className="text-slate-300 dark:text-white/25">•</span>
                     <span>{supportSubtopicLabel(locale, detail.topic, detail.subtopic)}</span>
-                    <span className="text-white/25">•</span>
+                    <span className="text-slate-300 dark:text-white/25">•</span>
                     <span>{tr("Created", "Создан")}: {formatDateTime(detail.created_at, locale)}</span>
                   </div>
                 </div>
@@ -388,18 +388,18 @@ export default function AdminTicketWorkspacePage() {
             <CardContent className="flex min-h-0 flex-1 flex-col gap-3">
               {detailQuery.isLoading && !detailQuery.data ? (
                 <div className="space-y-3">
-                  {Array.from({ length: 5 }).map((_, i) => <div key={i} className="h-20 animate-pulse rounded-2xl border border-white/10 bg-white/[0.03]" />)}
+                  {Array.from({ length: 5 }).map((_, i) => <div key={i} className="h-20 animate-pulse rounded-2xl border border-slate-200 bg-slate-200/70 dark:border-white/10 dark:bg-white/[0.03]" />)}
                 </div>
               ) : detailQuery.error ? (
-                <div className="rounded-2xl border border-red-400/20 bg-red-500/5 p-4 text-sm text-red-200">
+                <div className="rounded-2xl border border-red-500/20 bg-red-500/5 p-4 text-sm text-red-700 dark:border-red-400/20 dark:text-red-200">
                   {tr("Failed to load ticket details", "Не удалось загрузить детали тикета")}
                 </div>
               ) : detail ? (
                 <>
-                  <ScrollArea className="min-h-0 flex-1 rounded-2xl border border-white/10 bg-white/[0.02] p-2.5 pr-3">
+                  <ScrollArea className="min-h-0 flex-1 rounded-2xl border border-slate-200 bg-slate-50/70 p-2.5 pr-3 dark:border-white/10 dark:bg-white/[0.02]">
                     <div className="space-y-2">
                       {detail.messages.length === 0 ? (
-                        <div className="px-2 py-3 text-sm text-white/55">{tr("No messages yet", "Сообщений пока нет")}</div>
+                        <div className="px-2 py-3 text-sm text-slate-500 dark:text-white/55">{tr("No messages yet", "Сообщений пока нет")}</div>
                       ) : (
                         detail.messages.map((message) => (
                           <TicketChatMessage key={message.id} scope="admin" ticketId={detail.id} message={message} locale={locale} viewerRole="admin" />
@@ -409,9 +409,9 @@ export default function AdminTicketWorkspacePage() {
                     </div>
                   </ScrollArea>
 
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-3">
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-3 dark:border-white/10 dark:bg-white/[0.02]">
                     <div className="space-y-2">
-                      <Label htmlFor="admin-ticket-reply" className="text-white/80">
+                      <Label htmlFor="admin-ticket-reply" className="text-slate-700 dark:text-white/80">
                         <div className="flex items-center gap-2">
                           <MessageSquare className="h-4 w-4" />
                           {tr("Reply to user", "Ответ пользователю")}
@@ -425,7 +425,7 @@ export default function AdminTicketWorkspacePage() {
                           "Write a reply. Line breaks will be preserved.",
                           "Напишите ответ. Переносы строк будут сохранены.",
                         )}
-                        className="min-h-[120px] rounded-xl border-white/15 bg-white/5 text-white placeholder:text-white/30"
+                        className="min-h-[120px] rounded-xl border-slate-200 bg-white/80 text-slate-800 placeholder:text-slate-400 dark:border-white/15 dark:bg-white/5 dark:text-white dark:placeholder:text-white/30"
                         disabled={detail.status === "closed"}
                       />
                     </div>
@@ -440,13 +440,13 @@ export default function AdminTicketWorkspacePage() {
                         variant="outline"
                         onClick={handleCloseTicket}
                         disabled={closing || detail.status === "closed"}
-                        className="rounded-xl border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white"
+                        className="rounded-xl border-slate-200 bg-white/75 text-slate-800 shadow-sm hover:bg-slate-50 hover:text-slate-950 dark:border-white/15 dark:bg-white/5 dark:text-white dark:hover:bg-white/10 dark:hover:text-white"
                       >
                         {closing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}
                         {detail.status === "closed" ? tr("Closed", "Закрыт") : tr("Close ticket", "Закрыть тикет")}
                       </Button>
                       {detail.status === "closed" ? (
-                        <Badge className="rounded-full border-white/15 bg-white/5 px-3 py-1 text-white/70">
+                        <Badge className="rounded-full border-slate-200 bg-white/80 px-3 py-1 text-slate-600 dark:border-white/15 dark:bg-white/5 dark:text-white/70">
                           {tr("Read-only", "Только чтение")}
                         </Badge>
                       ) : null}
@@ -454,7 +454,7 @@ export default function AdminTicketWorkspacePage() {
                   </div>
                 </>
               ) : (
-                <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 text-sm text-white/55">
+                <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 text-sm text-slate-500 dark:border-white/10 dark:bg-white/[0.02] dark:text-white/55">
                   {tr("Ticket not found", "Тикет не найден")}
                 </div>
               )}

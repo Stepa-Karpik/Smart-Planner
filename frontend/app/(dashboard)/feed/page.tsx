@@ -32,7 +32,7 @@ const TYPE_META: Record<
   notification: {
     icon: BellRing,
     dotClassName: "bg-sky-400 shadow-[0_0_16px_rgba(56,189,248,0.7)]",
-    badgeClassName: "border-sky-400/30 bg-sky-400/10 text-sky-200",
+    badgeClassName: "border-sky-500/25 bg-sky-500/10 text-sky-700 dark:border-sky-400/30 dark:bg-sky-400/10 dark:text-sky-200",
     labelEn: "Notifications",
     labelRu: "Уведомления",
     hintEn: "System and account notices",
@@ -41,7 +41,7 @@ const TYPE_META: Record<
   update: {
     icon: Sparkles,
     dotClassName: "bg-violet-400 shadow-[0_0_16px_rgba(167,139,250,0.7)]",
-    badgeClassName: "border-violet-400/30 bg-violet-400/10 text-violet-200",
+    badgeClassName: "border-violet-500/25 bg-violet-500/10 text-violet-700 dark:border-violet-400/30 dark:bg-violet-400/10 dark:text-violet-200",
     labelEn: "Updates",
     labelRu: "Обновления",
     hintEn: "Product changes and releases",
@@ -50,7 +50,7 @@ const TYPE_META: Record<
   reminder: {
     icon: TimerReset,
     dotClassName: "bg-amber-400 shadow-[0_0_16px_rgba(251,191,36,0.7)]",
-    badgeClassName: "border-amber-400/30 bg-amber-400/10 text-amber-200",
+    badgeClassName: "border-amber-500/25 bg-amber-500/10 text-amber-700 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-amber-200",
     labelEn: "Reminders",
     labelRu: "Напоминания",
     hintEn: "Planning and task reminders",
@@ -59,7 +59,7 @@ const TYPE_META: Record<
   ticket: {
     icon: Ticket,
     dotClassName: "bg-emerald-400 shadow-[0_0_16px_rgba(52,211,153,0.7)]",
-    badgeClassName: "border-emerald-400/30 bg-emerald-400/10 text-emerald-200",
+    badgeClassName: "border-emerald-500/25 bg-emerald-500/10 text-emerald-700 dark:border-emerald-400/30 dark:bg-emerald-400/10 dark:text-emerald-200",
     labelEn: "Tickets",
     labelRu: "Тикеты",
     hintEn: "Support ticket updates",
@@ -130,21 +130,21 @@ export default function FeedPage() {
   return (
     <div className="relative min-h-full">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute left-[18%] top-[-5rem] h-56 w-56 rounded-full bg-cyan-400/10 blur-[90px]" />
-        <div className="absolute right-[10%] top-[12rem] h-64 w-64 rounded-full bg-blue-500/10 blur-[110px]" />
-        <div className="absolute bottom-[-3rem] left-[45%] h-52 w-52 rounded-full bg-violet-500/10 blur-[100px]" />
+        <div className="absolute left-[18%] top-[-5rem] h-56 w-56 rounded-full bg-cyan-300/[0.18] blur-[90px] dark:bg-cyan-400/10" />
+        <div className="absolute right-[10%] top-[12rem] h-64 w-64 rounded-full bg-blue-300/[0.16] blur-[110px] dark:bg-blue-500/10" />
+        <div className="absolute bottom-[-3rem] left-[45%] h-52 w-52 rounded-full bg-violet-300/[0.14] blur-[100px] dark:bg-violet-500/10" />
       </div>
 
       <div className="relative mx-auto flex max-w-7xl flex-col gap-6 p-4 md:p-6">
-        <div className="rounded-2xl border border-white/10 bg-black/30 p-5 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-sm">
+        <div className="rounded-2xl border border-slate-200/80 bg-white/80 p-5 text-slate-950 shadow-[0_18px_50px_rgba(15,23,42,0.10)] backdrop-blur-xl dark:border-white/10 dark:bg-black/30 dark:text-white dark:shadow-[0_20px_60px_rgba(0,0,0,0.35)]">
           <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
-              <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/70">
+              <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50/80 px-3 py-1 text-xs text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-white/70">
                 <Megaphone className="h-3.5 w-3.5" />
                 {tr("Unified feed center", "Единая лента")}
               </div>
-              <h1 className="text-2xl font-semibold tracking-tight text-white">{tr("Feed", "Лента")}</h1>
-              <p className="mt-1 text-sm text-white/55">
+              <h1 className="text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">{tr("Feed", "Лента")}</h1>
+              <p className="mt-1 text-sm text-slate-500 dark:text-white/55">
                 {tr(
                   "Notifications, product updates, and reminders in one place.",
                   "Уведомления, обновления продукта и напоминания в одном месте.",
@@ -153,10 +153,10 @@ export default function FeedPage() {
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
-              <Badge className="rounded-full border-white/15 bg-white/5 px-3 py-1 text-white/80">
+              <Badge className="rounded-full border-slate-200 bg-slate-50/80 px-3 py-1 text-slate-700 dark:border-white/15 dark:bg-white/5 dark:text-white/80">
                 {tr("Visible", "Показано")}: {visibleItems.length}
               </Badge>
-              <Badge className="rounded-full border-white/15 bg-white/5 px-3 py-1 text-white/80">
+              <Badge className="rounded-full border-slate-200 bg-slate-50/80 px-3 py-1 text-slate-700 dark:border-white/15 dark:bg-white/5 dark:text-white/80">
                 {tr("Filters", "Фильтры")}: {activeFilterCount}/{visibleTypes.length}
               </Badge>
               {isAdmin && (
@@ -165,7 +165,7 @@ export default function FeedPage() {
                     asChild
                     size="sm"
                     variant="outline"
-                    className="rounded-xl border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white"
+                    className="rounded-xl border-slate-200 bg-white/75 text-slate-800 shadow-sm hover:bg-slate-50 hover:text-slate-950 dark:border-white/15 dark:bg-white/5 dark:text-white dark:hover:bg-white/10 dark:hover:text-white"
                   >
                     <Link href="/admin/feed">
                       <Settings2 className="mr-1.5 h-4 w-4" />
@@ -186,20 +186,20 @@ export default function FeedPage() {
             {feedQuery.isLoading && !feedQuery.data ? (
               Array.from({ length: 5 }).map((_, index) => <Skeleton key={index} className="h-28 rounded-2xl" />)
             ) : feedQuery.error ? (
-              <Card className="rounded-2xl border-red-400/20 bg-red-500/5 backdrop-blur-sm">
-                <CardContent className="p-5 text-sm text-red-200">
+              <Card className="rounded-2xl border-red-500/20 bg-red-500/5 backdrop-blur-sm dark:border-red-400/20">
+                <CardContent className="p-5 text-sm text-red-700 dark:text-red-200">
                   {tr("Failed to load feed items.", "Не удалось загрузить ленту.")}
                 </CardContent>
               </Card>
             ) : visibleItems.length === 0 ? (
-              <Card className="rounded-2xl border-white/10 bg-black/25 backdrop-blur-sm">
+              <Card className="rounded-2xl border-slate-200/80 bg-white/75 shadow-[0_18px_50px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-white/10 dark:bg-black/25 dark:shadow-none">
                 <CardContent className="flex min-h-[220px] flex-col items-center justify-center gap-3 text-center">
-                  <div className="rounded-full border border-white/10 bg-white/5 p-3">
-                    <Bell className="h-5 w-5 text-white/70" />
+                  <div className="rounded-full border border-slate-200 bg-slate-50 p-3 text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-white/70">
+                    <Bell className="h-5 w-5" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-white">{tr("No items for current filters", "Нет элементов для текущих фильтров")}</p>
-                    <p className="mt-1 text-xs text-white/50">
+                    <p className="text-sm font-medium text-slate-950 dark:text-white">{tr("No items for current filters", "Нет элементов для текущих фильтров")}</p>
+                    <p className="mt-1 text-xs text-slate-500 dark:text-white/50">
                       {tr("Enable more types on the right panel.", "Включите больше типов в правой панели.")}
                     </p>
                   </div>
@@ -249,7 +249,7 @@ export default function FeedPage() {
                 return (
                   <Card
                     key={item.id}
-                    className="rounded-2xl border-white/10 bg-black/30 shadow-[0_16px_40px_rgba(0,0,0,0.28)] backdrop-blur-sm transition hover:border-white/20 hover:bg-black/35"
+                    className="rounded-2xl border-slate-200/80 bg-white/[0.78] shadow-[0_16px_42px_rgba(15,23,42,0.08)] backdrop-blur-xl transition hover:border-slate-300 hover:bg-white/90 dark:border-white/10 dark:bg-black/30 dark:shadow-[0_16px_40px_rgba(0,0,0,0.28)] dark:hover:border-white/20 dark:hover:bg-black/35"
                   >
                     <CardContent className="p-4 sm:p-5">
                       <div className="flex gap-4">
@@ -263,9 +263,9 @@ export default function FeedPage() {
                               <Icon className="mr-1 h-3 w-3" />
                               {tr(meta.labelEn, meta.labelRu)}
                             </Badge>
-                            <span className="text-xs text-white/45">{formatDateTime(item.published_at, locale)}</span>
+                            <span className="text-xs text-slate-500 dark:text-white/45">{formatDateTime(item.published_at, locale)}</span>
                             {isAdmin ? (
-                              <span className="text-[11px] text-white/35">
+                              <span className="text-[11px] text-slate-400 dark:text-white/35">
                                 {item.target_username
                                   ? `${tr("for user", "для пользователя")} @${item.target_username}`
                                   : tr("for all users", "для всех пользователей")}
@@ -273,22 +273,22 @@ export default function FeedPage() {
                             ) : null}
                           </div>
 
-                          <h3 className="text-sm font-semibold text-white sm:text-base">{ticketDisplayTitle}</h3>
-                          <p className="mt-1.5 whitespace-pre-line break-words text-sm leading-relaxed text-white/60">{ticketDisplayBody}</p>
+                          <h3 className="text-sm font-semibold text-slate-950 dark:text-white sm:text-base">{ticketDisplayTitle}</h3>
+                          <p className="mt-1.5 whitespace-pre-line break-words text-sm leading-relaxed text-slate-600 dark:text-white/60">{ticketDisplayBody}</p>
                           {showTicketDetails && (item.meta?.ticket_id || item.meta?.ticket_topic || ticketEventKind) ? (
                             <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
                               {ticketEventKind ? (
-                                <Badge variant="outline" className="rounded-full border-emerald-400/20 bg-emerald-400/5 text-emerald-200">
+                                <Badge variant="outline" className="rounded-full border-emerald-500/25 bg-emerald-500/10 text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-400/5 dark:text-emerald-200">
                                   {ticketEventKind === "created" && tr("Created", "Создан")}
                                   {ticketEventKind === "replied" && tr("Replied", "Ответ")}
                                   {ticketEventKind === "closed" && tr("Closed", "Закрыт")}
                                 </Badge>
                               ) : null}
                               {item.meta?.ticket_id ? (
-                                <span className="text-white/45">ID: {item.meta.ticket_id.slice(0, 8)}...</span>
+                                <span className="text-slate-500 dark:text-white/45">ID: {item.meta.ticket_id.slice(0, 8)}...</span>
                               ) : null}
                               {item.meta?.ticket_topic ? (
-                                <span className="text-white/45">
+                                <span className="text-slate-500 dark:text-white/45">
                                   {supportTopicLabel(locale, item.meta.ticket_topic)}
                                   {item.meta.ticket_subtopic
                                     ? ` · ${supportSubtopicLabel(locale, item.meta.ticket_topic, item.meta.ticket_subtopic)}`
@@ -298,9 +298,9 @@ export default function FeedPage() {
                             </div>
                           ) : null}
                           {updatePoints.length > 0 ? (
-                            <ul className="mt-3 space-y-1.5 rounded-xl border border-white/10 bg-white/[0.02] p-3">
+                            <ul className="mt-3 space-y-1.5 rounded-xl border border-slate-200 bg-slate-50/80 p-3 dark:border-white/10 dark:bg-white/[0.02]">
                               {updatePoints.map((point, index) => (
-                                <li key={`${item.id}-${index}`} className="flex items-start gap-2 text-sm text-white/70">
+                                <li key={`${item.id}-${index}`} className="flex items-start gap-2 text-sm text-slate-700 dark:text-white/70">
                                   <span className="mt-[0.38rem] h-1.5 w-1.5 rounded-full bg-violet-300/90" />
                                   <span className="whitespace-pre-line break-words">{point}</span>
                                 </li>
@@ -317,10 +317,10 @@ export default function FeedPage() {
           </section>
 
           <aside className="space-y-4 xl:sticky xl:top-20 xl:h-fit">
-            <Card className="rounded-2xl border-white/10 bg-black/30 backdrop-blur-sm">
+            <Card className="rounded-2xl border-slate-200/80 bg-white/75 shadow-[0_18px_50px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-white/10 dark:bg-black/30 dark:shadow-none">
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm text-white">{tr("Feed types", "Типы ленты")}</CardTitle>
-                <CardDescription className="text-white/45">
+                <CardTitle className="text-sm text-slate-950 dark:text-white">{tr("Feed types", "Типы ленты")}</CardTitle>
+                <CardDescription className="text-slate-500 dark:text-white/45">
                   {tr("Turn categories on or off", "Включайте и выключайте категории")}
                 </CardDescription>
               </CardHeader>
@@ -331,8 +331,8 @@ export default function FeedPage() {
                     variant="outline"
                     size="sm"
                     className={cn(
-                      "rounded-full border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white",
-                      activeFilterCount === visibleTypes.length && "border-white/30 bg-white/10",
+                      "rounded-full border-slate-200 bg-white/75 text-slate-700 hover:bg-slate-50 hover:text-slate-950 dark:border-white/15 dark:bg-white/5 dark:text-white dark:hover:bg-white/10 dark:hover:text-white",
+                      activeFilterCount === visibleTypes.length && "border-slate-300 bg-slate-100 dark:border-white/30 dark:bg-white/10",
                     )}
                     onClick={() => setAllFilters(true)}
                   >
@@ -342,7 +342,7 @@ export default function FeedPage() {
                     type="button"
                     variant="outline"
                     size="sm"
-                    className="rounded-full border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white"
+                    className="rounded-full border-slate-200 bg-white/75 text-slate-700 hover:bg-slate-50 hover:text-slate-950 dark:border-white/15 dark:bg-white/5 dark:text-white dark:hover:bg-white/10 dark:hover:text-white"
                     onClick={() => setAllFilters(false)}
                   >
                     {tr("All off", "Все выкл")}
@@ -363,16 +363,16 @@ export default function FeedPage() {
                         className={cn(
                           "flex w-full items-center gap-3 rounded-2xl border px-3 py-2.5 text-left transition",
                           active
-                            ? "border-white/20 bg-white/[0.08] text-white"
-                            : "border-white/10 bg-white/[0.02] text-white/55 hover:bg-white/[0.05]",
+                            ? "border-slate-300 bg-slate-100/80 text-slate-950 dark:border-white/20 dark:bg-white/[0.08] dark:text-white"
+                            : "border-slate-200 bg-white/55 text-slate-500 hover:bg-slate-50 hover:text-slate-800 dark:border-white/10 dark:bg-white/[0.02] dark:text-white/55 dark:hover:bg-white/[0.05]",
                         )}
                       >
                         <span className={cn("h-2.5 w-2.5 rounded-full", meta.dotClassName)} />
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-medium">{tr(meta.labelEn, meta.labelRu)}</p>
-                          <p className="truncate text-xs text-white/45">{tr(meta.hintEn, meta.hintRu)}</p>
+                          <p className="truncate text-xs text-slate-500 dark:text-white/45">{tr(meta.hintEn, meta.hintRu)}</p>
                         </div>
-                        <Badge variant="outline" className="rounded-full border-white/10 bg-white/5 text-white/80">
+                        <Badge variant="outline" className="rounded-full border-slate-200 bg-white/80 text-slate-700 dark:border-white/10 dark:bg-white/5 dark:text-white/80">
                           {displayCount}
                         </Badge>
                         <Icon className="h-4 w-4 opacity-70" />
@@ -384,10 +384,10 @@ export default function FeedPage() {
             </Card>
 
             {isAdmin && (
-              <Card className="rounded-2xl border-white/10 bg-black/35 backdrop-blur-sm">
+              <Card className="rounded-2xl border-slate-200/80 bg-white/75 shadow-[0_18px_50px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-white/10 dark:bg-black/35 dark:shadow-none">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-sm text-white">{tr("Admin tools", "Инструменты админа")}</CardTitle>
-                  <CardDescription className="text-white/45">
+                  <CardTitle className="text-sm text-slate-950 dark:text-white">{tr("Admin tools", "Инструменты админа")}</CardTitle>
+                  <CardDescription className="text-slate-500 dark:text-white/45">
                     {tr(
                       "Use the admin feed editor for creating and updating broadcasts or targeted events.",
                       "Используйте редактор админ-ленты для создания и редактирования рассылок и адресных событий.",
@@ -401,7 +401,7 @@ export default function FeedPage() {
                   <Button
                     asChild
                     variant="outline"
-                    className="w-full rounded-xl border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white"
+                    className="w-full rounded-xl border-slate-200 bg-white/75 text-slate-800 shadow-sm hover:bg-slate-50 hover:text-slate-950 dark:border-white/15 dark:bg-white/5 dark:text-white dark:hover:bg-white/10 dark:hover:text-white"
                   >
                     <Link href="/admin">{tr("Open admin panel", "Открыть админ панель")}</Link>
                   </Button>

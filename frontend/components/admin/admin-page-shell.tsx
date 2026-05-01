@@ -86,22 +86,22 @@ export function AdminPageShell({
   return (
     <div className="relative min-h-full">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute left-[8%] top-[-4rem] h-64 w-64 rounded-full bg-sky-400/10 blur-[100px]" />
-        <div className="absolute right-[10%] top-[8rem] h-72 w-72 rounded-full bg-violet-500/10 blur-[120px]" />
-        <div className="absolute bottom-[5%] left-[45%] h-60 w-60 rounded-full bg-cyan-500/10 blur-[120px]" />
+        <div className="absolute left-[8%] top-[-4rem] h-64 w-64 rounded-full bg-sky-300/[0.18] blur-[100px] dark:bg-sky-400/10" />
+        <div className="absolute right-[10%] top-[8rem] h-72 w-72 rounded-full bg-violet-300/[0.14] blur-[120px] dark:bg-violet-500/10" />
+        <div className="absolute bottom-[5%] left-[45%] h-60 w-60 rounded-full bg-cyan-300/[0.16] blur-[120px] dark:bg-cyan-500/10" />
       </div>
 
       <div className="relative mx-auto flex max-w-7xl flex-col gap-6 p-4 md:p-6">
-        <Card className="rounded-3xl border-white/10 bg-gradient-to-br from-black/35 via-black/25 to-black/30 shadow-[0_24px_70px_rgba(0,0,0,0.38)] backdrop-blur-sm">
+        <Card className="rounded-3xl border-slate-200/80 bg-gradient-to-br from-white/90 via-white/[0.78] to-slate-50/80 shadow-[0_22px_60px_rgba(15,23,42,0.10)] backdrop-blur-xl dark:border-white/10 dark:bg-gradient-to-br dark:from-black/35 dark:via-black/25 dark:to-black/30 dark:shadow-[0_24px_70px_rgba(0,0,0,0.38)]">
           <CardHeader className="gap-3 md:flex-row md:items-end md:justify-between">
             <div className="space-y-2">
-              <Badge className="w-fit rounded-full border-white/15 bg-white/5 px-3 py-1 text-white/75">
+              <Badge className="w-fit rounded-full border-slate-200 bg-slate-50/80 px-3 py-1 text-slate-700 dark:border-white/15 dark:bg-white/5 dark:text-white/75">
                 <Sparkles className="mr-1.5 h-3.5 w-3.5" />
                 {tr(badgeEn, badgeRu)}
               </Badge>
               <div>
-                <CardTitle className="text-2xl tracking-tight text-white">{tr(titleEn, titleRu)}</CardTitle>
-                <CardDescription className="mt-1 text-sm text-white/55">{tr(descriptionEn, descriptionRu)}</CardDescription>
+                <CardTitle className="text-2xl tracking-tight text-slate-950 dark:text-white">{tr(titleEn, titleRu)}</CardTitle>
+                <CardDescription className="mt-1 text-sm text-slate-500 dark:text-white/55">{tr(descriptionEn, descriptionRu)}</CardDescription>
               </div>
             </div>
             {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
@@ -112,10 +112,10 @@ export function AdminPageShell({
           <div className="space-y-6">{children}</div>
 
           <aside className="space-y-4 xl:sticky xl:top-20 xl:h-fit">
-            <Card className="rounded-2xl border-white/10 bg-black/30 shadow-[0_12px_36px_rgba(0,0,0,0.2)] backdrop-blur-sm">
+            <Card className="rounded-2xl border-slate-200/80 bg-white/75 shadow-[0_18px_50px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-white/10 dark:bg-black/30 dark:shadow-[0_12px_36px_rgba(0,0,0,0.2)]">
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm text-white">{tr("Anchors", "Якоря")}</CardTitle>
-                <CardDescription className="text-white/45">
+                <CardTitle className="text-sm text-slate-950 dark:text-white">{tr("Anchors", "Якоря")}</CardTitle>
+                <CardDescription className="text-slate-500 dark:text-white/45">
                   {tr("Quick routes for admin tasks", "Быстрые роуты для админ-задач")}
                 </CardDescription>
               </CardHeader>
@@ -133,16 +133,16 @@ export function AdminPageShell({
                       className={cn(
                         "group flex items-center gap-3 rounded-2xl border px-3 py-2.5 transition duration-200",
                         active
-                          ? "border-white/20 bg-white/[0.08] text-white"
-                          : "border-white/10 bg-white/[0.02] text-white/70 hover:bg-white/[0.05] hover:text-white",
+                          ? "border-slate-300 bg-slate-100/80 text-slate-950 dark:border-white/20 dark:bg-white/[0.08] dark:text-white"
+                          : "border-slate-200 bg-white/[0.55] text-slate-600 hover:bg-slate-50 hover:text-slate-950 dark:border-white/10 dark:bg-white/[0.02] dark:text-white/70 dark:hover:bg-white/[0.05] dark:hover:text-white",
                       )}
                     >
-                      <div className="rounded-xl border border-white/10 bg-white/5 p-2">
+                      <div className="rounded-xl border border-slate-200 bg-white/80 p-2 dark:border-white/10 dark:bg-white/5">
                         <Icon className="h-4 w-4" />
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-medium">{tr(link.titleEn, link.titleRu)}</p>
-                        <p className="truncate text-xs text-white/45">{tr(link.descEn, link.descRu)}</p>
+                        <p className="truncate text-xs text-slate-500 dark:text-white/45">{tr(link.descEn, link.descRu)}</p>
                       </div>
                       <ChevronRight className="h-4 w-4 opacity-50 transition group-hover:translate-x-0.5" />
                     </Link>
@@ -152,7 +152,7 @@ export function AdminPageShell({
                 <div className="pt-2">
                   <Link
                     href="/ai"
-                    className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.02] px-3 py-2.5 text-sm text-white/70 transition hover:bg-white/[0.05] hover:text-white"
+                    className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white/[0.55] px-3 py-2.5 text-sm text-slate-600 transition hover:bg-slate-50 hover:text-slate-950 dark:border-white/10 dark:bg-white/[0.02] dark:text-white/70 dark:hover:bg-white/[0.05] dark:hover:text-white"
                   >
                     <span>{tr("Open AI chat", "Открыть AI чат")}</span>
                     <ChevronRight className="h-4 w-4 opacity-60" />

@@ -26,7 +26,7 @@ export function AdminRouteGuard({ children }: { children: React.ReactNode }) {
   if (isLoading && !profile) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-white/60" />
+        <Loader2 className="h-6 w-6 animate-spin text-slate-500 dark:text-white/60" />
       </div>
     )
   }
@@ -34,12 +34,12 @@ export function AdminRouteGuard({ children }: { children: React.ReactNode }) {
   if (!isAdmin) {
     return (
       <div className="mx-auto max-w-3xl p-4 md:p-6">
-        <div className="rounded-2xl border border-red-400/20 bg-red-500/5 p-6 text-white">
+        <div className="rounded-2xl border border-red-500/20 bg-red-500/5 p-6 text-slate-950 dark:border-red-400/20 dark:text-white">
           <div className="flex items-start gap-3">
             <ShieldAlert className="mt-0.5 h-5 w-5 text-red-300" />
             <div>
               <h1 className="text-lg font-semibold">{tr("Admin access required", "Требуется доступ администратора")}</h1>
-              <p className="mt-2 text-sm text-white/70">
+              <p className="mt-2 text-sm text-slate-600 dark:text-white/70">
                 {tr(
                   "This page is available only for administrators.",
                   "Эта страница доступна только администраторам.",
@@ -54,4 +54,3 @@ export function AdminRouteGuard({ children }: { children: React.ReactNode }) {
 
   return <>{children}</>
 }
-

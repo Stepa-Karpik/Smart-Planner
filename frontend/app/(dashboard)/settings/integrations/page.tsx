@@ -77,13 +77,13 @@ export default function IntegrationsPage() {
   return (
     <div className="relative mx-auto flex max-w-5xl flex-col gap-6 p-4 md:p-6">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute left-[8%] top-10 h-44 w-44 rounded-full bg-blue-500/10 blur-[90px]" />
-        <div className="absolute right-[10%] top-24 h-52 w-52 rounded-full bg-cyan-400/10 blur-[100px]" />
+        <div className="absolute left-[8%] top-10 h-44 w-44 rounded-full bg-blue-300/[0.16] blur-[90px] dark:bg-blue-500/10" />
+        <div className="absolute right-[10%] top-24 h-52 w-52 rounded-full bg-cyan-300/[0.18] blur-[100px] dark:bg-cyan-400/10" />
       </div>
 
-      <div className="relative rounded-2xl border border-white/10 bg-black/30 p-5 shadow-[0_18px_50px_rgba(0,0,0,0.28)] backdrop-blur-sm">
-        <h1 className="text-2xl font-semibold tracking-tight text-white">{tr("Integrations", "Интеграции")}</h1>
-        <p className="mt-1 text-sm text-white/55">
+      <div className="relative rounded-2xl border border-slate-200/80 bg-white/80 p-5 text-slate-950 shadow-[0_18px_50px_rgba(15,23,42,0.10)] backdrop-blur-xl dark:border-white/10 dark:bg-black/30 dark:text-white dark:shadow-[0_18px_50px_rgba(0,0,0,0.28)]">
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">{tr("Integrations", "Интеграции")}</h1>
+        <p className="mt-1 text-sm text-slate-500 dark:text-white/55">
           {tr(
             "Choose which map engine is used in pickers and route preview.",
             "Выберите картографический движок для выбора точек и предпросмотра маршрутов.",
@@ -91,13 +91,13 @@ export default function IntegrationsPage() {
         </p>
       </div>
 
-      <Card className="relative rounded-2xl border-white/10 bg-black/25 backdrop-blur-sm">
+      <Card className="relative rounded-2xl border-slate-200/80 bg-white/75 shadow-[0_18px_50px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-white/10 dark:bg-black/25 dark:shadow-none">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base text-white">
+          <CardTitle className="flex items-center gap-2 text-base text-slate-950 dark:text-white">
             <MapPinned className="h-4 w-4" />
             {tr("Map integrations", "Интеграции карт")}
           </CardTitle>
-          <CardDescription className="text-white/50">
+          <CardDescription className="text-slate-500 dark:text-white/50">
             {tr(
               "The selected provider is stored in your account and applied automatically.",
               "Выбранный провайдер сохраняется в вашем аккаунте и применяется автоматически.",
@@ -107,8 +107,8 @@ export default function IntegrationsPage() {
         <CardContent>
           {isLoading ? (
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <Skeleton className="h-52 rounded-xl bg-white/10" />
-              <Skeleton className="h-52 rounded-xl bg-white/10" />
+              <Skeleton className="h-52 rounded-xl bg-slate-200/70 dark:bg-white/10" />
+              <Skeleton className="h-52 rounded-xl bg-slate-200/70 dark:bg-white/10" />
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -121,19 +121,19 @@ export default function IntegrationsPage() {
                   <Card
                     key={item.provider}
                     className={cn(
-                      "flex h-full flex-col rounded-2xl border-white/10 bg-white/[0.02] shadow-[0_10px_30px_rgba(0,0,0,0.15)]",
-                      isSelected && "border-emerald-400/35 bg-emerald-400/5",
+                      "flex h-full flex-col rounded-2xl border-slate-200/80 bg-white/70 shadow-[0_10px_30px_rgba(15,23,42,0.06)] dark:border-white/10 dark:bg-white/[0.02] dark:shadow-[0_10px_30px_rgba(0,0,0,0.15)]",
+                      isSelected && "border-emerald-500/35 bg-emerald-500/10 dark:border-emerald-400/35 dark:bg-emerald-400/5",
                       isUnavailable && "opacity-70",
                     )}
                   >
                     <CardHeader className="min-h-[118px] pb-3">
                       <div className="flex items-center justify-between gap-2">
-                        <CardTitle className="text-sm font-medium text-white">{tr(item.title, item.titleRu)}</CardTitle>
-                        <Badge variant="outline" className="border-white/15 bg-white/5 text-[10px] text-white/75">
+                        <CardTitle className="text-sm font-medium text-slate-950 dark:text-white">{tr(item.title, item.titleRu)}</CardTitle>
+                        <Badge variant="outline" className="border-slate-200 bg-white/80 text-[10px] text-slate-600 dark:border-white/15 dark:bg-white/5 dark:text-white/75">
                           {tr(item.badge, item.badgeRu)}
                         </Badge>
                       </div>
-                      <CardDescription className="text-xs text-white/50">{tr(item.description, item.descriptionRu)}</CardDescription>
+                      <CardDescription className="text-xs text-slate-500 dark:text-white/50">{tr(item.description, item.descriptionRu)}</CardDescription>
                     </CardHeader>
                     <CardContent className="mt-auto pt-0">
                       <Button
@@ -143,8 +143,8 @@ export default function IntegrationsPage() {
                         className={cn(
                           "w-full rounded-xl",
                           isSelected
-                            ? "bg-white text-black hover:bg-white/90"
-                            : "border-white/15 bg-white/[0.03] text-white hover:bg-white/10 hover:text-white",
+                            ? "bg-slate-950 text-white hover:bg-slate-800 disabled:bg-slate-950 disabled:text-white disabled:opacity-100 dark:bg-white dark:text-black dark:hover:bg-white/90 dark:disabled:bg-white dark:disabled:text-black"
+                            : "border-slate-200 bg-white/75 text-slate-800 shadow-sm hover:bg-slate-50 hover:text-slate-950 dark:border-white/15 dark:bg-white/[0.03] dark:text-white dark:hover:bg-white/10 dark:hover:text-white",
                         )}
                         disabled={isSelected || isSaving || isUnavailable}
                         onClick={() => selectProvider(item.provider)}
@@ -161,7 +161,7 @@ export default function IntegrationsPage() {
                             : tr("Use this provider", "Использовать этот провайдер")}
                       </Button>
 
-                      <p className="mt-2 min-h-[32px] text-xs text-white/45">
+                      <p className="mt-2 min-h-[32px] text-xs text-slate-500 dark:text-white/45">
                         {isUnavailable
                           ? tr("Yandex API key is missing in backend config.", "В backend-конфиге отсутствует API ключ Яндекс.Карт.")
                           : "\u00A0"}
@@ -180,4 +180,3 @@ export default function IntegrationsPage() {
     </div>
   )
 }
-

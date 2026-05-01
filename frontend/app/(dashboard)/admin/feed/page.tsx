@@ -227,7 +227,7 @@ export default function AdminFeedPage() {
             type="button"
             variant="outline"
             size="sm"
-            className="rounded-xl border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white"
+            className="rounded-xl border-slate-200 bg-white/75 text-slate-800 shadow-sm hover:bg-slate-50 hover:text-slate-950 dark:border-white/15 dark:bg-white/5 dark:text-white dark:hover:bg-white/10 dark:hover:text-white"
             onClick={startCreate}
           >
             <Plus className="mr-1.5 h-4 w-4" />
@@ -237,7 +237,7 @@ export default function AdminFeedPage() {
             type="button"
             variant="outline"
             size="sm"
-            className="rounded-xl border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white"
+            className="rounded-xl border-slate-200 bg-white/75 text-slate-800 shadow-sm hover:bg-slate-50 hover:text-slate-950 dark:border-white/15 dark:bg-white/5 dark:text-white dark:hover:bg-white/10 dark:hover:text-white"
             onClick={() => void feedQuery.mutate()}
             disabled={feedQuery.isLoading}
           >
@@ -247,10 +247,10 @@ export default function AdminFeedPage() {
         </>
       }
     >
-      <Card className="rounded-2xl border-white/10 bg-black/30 backdrop-blur-sm">
+      <Card className="rounded-2xl border-slate-200/80 bg-white/75 shadow-[0_18px_50px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-white/10 dark:bg-black/30 dark:shadow-none">
         <CardHeader className="pb-3">
-          <CardTitle className="text-sm text-white">{tr("Feed events", "События ленты")}</CardTitle>
-          <CardDescription className="text-white/45">
+          <CardTitle className="text-sm text-slate-950 dark:text-white">{tr("Feed events", "События ленты")}</CardTitle>
+          <CardDescription className="text-slate-500 dark:text-white/45">
             {tr("Select an item to edit or create a new one", "Выберите событие для редактирования или создайте новое")}
           </CardDescription>
           <div className="grid grid-cols-1 gap-2 md:grid-cols-[minmax(0,1fr)_200px]">
@@ -258,26 +258,26 @@ export default function AdminFeedPage() {
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder={tr("Search in title or message", "Поиск по заголовку или сообщению")}
-              className="h-10 rounded-xl border-white/15 bg-white/5 text-white placeholder:text-white/30"
+              className="h-10 rounded-xl border-slate-200 bg-white/80 text-slate-800 placeholder:text-slate-400 dark:border-white/15 dark:bg-white/5 dark:text-white dark:placeholder:text-white/30"
             />
             <select
               value={typeFilter}
               onChange={(event) => setTypeFilter(event.target.value as "all" | FeedItemType)}
-              className="h-10 rounded-xl border border-white/15 bg-white/5 px-3 text-sm text-white outline-none focus:border-white/30"
+              className="h-10 rounded-xl border border-slate-200 bg-white/80 px-3 text-sm text-slate-800 outline-none focus:border-slate-300 dark:border-white/15 dark:bg-white/5 dark:text-white dark:focus:border-white/30"
             >
-              <option value="all" className="bg-[#0b0f17]">
+              <option value="all" className="bg-white text-slate-950 dark:bg-[#0b0f17] dark:text-white">
                 {tr("All types", "Все типы")}
               </option>
-              <option value="notification" className="bg-[#0b0f17]">
+              <option value="notification" className="bg-white text-slate-950 dark:bg-[#0b0f17] dark:text-white">
                 {tr("Notifications", "Уведомления")}
               </option>
-              <option value="update" className="bg-[#0b0f17]">
+              <option value="update" className="bg-white text-slate-950 dark:bg-[#0b0f17] dark:text-white">
                 {tr("Updates", "Обновления")}
               </option>
-              <option value="reminder" className="bg-[#0b0f17]">
+              <option value="reminder" className="bg-white text-slate-950 dark:bg-[#0b0f17] dark:text-white">
                 {tr("Reminders", "Напоминания")}
               </option>
-              <option value="ticket" className="bg-[#0b0f17]">
+              <option value="ticket" className="bg-white text-slate-950 dark:bg-[#0b0f17] dark:text-white">
                 {tr("Tickets", "Тикеты")}
               </option>
             </select>
@@ -289,11 +289,11 @@ export default function AdminFeedPage() {
             {feedQuery.isLoading && !feedQuery.data ? (
               Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-24 rounded-2xl" />)
             ) : feedQuery.error ? (
-              <div className="rounded-2xl border border-red-400/20 bg-red-500/5 p-4 text-sm text-red-200">
+              <div className="rounded-2xl border border-red-500/20 bg-red-500/5 p-4 text-sm text-red-700 dark:border-red-400/20 dark:text-red-200">
                 {tr("Failed to load feed events", "Не удалось загрузить события ленты")}
               </div>
             ) : items.length === 0 ? (
-              <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 text-sm text-white/60">
+              <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 text-sm text-slate-500 dark:border-white/10 dark:bg-white/[0.02] dark:text-white/60">
                 {tr("No feed items found", "События ленты не найдены")}
               </div>
             ) : (
@@ -305,40 +305,40 @@ export default function AdminFeedPage() {
                   className={cn(
                     "w-full rounded-2xl border p-4 text-left transition",
                     item.id === selectedId
-                      ? "border-white/20 bg-white/[0.08]"
-                      : "border-white/10 bg-white/[0.02] hover:bg-white/[0.05]",
+                      ? "border-slate-300 bg-slate-100/80 dark:border-white/20 dark:bg-white/[0.08]"
+                      : "border-slate-200 bg-white/70 hover:bg-white/90 dark:border-white/10 dark:bg-white/[0.02] dark:hover:bg-white/[0.05]",
                   )}
                 >
                   <div className="flex items-start gap-3">
                     <span className={cn("mt-1 h-2.5 w-2.5 rounded-full", TYPE_META[item.type].dot)} />
                     <div className="min-w-0 flex-1">
                       <div className="mb-2 flex flex-wrap items-center gap-2">
-                        <Badge variant="outline" className="rounded-full border-white/15 bg-white/5 text-white/80">
+                        <Badge variant="outline" className="rounded-full border-slate-200 bg-white/80 text-slate-700 dark:border-white/15 dark:bg-white/5 dark:text-white/80">
                           {tr(TYPE_META[item.type].labelEn, TYPE_META[item.type].labelRu)}
                         </Badge>
-                        <span className="text-xs text-white/45">{formatFeedDate(item.published_at, locale)}</span>
-                        <span className="text-xs text-white/35">
+                        <span className="text-xs text-slate-500 dark:text-white/45">{formatFeedDate(item.published_at, locale)}</span>
+                        <span className="text-xs text-slate-400 dark:text-white/35">
                           {item.target_username
                             ? `${tr("to", "для")} @${item.target_username}`
                             : tr("for all users", "для всех пользователей")}
                         </span>
                       </div>
-                      <p className="truncate text-sm font-semibold text-white">{item.title}</p>
-                      <p className="mt-1 line-clamp-2 text-sm text-white/55">{item.body}</p>
+                      <p className="truncate text-sm font-semibold text-slate-950 dark:text-white">{item.title}</p>
+                      <p className="mt-1 line-clamp-2 text-sm text-slate-600 dark:text-white/55">{item.body}</p>
                     </div>
-                    <PencilLine className="mt-0.5 h-4 w-4 shrink-0 text-white/35" />
+                    <PencilLine className="mt-0.5 h-4 w-4 shrink-0 text-slate-400 dark:text-white/35" />
                   </div>
                 </button>
               ))
             )}
           </div>
 
-          <Card className="rounded-2xl border-white/10 bg-white/[0.02]">
+          <Card className="rounded-2xl border-slate-200 bg-white/70 dark:border-white/10 dark:bg-white/[0.02]">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm text-white">
+              <CardTitle className="text-sm text-slate-950 dark:text-white">
                 {mode === "create" ? tr("Create feed event", "Создать событие ленты") : tr("Edit feed event", "Редактировать событие ленты")}
               </CardTitle>
-              <CardDescription className="text-white/45">
+              <CardDescription className="text-slate-500 dark:text-white/45">
                 {mode === "create"
                   ? tr("Configure a new event and send it", "Настройте новое событие и отправьте его")
                   : selectedItem
@@ -348,17 +348,17 @@ export default function AdminFeedPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="feed-type" className="text-white/80">
+                <Label htmlFor="feed-type" className="text-slate-700 dark:text-white/80">
                   {tr("Category", "Категория")}
                 </Label>
                 <select
                   id="feed-type"
                   value={draft.type}
                   onChange={(event) => setDraft((prev) => ({ ...prev, type: event.target.value as FeedItemType }))}
-                  className="h-10 w-full rounded-xl border border-white/15 bg-white/5 px-3 text-sm text-white outline-none focus:border-white/30"
+                  className="h-10 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm text-slate-800 outline-none focus:border-slate-300 dark:border-white/15 dark:bg-white/5 dark:text-white dark:focus:border-white/30"
                 >
                   {(Object.keys(TYPE_META) as FeedItemType[]).map((type) => (
-                    <option key={type} value={type} className="bg-[#0b0f17]">
+                    <option key={type} value={type} className="bg-white text-slate-950 dark:bg-[#0b0f17] dark:text-white">
                       {tr(TYPE_META[type].labelEn, TYPE_META[type].labelRu)}
                     </option>
                   ))}
@@ -366,7 +366,7 @@ export default function AdminFeedPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="feed-title" className="text-white/80">
+                <Label htmlFor="feed-title" className="text-slate-700 dark:text-white/80">
                   {tr("Name / title", "Имя / заголовок")}
                 </Label>
                 <Input
@@ -374,12 +374,12 @@ export default function AdminFeedPage() {
                   value={draft.title}
                   onChange={(event) => setDraft((prev) => ({ ...prev, title: event.target.value }))}
                   placeholder={tr("Example: New release 1.2.0", "Например: Новый релиз 1.2.0")}
-                  className="h-10 rounded-xl border-white/15 bg-white/5 text-white placeholder:text-white/30"
+                  className="h-10 rounded-xl border-slate-200 bg-white/80 text-slate-800 placeholder:text-slate-400 dark:border-white/15 dark:bg-white/5 dark:text-white dark:placeholder:text-white/30"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="feed-target" className="text-white/80">
+                <Label htmlFor="feed-target" className="text-slate-700 dark:text-white/80">
                   {tr("Recipient username (leave empty for all)", "Username получателя (оставьте пустым для всех)")}
                 </Label>
                 <Input
@@ -387,14 +387,14 @@ export default function AdminFeedPage() {
                   value={draft.target_username}
                   onChange={(event) => setDraft((prev) => ({ ...prev, target_username: event.target.value }))}
                   placeholder={tr("all users", "все пользователи")}
-                  className="h-10 rounded-xl border-white/15 bg-white/5 text-white placeholder:text-white/30"
+                  className="h-10 rounded-xl border-slate-200 bg-white/80 text-slate-800 placeholder:text-slate-400 dark:border-white/15 dark:bg-white/5 dark:text-white dark:placeholder:text-white/30"
                 />
                 <div className="flex gap-2">
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
-                    className="rounded-xl border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white"
+                    className="rounded-xl border-slate-200 bg-white/75 text-slate-800 shadow-sm hover:bg-slate-50 hover:text-slate-950 dark:border-white/15 dark:bg-white/5 dark:text-white dark:hover:bg-white/10 dark:hover:text-white"
                     onClick={() => setDraft((prev) => ({ ...prev, target_username: "" }))}
                   >
                     {tr("Send to all", "Отправить всем")}
@@ -403,7 +403,7 @@ export default function AdminFeedPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="feed-published-at" className="text-white/80">
+                <Label htmlFor="feed-published-at" className="text-slate-700 dark:text-white/80">
                   {tr("Time of publication", "Время публикации")}
                 </Label>
                 <Input
@@ -411,9 +411,9 @@ export default function AdminFeedPage() {
                   type="datetime-local"
                   value={draft.published_at_local}
                   onChange={(event) => setDraft((prev) => ({ ...prev, published_at_local: event.target.value }))}
-                  className="h-10 rounded-xl border-white/15 bg-white/5 text-white"
+                  className="h-10 rounded-xl border-slate-200 bg-white/80 text-slate-800 dark:border-white/15 dark:bg-white/5 dark:text-white"
                 />
-                <p className="text-xs text-white/40">
+                <p className="text-xs text-slate-500 dark:text-white/40">
                   {tr(
                     "Leave empty when creating to use current time. Clearing time on existing items keeps the previous value.",
                     "Оставьте пустым при создании, чтобы использовать текущее время. Если очистить поле у существующего события, будет сохранено прежнее время.",
@@ -422,7 +422,7 @@ export default function AdminFeedPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="feed-body" className="text-white/80">
+                <Label htmlFor="feed-body" className="text-slate-700 dark:text-white/80">
                   {tr("Message text", "Текст сообщения")}
                 </Label>
                 <Textarea
@@ -430,26 +430,26 @@ export default function AdminFeedPage() {
                   value={draft.body}
                   onChange={(event) => setDraft((prev) => ({ ...prev, body: event.target.value }))}
                   placeholder={tr("Describe the update / notification / reminder", "Опишите обновление / уведомление / напоминание")}
-                  className="min-h-[140px] rounded-xl border-white/15 bg-white/5 text-white placeholder:text-white/30"
+                  className="min-h-[140px] rounded-xl border-slate-200 bg-white/80 text-slate-800 placeholder:text-slate-400 dark:border-white/15 dark:bg-white/5 dark:text-white dark:placeholder:text-white/30"
                 />
               </div>
 
               {draft.type === "update" ? (
-                <div className="space-y-2 rounded-xl border border-white/10 bg-white/[0.02] p-3">
+                <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50/80 p-3 dark:border-white/10 dark:bg-white/[0.02]">
                   <div className="flex items-center justify-between gap-2">
-                    <Label className="text-white/80">{tr("Update points", "Пункты обновления")}</Label>
+                    <Label className="text-slate-700 dark:text-white/80">{tr("Update points", "Пункты обновления")}</Label>
                     <Button
                       type="button"
                       size="sm"
                       variant="outline"
-                      className="h-8 rounded-lg border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white"
+                      className="h-8 rounded-lg border-slate-200 bg-white/75 text-slate-800 shadow-sm hover:bg-slate-50 hover:text-slate-950 dark:border-white/15 dark:bg-white/5 dark:text-white dark:hover:bg-white/10 dark:hover:text-white"
                       onClick={() => setDraft((prev) => ({ ...prev, update_points: [...prev.update_points, ""] }))}
                     >
                       <Plus className="mr-1 h-3.5 w-3.5" />
                       {tr("Add", "Добавить")}
                     </Button>
                   </div>
-                  <p className="text-xs text-white/45">
+                  <p className="text-xs text-slate-500 dark:text-white/45">
                     {tr(
                       "Points will be displayed as a structured checklist under the main text in the feed.",
                       "Пункты будут отображаться структурированным списком под основным текстом в ленте.",
@@ -457,7 +457,7 @@ export default function AdminFeedPage() {
                   </p>
                   <div className="space-y-2">
                     {draft.update_points.length === 0 ? (
-                      <div className="rounded-lg border border-dashed border-white/10 px-3 py-2 text-xs text-white/45">
+                      <div className="rounded-lg border border-dashed border-slate-300 px-3 py-2 text-xs text-slate-500 dark:border-white/10 dark:text-white/45">
                         {tr("No points yet. Click Add.", "Пунктов пока нет. Нажмите «Добавить».")}
                       </div>
                     ) : (
@@ -473,13 +473,13 @@ export default function AdminFeedPage() {
                               }))
                             }
                             placeholder={tr("Update point", "Пункт обновления")}
-                            className="h-10 rounded-xl border-white/15 bg-white/5 text-white placeholder:text-white/30"
+                            className="h-10 rounded-xl border-slate-200 bg-white/80 text-slate-800 placeholder:text-slate-400 dark:border-white/15 dark:bg-white/5 dark:text-white dark:placeholder:text-white/30"
                           />
                           <Button
                             type="button"
                             variant="outline"
                             size="icon"
-                            className="h-10 w-10 rounded-xl border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white"
+                            className="h-10 w-10 rounded-xl border-slate-200 bg-white/75 text-slate-800 shadow-sm hover:bg-slate-50 hover:text-slate-950 dark:border-white/15 dark:bg-white/5 dark:text-white dark:hover:bg-white/10 dark:hover:text-white"
                             onClick={() => setDraft((prev) => ({ ...prev, update_points: prev.update_points.filter((_, itemIndex) => itemIndex !== index) }))}
                           >
                             <Trash2 className="h-4 w-4" />
@@ -502,7 +502,7 @@ export default function AdminFeedPage() {
                     variant="outline"
                     onClick={handleDelete}
                     disabled={deleting}
-                    className="rounded-xl border-red-400/25 bg-red-500/5 text-red-200 hover:bg-red-500/10 hover:text-red-100"
+                    className="rounded-xl border-red-500/25 bg-red-500/5 text-red-700 hover:bg-red-500/10 hover:text-red-800 dark:border-red-400/25 dark:text-red-200 dark:hover:text-red-100"
                   >
                     {deleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
                     {tr("Delete", "Удалить")}
@@ -516,4 +516,3 @@ export default function AdminFeedPage() {
     </AdminPageShell>
   )
 }
-

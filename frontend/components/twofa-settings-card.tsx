@@ -167,13 +167,13 @@ export function TwoFactorSettingsCard() {
   const totpEnabled = data?.twofa_method === "totp"
 
   return (
-    <Card className="rounded-2xl border-white/10 bg-black/25 backdrop-blur-sm">
+    <Card className="rounded-2xl border-slate-200/80 bg-white/75 shadow-[0_18px_50px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-white/10 dark:bg-black/25 dark:shadow-none">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-base text-white">
+        <CardTitle className="flex items-center gap-2 text-base text-slate-950 dark:text-white">
           <Shield className="h-4 w-4" />
           {tr("Two-factor authentication", "Двухфакторная аутентификация")}
         </CardTitle>
-        <CardDescription className="text-white/50">
+        <CardDescription className="text-slate-500 dark:text-white/50">
           {tr(
             "Choose one extra verification method for login. Only one method can be active at a time.",
             "Выберите дополнительный способ подтверждения входа. Одновременно активен только один метод.",
@@ -184,21 +184,21 @@ export function TwoFactorSettingsCard() {
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           <Card
             className={cn(
-              "flex h-full flex-col rounded-2xl border-white/10 bg-white/[0.02]",
-              telegramEnabled && "border-emerald-400/35 bg-emerald-400/5",
+              "flex h-full flex-col rounded-2xl border-slate-200/80 bg-white/70 dark:border-white/10 dark:bg-white/[0.02]",
+              telegramEnabled && "border-emerald-500/35 bg-emerald-500/10 dark:border-emerald-400/35 dark:bg-emerald-400/5",
             )}
           >
             <CardHeader className="min-h-[106px] pb-3">
               <div className="flex items-center justify-between gap-2">
-                <CardTitle className="flex items-center gap-2 text-sm font-medium text-white">
+                <CardTitle className="flex items-center gap-2 text-sm font-medium text-slate-950 dark:text-white">
                   <Smartphone className="h-4 w-4" />
                   Telegram 2FA
                 </CardTitle>
-                <Badge variant="outline" className="border-white/15 bg-white/5 text-[10px] text-white/75">
+                <Badge variant="outline" className="border-slate-200 bg-white/80 text-[10px] text-slate-600 dark:border-white/15 dark:bg-white/5 dark:text-white/75">
                   {telegramEnabled ? tr("Enabled", "Включено") : tr("Disabled", "Выключено")}
                 </Badge>
               </div>
-              <CardDescription className="text-xs text-white/50">
+              <CardDescription className="text-xs text-slate-500 dark:text-white/50">
                 {tr(
                   "Login is confirmed by tapping a button in Telegram.",
                   "Вход подтверждается кнопкой в Telegram.",
@@ -207,7 +207,7 @@ export function TwoFactorSettingsCard() {
             </CardHeader>
             <CardContent className="flex flex-1 flex-col space-y-3 pt-0">
               {!isLoading && !data?.telegram_linked && (
-                <p className="text-xs text-white/45">{tr("First link Telegram account", "Сначала нужно привязать Telegram")}</p>
+                <p className="text-xs text-slate-500 dark:text-white/45">{tr("First link Telegram account", "Сначала нужно привязать Telegram")}</p>
               )}
 
               <Button
@@ -217,8 +217,8 @@ export function TwoFactorSettingsCard() {
                 className={cn(
                   "mt-auto w-full rounded-xl",
                   telegramEnabled
-                    ? "border-white/15 bg-white/[0.03] text-white hover:bg-white/10 hover:text-white"
-                    : "bg-white text-black hover:bg-white/90",
+                    ? "border-slate-200 bg-white/75 text-slate-800 shadow-sm hover:bg-slate-50 hover:text-slate-950 dark:border-white/15 dark:bg-white/[0.03] dark:text-white dark:hover:bg-white/10 dark:hover:text-white"
+                    : "bg-slate-950 text-white hover:bg-slate-800 dark:bg-white dark:text-black dark:hover:bg-white/90",
                 )}
                 disabled={isLoading || telegramSubmitting || !data?.telegram_linked}
                 onClick={() => void requestTelegramToggle(telegramEnabled ? "disable" : "enable")}
@@ -230,11 +230,11 @@ export function TwoFactorSettingsCard() {
               </Button>
 
               {telegramPending && (
-                <div className="rounded-xl border border-white/10 bg-white/[0.03] p-2.5 text-xs">
-                  <p className="font-medium text-white">
+                <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-2.5 text-xs dark:border-white/10 dark:bg-white/[0.03]">
+                  <p className="font-medium text-slate-950 dark:text-white">
                     {tr("Telegram confirmation status", "Статус подтверждения в Telegram")}: {telegramPending.status}
                   </p>
-                  <p className="mt-1 text-white/45">
+                  <p className="mt-1 text-slate-500 dark:text-white/45">
                     {telegramPending.status === "pending"
                       ? tr("Open Telegram and confirm the action.", "Откройте Telegram и подтвердите действие.")
                       : telegramPending.status === "approved"
@@ -250,18 +250,18 @@ export function TwoFactorSettingsCard() {
 
           <Card
             className={cn(
-              "flex h-full flex-col rounded-2xl border-white/10 bg-white/[0.02]",
-              totpEnabled && "border-emerald-400/35 bg-emerald-400/5",
+              "flex h-full flex-col rounded-2xl border-slate-200/80 bg-white/70 dark:border-white/10 dark:bg-white/[0.02]",
+              totpEnabled && "border-emerald-500/35 bg-emerald-500/10 dark:border-emerald-400/35 dark:bg-emerald-400/5",
             )}
           >
             <CardHeader className="min-h-[106px] pb-3">
               <div className="flex items-center justify-between gap-2">
-                <CardTitle className="text-sm font-medium text-white">{tr("Yandex Authenticator (TOTP)", "Яндекс Аутентификатор (TOTP)")}</CardTitle>
-                <Badge variant="outline" className="border-white/15 bg-white/5 text-[10px] text-white/75">
+                <CardTitle className="text-sm font-medium text-slate-950 dark:text-white">{tr("Yandex Authenticator (TOTP)", "Яндекс Аутентификатор (TOTP)")}</CardTitle>
+                <Badge variant="outline" className="border-slate-200 bg-white/80 text-[10px] text-slate-600 dark:border-white/15 dark:bg-white/5 dark:text-white/75">
                   {totpEnabled ? tr("Enabled", "Включено") : tr("Disabled", "Выключено")}
                 </Badge>
               </div>
-              <CardDescription className="text-xs text-white/50">
+              <CardDescription className="text-xs text-slate-500 dark:text-white/50">
                 {tr(
                   "Compatible with Yandex Key and other authenticator apps.",
                   "Совместимо с Яндекс Ключ и другими приложениями-аутентификаторами.",
@@ -273,7 +273,7 @@ export function TwoFactorSettingsCard() {
                 <Button
                   type="button"
                   size="sm"
-                  className="mt-auto w-full rounded-xl bg-white text-black hover:bg-white/90"
+                  className="mt-auto w-full rounded-xl bg-slate-950 text-white hover:bg-slate-800 dark:bg-white dark:text-black dark:hover:bg-white/90"
                   onClick={() => void handleStartTotpSetup()}
                   disabled={totpSubmitting === "setup"}
                 >
@@ -283,24 +283,24 @@ export function TwoFactorSettingsCard() {
               )}
 
               {!totpEnabled && totpSetup && (
-                <div className="space-y-3 rounded-xl border border-white/10 bg-white/[0.03] p-3">
-                  <p className="text-xs text-white/45">
+                <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50/80 p-3 dark:border-white/10 dark:bg-white/[0.03]">
+                  <p className="text-xs text-slate-500 dark:text-white/45">
                     {tr("Scan QR code in authenticator app and enter 6-digit code.", "Сканируйте QR-код в приложении и введите 6-значный код.")}
                   </p>
                   {qrUrl ? (
-                    <div className="w-fit overflow-hidden rounded-lg border border-white/15 bg-white p-2">
+                    <div className="w-fit overflow-hidden rounded-lg border border-slate-200 bg-white p-2 dark:border-white/15">
                       <img src={qrUrl} alt="TOTP QR" width={180} height={180} />
                     </div>
                   ) : null}
                   <div className="space-y-1">
-                    <Label className="text-xs text-white/75">{tr("Secret", "Секрет")}</Label>
+                    <Label className="text-xs text-slate-600 dark:text-white/75">{tr("Secret", "Секрет")}</Label>
                     <div className="flex items-center gap-2">
-                      <Input value={totpSetup.secret} readOnly className="h-9 border-white/15 bg-white/5 font-mono text-xs text-white" />
+                      <Input value={totpSetup.secret} readOnly className="h-9 border-slate-200 bg-white/80 font-mono text-xs text-slate-800 dark:border-white/15 dark:bg-white/5 dark:text-white" />
                       <Button
                         type="button"
                         variant="outline"
                         size="icon"
-                        className="h-9 w-9 rounded-xl border-white/15 bg-white/[0.03] text-white hover:bg-white/10 hover:text-white"
+                        className="h-9 w-9 rounded-xl border-slate-200 bg-white/75 text-slate-800 shadow-sm hover:bg-slate-50 hover:text-slate-950 dark:border-white/15 dark:bg-white/[0.03] dark:text-white dark:hover:bg-white/10 dark:hover:text-white"
                         onClick={() => void copySecret()}
                       >
                         {secretCopied ? <CheckCircle2 className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
@@ -308,21 +308,21 @@ export function TwoFactorSettingsCard() {
                     </div>
                   </div>
                   <div className="space-y-1">
-                    <Label htmlFor="totp-setup-code" className="text-xs text-white/75">{tr("Verification code", "Код подтверждения")}</Label>
+                    <Label htmlFor="totp-setup-code" className="text-xs text-slate-600 dark:text-white/75">{tr("Verification code", "Код подтверждения")}</Label>
                     <Input
                       id="totp-setup-code"
                       value={totpSetupCode}
                       onChange={(e) => setTotpSetupCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                       inputMode="numeric"
                       placeholder="123456"
-                      className="h-9 border-white/15 bg-white/5 font-mono tracking-[0.2em] text-white placeholder:text-white/25"
+                      className="h-9 border-slate-200 bg-white/80 font-mono tracking-[0.2em] text-slate-800 placeholder:text-slate-400 dark:border-white/15 dark:bg-white/5 dark:text-white dark:placeholder:text-white/25"
                     />
                   </div>
                   <div className="flex gap-2">
                     <Button
                       type="button"
                       size="sm"
-                      className="flex-1 rounded-xl bg-white text-black hover:bg-white/90"
+                      className="flex-1 rounded-xl bg-slate-950 text-white hover:bg-slate-800 dark:bg-white dark:text-black dark:hover:bg-white/90"
                       onClick={() => void handleVerifyTotpSetup()}
                       disabled={totpSetupCode.length < 6 || totpSubmitting === "verify"}
                     >
@@ -333,7 +333,7 @@ export function TwoFactorSettingsCard() {
                       type="button"
                       size="sm"
                       variant="outline"
-                      className="rounded-xl border-white/15 bg-white/[0.03] text-white hover:bg-white/10 hover:text-white"
+                      className="rounded-xl border-slate-200 bg-white/75 text-slate-800 shadow-sm hover:bg-slate-50 hover:text-slate-950 dark:border-white/15 dark:bg-white/[0.03] dark:text-white dark:hover:bg-white/10 dark:hover:text-white"
                       onClick={() => setTotpSetup(null)}
                     >
                       {tr("Cancel", "Отмена")}
@@ -343,21 +343,21 @@ export function TwoFactorSettingsCard() {
               )}
 
               {totpEnabled && (
-                <div className="space-y-2 rounded-xl border border-white/10 bg-white/[0.03] p-3">
-                  <Label htmlFor="totp-disable-code" className="text-xs text-white/75">{tr("Code to disable", "Код для отключения")}</Label>
+                <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50/80 p-3 dark:border-white/10 dark:bg-white/[0.03]">
+                  <Label htmlFor="totp-disable-code" className="text-xs text-slate-600 dark:text-white/75">{tr("Code to disable", "Код для отключения")}</Label>
                   <Input
                     id="totp-disable-code"
                     value={totpDisableCode}
                     onChange={(e) => setTotpDisableCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                     inputMode="numeric"
                     placeholder="123456"
-                    className="h-9 border-white/15 bg-white/5 font-mono tracking-[0.2em] text-white placeholder:text-white/25"
+                    className="h-9 border-slate-200 bg-white/80 font-mono tracking-[0.2em] text-slate-800 placeholder:text-slate-400 dark:border-white/15 dark:bg-white/5 dark:text-white dark:placeholder:text-white/25"
                   />
                   <Button
                     type="button"
                     size="sm"
                     variant="outline"
-                    className="w-full rounded-xl border-white/15 bg-white/[0.03] text-white hover:bg-white/10 hover:text-white"
+                    className="w-full rounded-xl border-slate-200 bg-white/75 text-slate-800 shadow-sm hover:bg-slate-50 hover:text-slate-950 dark:border-white/15 dark:bg-white/[0.03] dark:text-white dark:hover:bg-white/10 dark:hover:text-white"
                     onClick={() => void handleDisableTotp()}
                     disabled={totpDisableCode.length < 6 || totpSubmitting === "disable"}
                   >
