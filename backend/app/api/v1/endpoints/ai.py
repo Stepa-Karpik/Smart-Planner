@@ -163,9 +163,8 @@ async def ai_delete_session(
     redis: Redis = Depends(get_redis_client),
 ):
     service = build_ai_service(session, redis)
-    deleted = await service.delete_session(current_user.id, session_id)
-    data = AISessionRead.model_validate(deleted).model_dump()
-    return success_response(data=data, request=request)
+    await service.delete_session(current_user.id, session_id)
+    return success_response(data={"id": str(session_id), "deleted": True}, request=request)
 
 
 @router.get("/sessions/{session_id}/messages")

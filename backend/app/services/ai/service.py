@@ -129,6 +129,10 @@ class AIService:
         if not words:
             return fallback
 
+        lowered_text = " ".join(word.lower() for word in words)
+        if re.search(r"\bан[еэ]к?д[оа]т\w*\b|\bjoke\w*\b", lowered_text):
+            return "Анекдот" if language == "ru" else "Joke"
+
         stop_words = {
             "создай",
             "создать",
@@ -143,6 +147,7 @@ class AIService:
             "пожалуйста",
             "плиз",
             "давай",
+            "бро",
             "can",
             "could",
             "please",

@@ -31,3 +31,13 @@ def test_ai_session_title_is_short_and_based_on_first_message():
     assert len(title.split()) <= 4
     assert "создай" not in title.lower()
     assert title
+
+
+def test_ai_session_title_normalizes_joke_request():
+    assert AIService._derive_session_title("расскажи анедот бро", "ru") == "Анекдот"
+
+
+def test_ai_delete_endpoint_returns_simple_deleted_payload():
+    source = (ROOT / "backend" / "app" / "api" / "v1" / "endpoints" / "ai.py").read_text(encoding="utf-8")
+
+    assert 'data={"id": str(session_id), "deleted": True}' in source

@@ -96,7 +96,7 @@ function sessionTitle(
 ) {
   const title = session.title?.trim()
   if (title) return title
-  return tr("New chat", "Новый чат")
+  return tr(`New chat #${session.display_index}`, `Новый чат #${session.display_index}`)
 }
 
 export default function AiChatPage() {
@@ -203,6 +203,7 @@ export default function AiChatPage() {
       return
     }
     await mutateSessions()
+    await mutateAssistantMode()
     clearMessages()
     setSelectedSessionId(res.data.id)
     setActiveSessionId(res.data.id)

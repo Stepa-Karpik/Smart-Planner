@@ -200,3 +200,15 @@ async def test_requested_session_with_other_chat_type_does_not_mix_histories():
 
     assert resolved.id == planner.id
     assert resolved.chat_type == AIChatType.PLANNER
+
+
+@pytest.mark.asyncio
+async def test_manual_new_chat_always_creates_another_empty_session():
+    service = _build_service()
+    user_id = uuid4()
+
+    first = await service.create_session(user_id, AIChatType.COMPANION)
+    second = await service.create_session(user_id, AIChatType.COMPANION)
+
+    assert second.id != first.id
+    assert second.display_index == first.display_index + 1
