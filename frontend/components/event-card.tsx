@@ -1,7 +1,7 @@
 ﻿"use client"
 
 import Link from "next/link"
-import { MapPin, Navigation } from "lucide-react"
+import { MapPin } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { CalendarEvent } from "@/lib/types"
 import { Badge } from "@/components/ui/badge"
@@ -79,16 +79,6 @@ export function EventCard({ event }: { event: CalendarEvent }) {
             </a>
           ) : (
             <span className="truncate">{event.location_text}</span>
-          )}
-
-          {typeof event.location_lat === "number" && typeof event.location_lon === "number" && (
-            <Link
-              href={`/routes?to=${event.location_lat},${event.location_lon}`}
-              className="ml-auto inline-flex items-center rounded border px-1.5 py-0.5 text-[10px] hover:bg-accent/10"
-              title={tr("Build route", "Построить маршрут")}
-            >
-              <Navigation className="h-3 w-3" />
-            </Link>
           )}
         </div>
       )}

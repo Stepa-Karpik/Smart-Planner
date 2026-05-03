@@ -28,7 +28,6 @@ import {
   Sun,
   List,
   Settings,
-  MapPin,
   AlertTriangle,
   MessageSquare,
   Bell,
@@ -47,7 +46,6 @@ const baseNavItems = [
   { title: "Events", href: "/events", icon: List },
   { title: "AI Chat", href: "/ai", icon: MessageSquare },
   { title: "Feed", href: "/feed", icon: Bell },
-  { title: "Routes", href: "/routes", icon: MapPin },
   { title: "Feasibility", href: "/feasibility", icon: AlertTriangle },
   { title: "Integrations", href: "/settings/integrations", icon: Settings },
 ]
@@ -119,7 +117,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                           {item.title === "Events" && tr("Events", "События")}
                           {item.title === "AI Chat" && tr("AI Chat", "AI чат")}
                           {item.title === "Feed" && tr("Feed", "Лента")}
-                          {item.title === "Routes" && tr("Routes", "Маршруты")}
                           {item.title === "Feasibility" && tr("Feasibility", "Успеваемость")}
                           {item.title === "Profile" && tr("Profile", "Профиль")}
                           {item.title === "Integrations" && tr("Integrations", "Интеграции")}
