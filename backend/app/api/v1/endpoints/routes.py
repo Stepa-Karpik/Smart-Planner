@@ -171,7 +171,7 @@ async def route_recommendations(
     from_point = await _resolve_point(from_raw, geocoding_service)
     to_point = await _resolve_point(to_raw, geocoding_service)
 
-    selected_modes = modes or ([mode] if mode else [RouteMode.WALKING, RouteMode.PUBLIC_TRANSPORT, RouteMode.DRIVING, RouteMode.BICYCLE])
+    selected_modes = modes or ([mode] if mode else [RouteMode.WALKING, RouteMode.PUBLIC_TRANSPORT, RouteMode.METRO, RouteMode.DRIVING, RouteMode.BICYCLE])
 
     route_service = RouteService(redis)
     routes = await route_service.get_routes_for_modes(from_point, to_point, selected_modes, departure=departure_at)

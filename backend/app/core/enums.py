@@ -28,6 +28,7 @@ class RouteMode(str, Enum):
     WALKING = "walking"
     DRIVING = "driving"
     PUBLIC_TRANSPORT = "public_transport"
+    METRO = "metro"
     BICYCLE = "bicycle"
 
 

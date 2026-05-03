@@ -11,12 +11,7 @@ export default function AdminAssistantPage() {
   const { tr } = useI18n()
 
   return (
-    <AdminPageShell
-      titleEn="Assistant Administration"
-      titleRu="Администрирование ассистента"
-      descriptionEn="Shortcuts and operational controls for AI-related administration."
-      descriptionRu="Быстрые переходы и операционные инструменты для администрирования AI."
-    >
+    <AdminPageShell>
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Card className="flex h-full flex-col rounded-2xl border-slate-200/80 bg-white/75 shadow-[0_16px_42px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-white/10 dark:bg-black/30 dark:shadow-none">
           <CardHeader className="flex-1">

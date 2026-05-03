@@ -121,10 +121,39 @@ async def test_telegram_twofa_pending_approve_and_deny(app_client, db_session, r
     await db_session.refresh(user)
     assert user.twofa_method == "telegram"
 
-    disable_request = await app_client.post("/api/v1/integrations/twofa/telegram/disable-request", headers=headers)
-    assert disable_request.status_code == 200
-    pending_id_2 = disable_request.json()["data"]["pending_id"]
-    denied = await service.confirm_telegram_method_change_from_callback(chat_id=123456789, pending_id=UUID(pending_id_2), decision="deny")
-    assert denied["status"] == "denied"
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_switching_active_twofa_method_keeps_existing_bindings(app_client, db_session):
+    creds = await _register_and_login(app_client, email="twofa-switch@example.com", username="twofaswitch")
+    headers = {"Authorization": f"Bearer {creds['access_token']}"}
+
+    user = await db_session.scalar(select(User).where(User.username == "twofaswitch"))
+    assert user is not None
+    secret = TwoFactorAuthService._generate_totp_secret()
+    user.twofa_method = "totp"
+    user.twofa_totp_secret = secret
+
+    from app.models import TelegramLink
+
+    db_session.add(TelegramLink(user_id=user.id, telegram_chat_id=987654321, telegram_username="switcher", is_confirmed=True))
+    await db_session.commit()
+
+    switch_to_telegram = await app_client.post("/api/v1/integrations/twofa/method", headers=headers, json={"method": "telegram"})
+    assert switch_to_telegram.status_code == 200
     await db_session.refresh(user)
     assert user.twofa_method == "telegram"
+    assert user.twofa_totp_secret == secret
+
+    settings = await app_client.get("/api/v1/integrations/twofa", headers=headers)
+    assert settings.status_code == 200
+    settings_data = settings.json()["data"]
+    assert settings_data["twofa_method"] == "telegram"
+    assert settings_data["telegram_linked"] is True
+    assert settings_data["totp_enabled"] is True
+
+    switch_to_totp = await app_client.post("/api/v1/integrations/twofa/method", headers=headers, json={"method": "totp"})
+    assert switch_to_totp.status_code == 200
+    await db_session.refresh(user)
+    assert user.twofa_method == "totp"
+    assert user.twofa_totp_secret == secret

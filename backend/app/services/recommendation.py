@@ -25,7 +25,7 @@ class MultiCriteriaRecommendationService:
         km = route.distance_m / 1000
         if route.mode == RouteMode.WALKING:
             return 0.0
-        if route.mode == RouteMode.PUBLIC_TRANSPORT:
+        if route.mode in {RouteMode.PUBLIC_TRANSPORT, RouteMode.METRO}:
             return float(self.settings.city_pt_fare)
         if route.mode == RouteMode.DRIVING:
             return round(km * float(self.settings.car_cost_per_km), 2)

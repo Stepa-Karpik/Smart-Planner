@@ -217,10 +217,6 @@ export default function AdminFeedPage() {
 
   return (
     <AdminPageShell
-      titleEn="Feed Management"
-      titleRu="Управление лентой"
-      descriptionEn="Create and edit notifications, updates, reminders, and targeted feed events for specific users or all users."
-      descriptionRu="Создавайте и редактируйте уведомления, обновления, напоминания и адресные события ленты для конкретных пользователей или всех."
       actions={
         <>
           <Button

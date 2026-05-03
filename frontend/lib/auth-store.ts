@@ -11,7 +11,7 @@ export interface AuthState {
     username: string
     display_name?: string | null
     role?: "user" | "admin"
-    default_route_mode?: "walking" | "driving" | "public_transport" | "bicycle"
+    default_route_mode?: "walking" | "driving" | "public_transport" | "metro" | "bicycle"
   } | null
 }
 

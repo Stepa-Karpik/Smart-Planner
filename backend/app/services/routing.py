@@ -161,6 +161,7 @@ class MockRouteProvider(RouteProvider):
     _speed_m_s = {
         RouteMode.WALKING: 1.3,
         RouteMode.PUBLIC_TRANSPORT: 6.0,
+        RouteMode.METRO: 7.5,
         RouteMode.DRIVING: 11.0,
         RouteMode.BICYCLE: 4.5,
     }
@@ -210,6 +211,7 @@ class YandexRouteProvider(RouteProvider):
             RouteMode.WALKING: "pedestrian",
             RouteMode.DRIVING: "auto",
             RouteMode.PUBLIC_TRANSPORT: "masstransit",
+            RouteMode.METRO: "masstransit",
             RouteMode.BICYCLE: "bicycle",
         }
         return mapping.get(mode, "auto")
@@ -313,10 +315,10 @@ class OpenRouteServiceRouteProvider(RouteProvider):
         mode: RouteMode,
         departure: datetime | None = None,
     ) -> RouteResult:
-        if mode == RouteMode.PUBLIC_TRANSPORT:
+        if mode in {RouteMode.PUBLIC_TRANSPORT, RouteMode.METRO}:
             if self.public_transport_fallback is None:
                 raise RuntimeError("OpenRouteService does not support public transport and no fallback is configured")
-            logger.info("ORS provider falling back for public transport mode")
+            logger.info("ORS provider falling back for mass transit mode")
             return await self.public_transport_fallback.get_route(from_point, to_point, mode, departure)
 
         profile = self._profile(mode)
@@ -525,4 +527,3 @@ class RouteService:
             "api_key": self.settings.yandex_maps_api_key,
             "layers": ["traffic", "transit", "bicycle"],
         }
-

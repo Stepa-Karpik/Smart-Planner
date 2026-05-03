@@ -40,6 +40,7 @@ function modeLabel(mode: RouteMode, tr: (en: string, ru: string) => string) {
   if (mode === "walking") return tr("Walking", "Пешком")
   if (mode === "driving") return tr("Driving", "Авто")
   if (mode === "public_transport") return tr("Public transport", "Общественный транспорт")
+  if (mode === "metro") return tr("Metro", "Метро")
   return tr("Bicycle", "Велосипед/самокат")
 }
 
@@ -137,7 +138,7 @@ export default function RoutesPage() {
       fetchRouteRecommendations({
         from: fromValue,
         to: toValue,
-        modes: ["walking", "public_transport", "driving", "bicycle"],
+        modes: ["walking", "public_transport", "metro", "driving", "bicycle"],
       }),
     ])
     setPreviewLoading(false)
@@ -203,6 +204,7 @@ export default function RoutesPage() {
                   <SelectContent>
                     <SelectItem value="walking">{modeLabel("walking", tr)}</SelectItem>
                     <SelectItem value="public_transport">{modeLabel("public_transport", tr)}</SelectItem>
+                    <SelectItem value="metro">{modeLabel("metro", tr)}</SelectItem>
                     <SelectItem value="driving">{modeLabel("driving", tr)}</SelectItem>
                     <SelectItem value="bicycle">{modeLabel("bicycle", tr)}</SelectItem>
                   </SelectContent>

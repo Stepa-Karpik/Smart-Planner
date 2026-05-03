@@ -53,8 +53,27 @@ class TwoFactorAuthService:
             "twofa_method": self._normalize_method(user.twofa_method),
             "telegram_linked": bool(link and link.is_confirmed),
             "telegram_confirmed": bool(link and link.is_confirmed),
-            "totp_enabled": bool(user.twofa_totp_secret and self._normalize_method(user.twofa_method) == "totp"),
+            "totp_enabled": bool(user.twofa_totp_secret),
         }
+
+    async def set_active_method(self, user_id: UUID, method: TwoFAMethod) -> None:
+        user = await self.users.get_by_id(user_id)
+        if user is None:
+            raise NotFoundError("User not found")
+
+        method = self._normalize_method(method)
+        if method == "telegram":
+            link = await self.telegram.get_link_by_user(user_id)
+            if link is None or not link.is_confirmed:
+                raise ValidationAppError("Telegram account is not linked")
+        elif method == "totp":
+            if not user.twofa_totp_secret:
+                raise ValidationAppError("TOTP is not configured")
+        elif method != "none":
+            raise ValidationAppError("Unsupported 2FA method")
+
+        await self.users.update_twofa(user, method=method)
+        await self.session.commit()
 
     async def request_telegram_method_change(self, user_id: UUID, action: Literal["enable", "disable"]) -> dict:
         user = await self.users.get_by_id(user_id)
@@ -131,8 +150,6 @@ class TwoFactorAuthService:
             await self.users.update_twofa(
                 user,
                 method="telegram",
-                clear_totp_secret=True,
-                clear_last_totp_step=True,
                 telegram_enabled_at=now,
             )
         elif action == "disable":
@@ -205,8 +222,8 @@ class TwoFactorAuthService:
         user = await self.users.get_by_id(user_id)
         if user is None:
             raise NotFoundError("User not found")
-        if self._normalize_method(user.twofa_method) != "totp" or not user.twofa_totp_secret:
-            raise ValidationAppError("TOTP 2FA is not enabled")
+        if not user.twofa_totp_secret:
+            raise ValidationAppError("TOTP is not configured")
 
         ok, matched_step = self.verify_totp_code(user.twofa_totp_secret, self._normalize_code(code), now=self._now(), valid_window=1)
         if not ok or matched_step is None:
@@ -216,7 +233,7 @@ class TwoFactorAuthService:
 
         await self.users.update_twofa(
             user,
-            method="none",
+            method="none" if self._normalize_method(user.twofa_method) == "totp" else None,
             clear_totp_secret=True,
             last_totp_step=matched_step,
         )

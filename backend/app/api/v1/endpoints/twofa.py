@@ -14,6 +14,7 @@ from app.schemas.twofa import (
     TotpDisableRequest,
     TotpSetupResponse,
     TotpVerifySetupRequest,
+    TwoFASetMethodRequest,
     TwoFAPendingStatusResponse,
     TwoFASettingsResponse,
     TwoFATelegramPendingResponse,
@@ -32,6 +33,18 @@ async def get_twofa_settings(
 ):
     data = TwoFASettingsResponse(**(await TwoFactorAuthService(session, redis).get_user_twofa_settings(current_user.id)))
     return success_response(data=data.model_dump(), request=request)
+
+
+@router.post("/method")
+async def set_twofa_method(
+    payload: TwoFASetMethodRequest,
+    request: Request,
+    current_user=Depends(get_current_user),
+    session: AsyncSession = Depends(get_db_session),
+    redis: Redis = Depends(get_redis_client),
+):
+    await TwoFactorAuthService(session, redis).set_active_method(current_user.id, payload.method)
+    return success_response(data={"ok": True}, request=request)
 
 
 @router.post("/telegram/enable-request")

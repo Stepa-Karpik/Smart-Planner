@@ -320,7 +320,7 @@ export interface LoginTwoFASessionStatusPayload {
 }
 
 export type MapProvider = "leaflet" | "yandex"
-export type RouteMode = "walking" | "driving" | "public_transport" | "bicycle"
+export type RouteMode = "walking" | "driving" | "public_transport" | "metro" | "bicycle"
 
 export interface LocationSuggestion {
   title: string

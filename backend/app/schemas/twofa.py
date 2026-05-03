@@ -51,6 +51,10 @@ class TotpDisableRequest(BaseModel):
     code: str = Field(min_length=6, max_length=16)
 
 
+class TwoFASetMethodRequest(BaseModel):
+    method: TwoFAMethod
+
+
 class LoginTwoFAChallenge(BaseModel):
     requires_twofa: Literal[True] = True
     twofa_method: Literal["telegram", "totp"]

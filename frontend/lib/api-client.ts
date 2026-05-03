@@ -15,6 +15,7 @@ import type {
   TotpSetupPayload,
   TwoFAPendingStatusPayload,
   TwoFASettings,
+  TwoFAMethod,
   TwoFATelegramPending,
 } from "./types"
 
@@ -378,6 +379,13 @@ export async function requestEnableTelegramTwofa() {
 
 export async function requestDisableTelegramTwofa() {
   return apiRequest<TwoFATelegramPending>("/api/v1/integrations/twofa/telegram/disable-request", { method: "POST" })
+}
+
+export async function setTwofaMethod(method: TwoFAMethod) {
+  return apiRequest<{ ok: boolean }>("/api/v1/integrations/twofa/method", {
+    method: "POST",
+    body: JSON.stringify({ method }),
+  })
 }
 
 export async function getTwofaPendingStatus(pendingId: string) {

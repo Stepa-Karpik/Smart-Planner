@@ -1,7 +1,7 @@
 ﻿"use client"
 
-import { useEffect, useState } from "react"
-import { Loader2, Save, ShieldCheck } from "lucide-react"
+import { useEffect, useMemo, useState } from "react"
+import { Bike, Bus, Car, Footprints, Loader2, Save, ShieldCheck, Train, type LucideIcon } from "lucide-react"
 import { toast } from "sonner"
 import { LocationInput } from "@/components/location-input"
 import { TelegramLinkCard } from "@/components/telegram-link-card"
@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { changePassword, updateProfile, useProfile } from "@/lib/hooks"
 import type { MapProvider, RouteMode } from "@/lib/types"
 import { useI18n } from "@/lib/i18n"
@@ -17,12 +16,26 @@ import { cn } from "@/lib/utils"
 
 type LocationSource = "manual_text" | "geocoded" | "map_pick"
 
-const routeModeOptions: Array<{ value: RouteMode; labelEn: string; labelRu: string }> = [
-  { value: "walking", labelEn: "Walking", labelRu: "Пешком" },
-  { value: "public_transport", labelEn: "Public transport", labelRu: "Общественный транспорт" },
-  { value: "driving", labelEn: "Driving", labelRu: "Авто" },
-  { value: "bicycle", labelEn: "Bicycle / scooter", labelRu: "Велосипед / самокат" },
+const baseRouteModeOptions: Array<{ value: RouteMode; labelEn: string; labelRu: string; hintEn: string; hintRu: string; icon: LucideIcon }> = [
+  { value: "walking", labelEn: "Walking", labelRu: "Пешком", hintEn: "Short routes", hintRu: "Короткие маршруты", icon: Footprints },
+  { value: "public_transport", labelEn: "Public transport", labelRu: "Транспорт", hintEn: "Bus, tram, metro", hintRu: "Автобус, трамвай, метро", icon: Bus },
+  { value: "driving", labelEn: "Driving", labelRu: "Авто", hintEn: "By car", hintRu: "На машине", icon: Car },
+  { value: "bicycle", labelEn: "Bicycle / scooter", labelRu: "Вело / самокат", hintEn: "Personal mobility", hintRu: "Личный транспорт", icon: Bike },
 ]
+
+const metroOption = {
+  value: "metro" as RouteMode,
+  labelEn: "Metro",
+  labelRu: "Метро",
+  hintEn: "Moscow, SPb, Novosibirsk",
+  hintRu: "Москва, СПб, Новосибирск",
+  icon: Train,
+}
+
+function hasMetroCity(location: string) {
+  const normalized = location.toLowerCase()
+  return /москв|moscow|санкт[-\s]?петербург|петербург|spb|saint[-\s]?petersburg|st\.?\s?petersburg|новосибирск|novosibirsk/.test(normalized)
+}
 
 export default function ProfilePage() {
   const { tr } = useI18n()
@@ -32,6 +45,7 @@ export default function ProfilePage() {
   const [displayName, setDisplayName] = useState("")
   const [username, setUsername] = useState("")
   const [defaultMode, setDefaultMode] = useState<RouteMode>("public_transport")
+  const [savingRouteMode, setSavingRouteMode] = useState<RouteMode | null>(null)
   const [homeLocationText, setHomeLocationText] = useState("")
   const [homeLocationLat, setHomeLocationLat] = useState<number | null>(null)
   const [homeLocationLon, setHomeLocationLon] = useState<number | null>(null)
@@ -41,7 +55,11 @@ export default function ProfilePage() {
   const [currentPassword, setCurrentPassword] = useState("")
   const [newPassword, setNewPassword] = useState("")
   const [changingPassword, setChangingPassword] = useState(false)
-  const selectedRouteMode = routeModeOptions.find((option) => option.value === defaultMode) ?? routeModeOptions[1]
+  const routeModeOptions = useMemo(
+    () => (hasMetroCity(homeLocationText) ? [...baseRouteModeOptions.slice(0, 2), metroOption, ...baseRouteModeOptions.slice(2)] : baseRouteModeOptions),
+    [homeLocationText],
+  )
+  const metroAvailable = hasMetroCity(homeLocationText)
 
   useEffect(() => {
     if (!profile) return
@@ -53,6 +71,12 @@ export default function ProfilePage() {
     setHomeLocationLon(typeof profile.home_location_lon === "number" ? profile.home_location_lon : null)
     setHomeLocationSource(((profile.home_location_source as LocationSource | null) || "manual_text"))
   }, [profile])
+
+  useEffect(() => {
+    if (!metroAvailable && defaultMode === "metro") {
+      setDefaultMode("public_transport")
+    }
+  }, [defaultMode, metroAvailable])
 
   async function handleProfileSave(event: React.FormEvent) {
     event.preventDefault()
@@ -74,6 +98,36 @@ export default function ProfilePage() {
     }
     await mutate()
     toast.success(tr("Profile updated", "Профиль обновлён"))
+  }
+
+  async function handleRouteModeSelect(nextMode: RouteMode) {
+    if (nextMode === defaultMode || savingRouteMode) {
+      setDefaultMode(nextMode)
+      return
+    }
+
+    const previousMode = defaultMode
+    setDefaultMode(nextMode)
+    setSavingRouteMode(nextMode)
+    const response = await updateProfile(
+      nextMode === "metro"
+        ? {
+            default_route_mode: nextMode,
+            home_location_text: homeLocationText || null,
+            home_location_lat: homeLocationLat,
+            home_location_lon: homeLocationLon,
+            home_location_source: homeLocationSource,
+          }
+        : { default_route_mode: nextMode },
+    )
+    setSavingRouteMode(null)
+
+    if (response.error) {
+      setDefaultMode(previousMode)
+      toast.error(response.error.message)
+      return
+    }
+    await mutate()
   }
 
   async function handlePasswordChange(event: React.FormEvent) {
@@ -128,35 +182,42 @@ export default function ProfilePage() {
 
               <div className="flex flex-col gap-2">
                 <Label>{tr("Default transport mode", "Режим передвижения по умолчанию")}</Label>
-                <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
-                  {routeModeOptions.map((option) => (
-                    <button
-                      key={option.value}
-                      type="button"
-                      onClick={() => setDefaultMode(option.value)}
-                      className={cn(
-                        "rounded-xl border px-3 py-2 text-left text-sm transition",
-                        defaultMode === option.value
-                          ? "border-slate-950 bg-slate-950 text-white dark:border-white dark:bg-white dark:text-black"
-                          : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-950 dark:border-white/10 dark:bg-white/5 dark:text-white/65 dark:hover:bg-white/10 dark:hover:text-white",
-                      )}
-                    >
-                      {tr(option.labelEn, option.labelRu)}
-                    </button>
-                  ))}
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                  {routeModeOptions.map((option) => {
+                    const Icon = option.icon
+                    const active = defaultMode === option.value
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => void handleRouteModeSelect(option.value)}
+                        disabled={Boolean(savingRouteMode)}
+                        className={cn(
+                          "group relative overflow-hidden rounded-2xl border px-3 py-3 text-left transition disabled:cursor-not-allowed disabled:opacity-70",
+                          active
+                            ? "border-slate-950 bg-slate-950 text-white shadow-[0_14px_35px_rgba(15,23,42,0.18)] dark:border-white dark:bg-white dark:text-black dark:shadow-none"
+                            : "border-slate-200 bg-white/85 text-slate-600 shadow-sm hover:border-slate-300 hover:bg-white hover:text-slate-950 dark:border-white/10 dark:bg-white/[0.04] dark:text-white/65 dark:shadow-none dark:hover:bg-white/10 dark:hover:text-white",
+                        )}
+                      >
+                        <div
+                          className={cn(
+                            "mb-3 flex h-9 w-9 items-center justify-center rounded-xl border transition",
+                            active
+                              ? "border-white/15 bg-white/12 text-white dark:border-black/10 dark:bg-black/5 dark:text-black"
+                              : "border-slate-200 bg-slate-50 text-slate-500 group-hover:text-slate-900 dark:border-white/10 dark:bg-white/5 dark:text-white/60 dark:group-hover:text-white",
+                          )}
+                        >
+                          {savingRouteMode === option.value ? <Loader2 className="h-4 w-4 animate-spin" /> : <Icon className="h-4 w-4" />}
+                        </div>
+                        <p className="text-sm font-semibold">{tr(option.labelEn, option.labelRu)}</p>
+                        <p className={cn("mt-0.5 text-xs", active ? "text-white/65 dark:text-black/55" : "text-slate-400 dark:text-white/35")}>
+                          {tr(option.hintEn, option.hintRu)}
+                        </p>
+                        {active ? <span className="absolute right-3 top-3 h-2 w-2 rounded-full bg-emerald-400 dark:bg-emerald-500" /> : null}
+                      </button>
+                    )
+                  })}
                 </div>
-                <Select value={defaultMode} onValueChange={(value) => setDefaultMode(value as RouteMode)}>
-                  <SelectTrigger className="w-full sm:w-72">
-                    <SelectValue placeholder={tr(selectedRouteMode.labelEn, selectedRouteMode.labelRu)} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {routeModeOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {tr(option.labelEn, option.labelRu)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
               </div>
 
               <div className="flex flex-col gap-2">

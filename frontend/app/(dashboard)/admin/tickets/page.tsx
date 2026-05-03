@@ -69,10 +69,6 @@ export default function AdminTicketsPage() {
 
   return (
     <AdminPageShell
-      titleEn="Tickets"
-      titleRu="Тикеты"
-      descriptionEn="Support queue with search and triage. Open each ticket in a dedicated chat workspace."
-      descriptionRu="Очередь поддержки с поиском и разбором. Каждый тикет открывается в отдельном рабочем чате."
       actions={
         <Button
           type="button"

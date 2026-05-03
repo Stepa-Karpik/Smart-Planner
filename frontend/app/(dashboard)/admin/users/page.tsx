@@ -99,10 +99,6 @@ export default function AdminUsersPage() {
 
   return (
     <AdminPageShell
-      titleEn="Users"
-      titleRu="Пользователи"
-      descriptionEn="Manage usernames, roles, passwords, and account availability."
-      descriptionRu="Управляйте юзернеймами, ролями, паролями и доступностью аккаунтов."
       actions={
         <Button
           type="button"

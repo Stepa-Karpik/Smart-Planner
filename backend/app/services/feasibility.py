@@ -55,7 +55,7 @@ class TravelFeasibilityService:
                 continue
 
             faster_mode: RouteMode | None = None
-            for candidate in [RouteMode.DRIVING, RouteMode.PUBLIC_TRANSPORT, RouteMode.BICYCLE, RouteMode.WALKING]:
+            for candidate in [RouteMode.DRIVING, RouteMode.METRO, RouteMode.PUBLIC_TRANSPORT, RouteMode.BICYCLE, RouteMode.WALKING]:
                 if candidate == mode:
                     continue
                 candidate_route = await self.route_service.get_route_preview(

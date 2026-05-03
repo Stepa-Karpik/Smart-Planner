@@ -26,6 +26,7 @@ import {
   requestEnableTelegramTwofa,
   requestLoginTwofaTelegram,
   replyMySupportTicket,
+  setTwofaMethod,
   setupTotpTwofa,
   verifyLoginTwofaTotp,
   verifyTotpTwofaSetup,
@@ -69,6 +70,7 @@ import type {
   TotpSetupPayload,
   TwoFAPendingStatusPayload,
   TwoFASettings,
+  TwoFAMethod,
   TwoFATelegramPending,
 } from "./types"
 
@@ -265,6 +267,14 @@ export async function enableTelegramTwofaRequest() {
 
 export async function disableTelegramTwofaRequest() {
   const res = await requestDisableTelegramTwofa()
+  if (!res.error) {
+    globalMutate("/api/v1/integrations/twofa")
+  }
+  return res
+}
+
+export async function switchTwofaMethod(method: TwoFAMethod) {
+  const res = await setTwofaMethod(method)
   if (!res.error) {
     globalMutate("/api/v1/integrations/twofa")
   }

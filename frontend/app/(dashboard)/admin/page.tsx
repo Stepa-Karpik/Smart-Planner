@@ -50,13 +50,8 @@ export default function AdminOverviewPage() {
   const { tr } = useI18n()
 
   return (
-    <AdminPageShell
-      titleEn="Admin Panel"
-      titleRu="Админ панель"
-      descriptionEn="Protected workspace for user management, feed broadcasts, and assistant administration."
-      descriptionRu="Защищенное пространство для управления пользователями, рассылками ленты и администрирования ассистента."
-    >
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 2xl:grid-cols-4">
+    <AdminPageShell>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
         {BLOCKS.map((block) => {
           const Icon = block.icon
           return (
@@ -84,18 +79,6 @@ export default function AdminOverviewPage() {
           )
         })}
       </div>
-
-      <Card className="rounded-2xl border-slate-200/80 bg-white/75 shadow-[0_18px_50px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-white/10 dark:bg-black/30 dark:shadow-none">
-        <CardHeader>
-          <CardTitle className="text-base text-slate-950 dark:text-white">{tr("Security", "Безопасность")}</CardTitle>
-          <CardDescription className="text-slate-500 dark:text-white/55">
-            {tr(
-              "All admin API routes are protected on the backend. Non-admin users cannot access users/feed admin endpoints even if they know the route.",
-              "Все admin API роуты защищены на backend. Не-админы не смогут использовать admin endpoints пользователей/ленты, даже если знают путь.",
-            )}
-          </CardDescription>
-        </CardHeader>
-      </Card>
     </AdminPageShell>
   )
 }
