@@ -20,6 +20,7 @@ class AIChatResponse(BaseModel):
     session_id: UUID
     chat_type: AIChatType | None = None
     display_index: int | None = None
+    session_title: str | None = None
     answer: str
     mode: AssistantMode | None = None
     intent: str | None = None
@@ -59,6 +60,7 @@ class AISessionRead(BaseModel):
     id: UUID
     chat_type: AIChatType
     display_index: int
+    title: str | None = None
     created_at: datetime
     last_used_at: datetime
 

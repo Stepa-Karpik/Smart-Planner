@@ -65,6 +65,7 @@ async def ai_chat(
         session_id=result.session_id,
         chat_type=result.chat_type,
         display_index=result.display_index,
+        session_title=result.session_title,
         answer=result.answer,
         mode=result.mode,
         intent=result.intent,

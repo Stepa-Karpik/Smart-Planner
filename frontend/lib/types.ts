@@ -402,6 +402,7 @@ export interface AiChatResponse {
   session_id: string
   chat_type?: "planner" | "companion" | null
   display_index?: number | null
+  session_title?: string | null
   answer: string
   mode?: "AUTO" | "PLANNER" | "COMPANION" | null
   intent?: string | null

@@ -106,6 +106,11 @@ class AIRepository:
         await self.session.flush()
         return session_obj
 
+    async def update_session_title(self, session_obj: AISession, title: str) -> AISession:
+        session_obj.title = title[:80]
+        await self.session.flush()
+        return session_obj
+
     async def soft_delete_session(self, user_id: UUID, session_id: UUID) -> AISession | None:
         item = await self.get_session(user_id, session_id)
         if item is None:

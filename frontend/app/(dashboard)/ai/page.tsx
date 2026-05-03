@@ -6,7 +6,6 @@ import { toast } from "sonner"
 import { MessageBubble } from "@/components/message-bubble"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -91,6 +90,15 @@ function chatTypeLabel(chatType: "planner" | "companion", tr: (en: string, ru: s
   return chatType === "planner" ? tr("Planner", "Планировщик") : tr("Companion", "Помощник")
 }
 
+function sessionTitle(
+  session: { title?: string | null; chat_type: "planner" | "companion"; display_index: number },
+  tr: (en: string, ru: string) => string,
+) {
+  const title = session.title?.trim()
+  if (title) return title
+  return tr("New chat", "Новый чат")
+}
+
 export default function AiChatPage() {
   const { tr, locale } = useI18n()
   const { data: sessions, isLoading: sessionsLoading, mutate: mutateSessions } = useAiSessions()
@@ -118,7 +126,6 @@ export default function AiChatPage() {
   const [liveTranscript, setLiveTranscript] = useState("")
   const [selectedMode, setSelectedMode] = useState<AssistantMode>("COMPANION")
   const [modeUpdating, setModeUpdating] = useState(false)
-  const [showModeHint, setShowModeHint] = useState(false)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -176,22 +183,6 @@ export default function AiChatPage() {
       void mutateSessions()
     }
   }, [assistantModeState?.active_session_id, selectedSessionId, activeSessionId, sessions, mutateSessions, setActiveSessionId])
-
-  useEffect(() => {
-    if (typeof window === "undefined") return
-    const key = "sp_assistant_mode_hint_seen"
-    const seen = window.localStorage.getItem(key)
-    if (!seen) {
-      setShowModeHint(true)
-      window.localStorage.setItem(key, "1")
-    }
-  }, [])
-
-  useEffect(() => {
-    if (!showModeHint) return
-    const timer = setTimeout(() => setShowModeHint(false), 8000)
-    return () => clearTimeout(timer)
-  }, [showModeHint])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -469,46 +460,46 @@ export default function AiChatPage() {
   }
 
   return (
-    <div className="flex h-[calc(100svh-8.5rem)] min-h-[560px] overflow-hidden rounded-2xl border border-border/50 bg-card/30 shadow-[0_20px_60px_rgba(0,0,0,0.12)]">
-      <div className="hidden md:flex w-64 flex-col border-r bg-card">
-        <div className="flex items-center justify-between px-3 py-3">
-          <h2 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{tr("Sessions", "Сессии")}</h2>
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleNewChat}>
+    <div className="flex h-[calc(100svh-8.5rem)] min-h-[560px] overflow-hidden rounded-2xl border border-border/70 bg-background/80 shadow-[0_24px_70px_rgba(15,23,42,0.12)] dark:shadow-[0_24px_70px_rgba(0,0,0,0.35)]">
+      <div className="hidden w-72 flex-col border-r border-border/70 bg-card/75 backdrop-blur md:flex">
+        <div className="flex items-center justify-between px-4 py-3">
+          <h2 className="text-xs font-semibold uppercase text-muted-foreground">{tr("Chats", "Чаты")}</h2>
+          <Button variant="outline" size="icon" className="h-8 w-8 rounded-xl" onClick={handleNewChat}>
             <Plus className="h-4 w-4" />
             <span className="sr-only">{tr("New chat", "Новый чат")}</span>
           </Button>
         </div>
         <Separator />
         <ScrollArea className="flex-1">
-          <div className="flex flex-col gap-0.5 p-2">
+          <div className="flex flex-col gap-1.5 p-2.5">
             {sessionsLoading ? (
-              Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-9 rounded-md" />)
+              Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-14 rounded-xl" />)
             ) : sessions && sessions.length > 0 ? (
               sessions.map((session) => (
                 <div
                   key={session.id}
                   className={cn(
-                    "group flex items-center gap-1 rounded-md px-1 py-1 transition-colors hover:bg-accent/5",
-                    resolvedSessionId === session.id && "bg-accent/10",
+                    "group flex items-center gap-1 rounded-xl border border-transparent px-1 py-1 transition-colors hover:border-border/70 hover:bg-muted/60",
+                    resolvedSessionId === session.id && "border-border bg-muted/70",
                   )}
                 >
                   <button
                     onClick={() => setSelectedSessionId(session.id)}
-                    className="flex min-w-0 flex-1 items-center gap-2 rounded-md px-1.5 py-1.5 text-left text-sm"
+                    className="flex min-w-0 flex-1 items-center gap-2.5 rounded-lg px-2 py-2 text-left text-sm"
                   >
-                    <MessageSquare className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-background text-muted-foreground shadow-sm">
+                      <MessageSquare className="h-4 w-4" />
+                    </span>
                     <div className="min-w-0">
-                      <p className="truncate text-xs font-medium">
-                        #{session.display_index} {chatTypeLabel(session.chat_type, tr)}
-                      </p>
-                      <p className="truncate text-[11px] text-muted-foreground">{session.id.slice(0, 8)}</p>
+                      <p className="truncate text-sm font-medium">{sessionTitle(session, tr)}</p>
+                      <p className="truncate text-xs text-muted-foreground">{chatTypeLabel(session.chat_type, tr)}</p>
                     </div>
                   </button>
                   <Button
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="h-7 w-7 shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
+                    className="h-8 w-8 shrink-0 rounded-lg opacity-0 transition-opacity group-hover:opacity-100"
                     onClick={(event) => {
                       event.stopPropagation()
                       void handleDeleteChat(session.id)
@@ -526,94 +517,48 @@ export default function AiChatPage() {
         </ScrollArea>
       </div>
 
-      <div className="flex min-w-0 flex-1 flex-col">
-        <div className="border-b bg-card/60 px-4 py-3">
-          <div className="mx-auto grid w-full max-w-6xl gap-3 xl:grid-cols-[minmax(0,1fr)_340px]">
-            <div className="rounded-xl border border-border/60 bg-background/70 px-3 py-2.5">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center rounded-full border border-border bg-background px-2 py-1 text-[11px] font-medium text-muted-foreground">
-                  {tr("AI workspace", "AI пространство")}
-                </span>
-                {selectedChatType && (
-                  <span className="inline-flex items-center rounded-full border border-border bg-background px-2 py-1 text-[11px] text-muted-foreground">
-                    {tr("Chat type", "Тип чата")}: {chatTypeLabel(selectedChatType, tr)}
-                  </span>
-                )}
-              </div>
-              <p className="mt-2 text-sm text-foreground">
-                {selectedSession
-                  ? tr(
-                      `Session #${selectedSession.display_index}: ${chatTypeLabel(selectedSession.chat_type, tr)}`,
-                      `Сессия #${selectedSession.display_index}: ${chatTypeLabel(selectedSession.chat_type, tr)}`,
-                    )
-                  : tr("Select a session or create a new chat", "Выберите сессию или создайте новый чат")}
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {tr(
-                  "Messages are shown in a chat stream below. Mode controls are fixed on the right.",
-                  "Сообщения отображаются в потоке чата ниже. Управление режимом закреплено справа.",
-                )}
-              </p>
-            </div>
-
-            <div className="rounded-xl border border-primary/15 bg-gradient-to-br from-primary/5 via-background to-background p-3 shadow-[0_10px_30px_rgba(0,0,0,0.06)]">
-              <div className="mb-2 flex items-center justify-between">
-                <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{tr("Mode", "Режим")}</span>
-                {modeUpdating || assistantModeLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" /> : null}
-              </div>
-              <ToggleGroup
-                type="single"
-                value={selectedMode}
-                onValueChange={handleModeChange}
-                disabled={modeUpdating || assistantModeLoading}
-                className="grid w-full grid-cols-2 rounded-xl border bg-background p-1"
-              >
-                <ToggleGroupItem value="PLANNER" className="h-9 rounded-lg px-3 text-xs">
-                  {tr("Planner", "Планировщик")}
-                </ToggleGroupItem>
-                <ToggleGroupItem value="COMPANION" className="h-9 rounded-lg px-3 text-xs">
-                  {tr("Companion", "Помощник")}
-                </ToggleGroupItem>
-              </ToggleGroup>
-              <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-                {selectedMode === "PLANNER"
-                  ? tr(
-                      "Optimized for schedules, tasks, and time planning.",
-                      "Оптимизирован для расписаний, задач и планирования времени.",
-                    )
-                  : tr(
-                      "Universal assistant mode for questions, ideas and communication.",
-                      "Универсальный режим ассистента для вопросов, идей и общения.",
-                    )}
-              </p>
-            </div>
-          </div>
-          {showModeHint && (
-            <div className="mx-auto mt-2 w-full max-w-6xl rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-xs text-muted-foreground">
-              {tr(
-                "Tip: switch mode anytime. Planner focuses on schedule, Companion is universal.",
-                "Подсказка: режим можно менять в любой момент. Планировщик фокусируется на расписании, Помощник — универсальный.",
-              )}
-            </div>
-          )}
-        </div>
-
-        <ScrollArea className="flex-1 p-3 md:p-4">
+      <div className="flex min-w-0 flex-1 flex-col bg-background/60">
+        <ScrollArea className="flex-1 p-4 md:p-6">
           {uiMessages.length === 0 ? (
-            <div className="flex h-full flex-col items-center justify-center py-20">
-              <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-muted">
-                <Bot className="h-7 w-7 text-muted-foreground" />
+            <div className="mx-auto flex h-full max-w-2xl flex-col items-center justify-center py-20 text-center">
+              <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl border bg-card shadow-sm">
+                <Bot className="h-8 w-8 text-foreground" />
               </div>
-              <h3 className="text-sm font-medium text-foreground">AI Assistant</h3>
-              <p className="mt-1 max-w-xs text-center text-sm text-muted-foreground">
+              <h3 className="text-xl font-semibold text-foreground">{tr("AI assistant", "AI помощник")}</h3>
+              <p className="mt-2 max-w-md text-sm leading-6 text-muted-foreground">
                 {tr(
                   "Ask about your schedule, create tasks, or request optimization suggestions.",
                   "Спрашивайте про расписание, создавайте задачи и запрашивайте предложения по оптимизации.",
                 )}
               </p>
+              <div className="mt-7 w-full rounded-2xl border bg-card/90 p-3 text-left shadow-sm">
+                <div className="mb-2 flex items-center justify-between px-1">
+                  <span className="text-xs font-semibold uppercase text-muted-foreground">{tr("Mode", "Режим")}</span>
+                  {modeUpdating || assistantModeLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" /> : null}
+                </div>
+                <ToggleGroup
+                  type="single"
+                  value={selectedMode}
+                  onValueChange={handleModeChange}
+                  disabled={modeUpdating || assistantModeLoading}
+                  className="grid w-full grid-cols-2 rounded-xl border bg-background p-1"
+                >
+                  <ToggleGroupItem value="PLANNER" className="h-10 rounded-lg px-3 text-sm">
+                    {tr("Planner", "Планировщик")}
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="COMPANION" className="h-10 rounded-lg px-3 text-sm">
+                    {tr("Companion", "Помощник")}
+                  </ToggleGroupItem>
+                </ToggleGroup>
+                <p className="mt-3 px-1 text-xs leading-relaxed text-muted-foreground">
+                  {selectedMode === "PLANNER"
+                    ? tr("For schedules, tasks, routes and time planning.", "Для расписания, задач, маршрутов и планирования времени.")
+                    : tr("For questions, ideas and regular conversation.", "Для вопросов, идей и обычного общения.")}
+                </p>
+              </div>
             </div>
           ) : (
-            <div className="mx-auto flex w-full max-w-4xl flex-col gap-4">
+            <div className="mx-auto flex w-full max-w-5xl flex-col gap-4">
               {uiMessages.map((msg, i) => {
                 const options = (msg.meta?.options || [])
                   .map((item) => (typeof item === "object" && item ? readOption(item as Record<string, unknown>) : null))
@@ -697,8 +642,8 @@ export default function AiChatPage() {
           )}
         </ScrollArea>
 
-        <div className="border-t bg-card/80 backdrop-blur-sm p-3">
-          <form onSubmit={handleSend} className="mx-auto flex w-full max-w-4xl flex-col gap-2">
+        <div className="border-t bg-card/80 p-3 backdrop-blur-sm">
+          <form onSubmit={handleSend} className="mx-auto flex w-full max-w-5xl flex-col gap-2">
             {isListening && (
               <div className="rounded-md border border-red-500/30 bg-red-500/5 px-3 py-2 text-xs text-muted-foreground">
                 <div className="inline-flex items-center gap-1.5 text-red-500">
@@ -765,11 +710,18 @@ export default function AiChatPage() {
                 <input ref={fileInputRef} type="file" accept="audio/*" className="hidden" onChange={handleVoiceUpload} />
               </div>
 
-              <Input
+              <Textarea
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" && !event.shiftKey) {
+                    event.preventDefault()
+                    event.currentTarget.form?.requestSubmit()
+                  }
+                }}
                 placeholder={tr("Type a message...", "Введите сообщение...")}
-                className="flex-1 h-9"
+                rows={1}
+                className="max-h-32 min-h-9 flex-1 resize-none rounded-xl"
                 disabled={isStreaming}
               />
 

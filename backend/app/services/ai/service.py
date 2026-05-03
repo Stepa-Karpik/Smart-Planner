@@ -65,6 +65,7 @@ class ChatResult:
     answer: str
     chat_type: AIChatType | None = None
     display_index: int | None = None
+    session_title: str | None = None
     mode: AssistantMode | None = None
     intent: str | None = None
     fallback_reason_code: str | None = None
@@ -119,6 +120,46 @@ class AIService:
     @staticmethod
     def _strip_meta_prefix(text: str) -> str:
         return re.sub(r"^\[\[meta:[a-z_]+]]\s*", "", text).strip()
+
+    @staticmethod
+    def _derive_session_title(text: str, language: str) -> str:
+        fallback = "Новый чат" if language == "ru" else "New chat"
+        cleaned = re.sub(r"https?://\S+|`[^`]*`", " ", text or "")
+        words = re.findall(r"[A-Za-zА-Яа-яЁё0-9]+", cleaned)
+        if not words:
+            return fallback
+
+        stop_words = {
+            "создай",
+            "создать",
+            "добавь",
+            "добавить",
+            "покажи",
+            "показать",
+            "расскажи",
+            "сделай",
+            "сделать",
+            "мне",
+            "пожалуйста",
+            "плиз",
+            "давай",
+            "can",
+            "could",
+            "please",
+            "make",
+            "create",
+            "add",
+            "show",
+            "tell",
+            "me",
+        }
+        meaningful = [word for word in words if word.lower() not in stop_words]
+        picked = (meaningful or words)[:4]
+        title = " ".join(picked).strip()
+        if not title:
+            return fallback
+        title = title[:48].rstrip()
+        return title[:1].upper() + title[1:]
 
     @staticmethod
     def _with_meta(meta: str, text: str) -> str:
@@ -2179,6 +2220,10 @@ class AIService:
             requested_session_id=session_id,
             target_chat_type=target_chat_type,
         )
+        session_was_empty = await self.repo.is_session_empty(user_id, ai_session.id)
+        if session_was_empty and not ai_session.title:
+            title = self._derive_session_title(clean_message or message, request_language)
+            ai_session = await self.repo.update_session_title(ai_session, title)
 
         await self.repo.create_message(
             session_id=ai_session.id,
@@ -2521,6 +2566,7 @@ class AIService:
             session_id=ai_session.id,
             chat_type=ai_session.chat_type,
             display_index=ai_session.display_index,
+            session_title=ai_session.title,
             answer=answer,
             mode=envelope.mode,
             intent=envelope.intent,
