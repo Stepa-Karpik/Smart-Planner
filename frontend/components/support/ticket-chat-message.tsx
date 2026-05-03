@@ -232,12 +232,18 @@ export function TicketChatMessage({
   if (isSystem) {
     return (
       <div className="flex justify-center">
-        <div className={cn("max-w-[90%] rounded-full border px-3 py-1.5 text-center text-xs", adminScope ? "border-slate-200 bg-white/80 text-slate-600 dark:border-white/10 dark:bg-white/[0.03] dark:text-white/60" : "border-white/10 bg-white/[0.03] text-white/60")}>
+        <div
+          className={cn(
+            "max-w-[90%] rounded-full border px-3 py-1.5 text-center text-xs",
+            adminScope
+              ? "border-slate-200 bg-white/80 text-slate-600 dark:border-white/10 dark:bg-white/[0.03] dark:text-white/60"
+              : "border-white/10 bg-white/[0.03] text-white/60",
+          )}
+        >
           {localizeSystemBody(locale, message.body)}
-          <span className={cn("ml-2", adminScope ? "text-slate-400 dark:text-white/35" : "text-white/35")}>{formatDateTime(message.created_at, locale)}</span>
-        <div className="max-w-[90%] rounded-full border border-slate-200 bg-white px-3 py-1.5 text-center text-xs text-slate-500 dark:border-white/10 dark:bg-white/[0.03] dark:text-white/60">
-          {localizeSystemBody(locale, message.body)}
-          <span className="ml-2 text-slate-400 dark:text-white/35">{formatDateTime(message.created_at, locale)}</span>
+          <span className={cn("ml-2", adminScope ? "text-slate-400 dark:text-white/35" : "text-white/35")}>
+            {formatDateTime(message.created_at, locale)}
+          </span>
         </div>
       </div>
     )
