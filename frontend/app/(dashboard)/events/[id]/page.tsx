@@ -21,10 +21,9 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
 import { deleteEvent, fetchRoutePreview, fetchRouteRecommendations, updateEvent, useEvent, useProfile } from "@/lib/hooks"
+import { routeModesForLocation } from "@/lib/route-modes"
 import { cn } from "@/lib/utils"
 import { useI18n } from "@/lib/i18n"
 import { formatDateTimeInTimezone } from "@/lib/timezone"
@@ -42,8 +41,6 @@ const priorityColors: Record<string, string> = {
   "1": "border-slate-200 bg-white/80 text-slate-600 dark:border-white/15 dark:bg-white/5 dark:text-white/70",
   "0": "border-slate-200 bg-white/80 text-slate-600 dark:border-white/15 dark:bg-white/5 dark:text-white/70",
 }
-
-const routeModes: RouteMode[] = ["walking", "public_transport", "metro", "driving", "bicycle"]
 
 function formatDateTime(value: string, timezone?: string | null, locale?: string | null) {
   return formatDateTimeInTimezone(value, timezone, locale)
@@ -114,7 +111,14 @@ export default function EventDetailPage() {
     () => pointQuery(event?.location_lat, event?.location_lon, event?.location_text),
     [event?.location_lat, event?.location_lon, event?.location_text],
   )
+  const availableRouteModes = useMemo(() => routeModesForLocation(profile?.home_location_text), [profile?.home_location_text])
   const routeReady = Boolean(fromValue && toValue && event)
+
+  useEffect(() => {
+    if (!availableRouteModes.includes(mode)) {
+      setMode("public_transport")
+    }
+  }, [availableRouteModes, mode])
 
   useEffect(() => {
     let cancelled = false
@@ -134,7 +138,7 @@ export default function EventDetailPage() {
         fetchRouteRecommendations({
           from: fromValue,
           to: toValue,
-          modes: routeModes,
+          modes: availableRouteModes,
           departure_at: event.start_at,
         }),
       ])
@@ -161,7 +165,7 @@ export default function EventDetailPage() {
     return () => {
       cancelled = true
     }
-  }, [event, fromValue, locale, mode, toValue])
+  }, [availableRouteModes, event, fromValue, locale, mode, toValue])
 
   async function handleStatusChange(status: "done" | "canceled") {
     const response = await updateEvent(eventId, { status })
@@ -185,12 +189,9 @@ export default function EventDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="mx-auto flex max-w-[1600px] flex-col gap-4 p-4 md:p-6">
+      <div className="mx-auto flex max-w-[1500px] flex-col gap-4 p-4 md:p-6">
         <Skeleton className="h-12 rounded-2xl" />
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
-          <Skeleton className="h-[36rem] rounded-3xl" />
-          <Skeleton className="h-[28rem] rounded-3xl" />
-        </div>
+        <Skeleton className="h-[42rem] rounded-3xl" />
       </div>
     )
   }
@@ -212,124 +213,125 @@ export default function EventDetailPage() {
   const mapUrl = buildMapUrl(event.location_text, event.location_lat, event.location_lon)
 
   return (
-    <div className="mx-auto flex max-w-[1600px] flex-col gap-4 p-4 md:p-6">
-      <div className="flex flex-col gap-3 rounded-3xl border border-slate-200/80 bg-white/85 p-4 shadow-[0_18px_55px_rgba(15,23,42,0.08)] backdrop-blur-sm dark:border-white/10 dark:bg-black/30 lg:flex-row lg:items-start lg:justify-between">
-        <div className="min-w-0">
-          <Button asChild variant="ghost" size="sm" className="-ml-2 mb-2 w-fit rounded-xl text-slate-500 hover:text-slate-950 dark:text-white/55 dark:hover:text-white">
+    <div className="mx-auto flex max-w-[1500px] flex-col gap-4 p-4 md:p-6">
+      <section className="overflow-hidden rounded-3xl border border-border/70 bg-card/85 shadow-[0_24px_70px_rgba(15,23,42,0.10)] backdrop-blur dark:bg-card/75">
+        <div className="flex flex-col gap-4 border-b border-border/70 p-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="min-w-0">
+            <Button asChild variant="ghost" size="sm" className="-ml-2 mb-2 w-fit rounded-xl text-muted-foreground hover:text-foreground">
             <Link href="/events">
               <ArrowLeft className="mr-1.5 h-4 w-4" />
               {tr("Events", "События")}
             </Link>
           </Button>
-          <h1 className={cn("break-words text-2xl font-semibold tracking-tight text-slate-950 dark:text-white md:text-3xl", event.status === "canceled" && "line-through opacity-60")}>
-            {event.title}
-          </h1>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <Badge variant="outline" className={cn("rounded-full text-xs", statusColors[event.status])}>
-              {event.status === "planned" ? tr("planned", "запланировано") : event.status === "done" ? tr("done", "выполнено") : tr("canceled", "отменено")}
-            </Badge>
-            <Badge variant="outline" className={cn("rounded-full text-xs", priorityColors[String(event.priority)] || priorityColors["0"])}>
-              {tr("Priority", "Приоритет")}: {event.priority}
-            </Badge>
-            {!event.all_day ? (
-              <Badge variant="outline" className="rounded-full border-slate-200 bg-white/80 text-xs text-slate-600 dark:border-white/15 dark:bg-white/5 dark:text-white/70">
-                {formatDateTime(event.start_at, profile?.timezone, locale)}
+            <h1 className={cn("break-words text-2xl font-semibold tracking-tight text-foreground md:text-3xl", event.status === "canceled" && "line-through opacity-60")}>
+              {event.title}
+            </h1>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <Badge variant="outline" className={cn("rounded-full text-xs", statusColors[event.status])}>
+                {event.status === "planned" ? tr("planned", "запланировано") : event.status === "done" ? tr("done", "выполнено") : tr("canceled", "отменено")}
               </Badge>
-            ) : null}
+              <Badge variant="outline" className={cn("rounded-full text-xs", priorityColors[String(event.priority)] || priorityColors["0"])}>
+                {tr("Priority", "Приоритет")}: {event.priority}
+              </Badge>
+              {!event.all_day ? (
+                <Badge variant="outline" className="rounded-full border-border bg-background text-xs text-muted-foreground">
+                  {formatDateTime(event.start_at, profile?.timezone, locale)}
+                </Badge>
+              ) : null}
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="outline" size="sm" className="rounded-xl" onClick={() => setEditorOpen(true)}>
+              <Pencil className="mr-1.5 h-3.5 w-3.5" />
+              {tr("Edit", "Изменить")}
+            </Button>
+            {event.status === "planned" && (
+              <>
+                <Button variant="outline" size="sm" className="rounded-xl" onClick={() => handleStatusChange("done")}>
+                  <Check className="mr-1.5 h-3.5 w-3.5" />
+                  {tr("Done", "Выполнено")}
+                </Button>
+                <Button variant="outline" size="sm" className="rounded-xl" onClick={() => handleStatusChange("canceled")}>
+                  <X className="mr-1.5 h-3.5 w-3.5" />
+                  {tr("Cancel", "Отменить")}
+                </Button>
+              </>
+            )}
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" size="sm" className="rounded-xl text-destructive hover:text-destructive">
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>{tr("Delete event?", "Удалить событие?")}</AlertDialogTitle>
+                  <AlertDialogDescription>{tr("This action cannot be undone.", "Это действие нельзя отменить.")}</AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>{tr("Cancel", "Отмена")}</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                    {tr("Delete", "Удалить")}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" size="sm" className="rounded-xl" onClick={() => setEditorOpen(true)}>
-            <Pencil className="mr-1.5 h-3.5 w-3.5" />
-            {tr("Edit", "Изменить")}
-          </Button>
-          {event.status === "planned" && (
-            <>
-              <Button variant="outline" size="sm" className="rounded-xl" onClick={() => handleStatusChange("done")}>
-                <Check className="mr-1.5 h-3.5 w-3.5" />
-                {tr("Done", "Выполнено")}
-              </Button>
-              <Button variant="outline" size="sm" className="rounded-xl" onClick={() => handleStatusChange("canceled")}>
-                <X className="mr-1.5 h-3.5 w-3.5" />
-                {tr("Cancel", "Отменить")}
-              </Button>
-            </>
-          )}
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="outline" size="sm" className="rounded-xl text-destructive hover:text-destructive">
-                <Trash2 className="h-3.5 w-3.5" />
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>{tr("Delete event?", "Удалить событие?")}</AlertDialogTitle>
-                <AlertDialogDescription>{tr("This action cannot be undone.", "Это действие нельзя отменить.")}</AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>{tr("Cancel", "Отмена")}</AlertDialogCancel>
-                <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                  {tr("Delete", "Удалить")}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
-        <div className="space-y-4">
-          <Card className="rounded-3xl border-slate-200/80 bg-white/85 shadow-[0_18px_55px_rgba(15,23,42,0.08)] backdrop-blur-sm dark:border-white/10 dark:bg-black/30">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm text-slate-950 dark:text-white">{tr("Event details", "Детали события")}</CardTitle>
-            </CardHeader>
-            <CardContent className="grid grid-cols-1 gap-4 text-sm lg:grid-cols-2">
-              <div className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-4 dark:border-white/10 dark:bg-white/[0.02]">
-                <Clock className="mt-0.5 h-4 w-4 shrink-0 text-slate-400 dark:text-white/45" />
+        <div className="grid gap-4 p-4 xl:grid-cols-[360px_minmax(0,1fr)]">
+          <aside className="space-y-3">
+            <div className="rounded-2xl border border-border/70 bg-background/70 p-4">
+              <div className="mb-3 text-xs font-semibold uppercase text-muted-foreground">{tr("Details", "Детали")}</div>
+              <div className="space-y-3 text-sm">
+                <div className="flex items-start gap-3">
+                  <Clock className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
                 {event.all_day ? (
-                  <span className="text-slate-700 dark:text-white/75">{tr("All day", "Весь день")}</span>
+                    <span className="text-foreground">{tr("All day", "Весь день")}</span>
                 ) : (
-                  <div className="text-slate-700 dark:text-white/75">
-                    <p>{formatDateTime(event.start_at, profile?.timezone, locale)}</p>
-                    <p>{formatDateTime(event.end_at, profile?.timezone, locale)}</p>
+                    <div className="text-foreground">
+                      <p>{formatDateTime(event.start_at, profile?.timezone, locale)}</p>
+                      <p className="text-muted-foreground">{formatDateTime(event.end_at, profile?.timezone, locale)}</p>
                   </div>
                 )}
-              </div>
-
-              <div className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-4 dark:border-white/10 dark:bg-white/[0.02]">
-                <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-slate-400 dark:text-white/45" />
+                </div>
+                <div className="flex items-start gap-3">
+                  <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
                 {event.location_text ? (
                   mapUrl ? (
-                    <a href={mapUrl} target="_blank" rel="noopener noreferrer" className="break-words text-slate-700 hover:text-slate-950 hover:underline dark:text-white/75 dark:hover:text-white">
-                      {event.location_text}
-                    </a>
+                      <a href={mapUrl} target="_blank" rel="noopener noreferrer" className="break-words text-foreground hover:underline">{event.location_text}</a>
                   ) : (
-                    <span className="break-words text-slate-700 dark:text-white/75">{event.location_text}</span>
+                      <span className="break-words text-foreground">{event.location_text}</span>
                   )
                 ) : (
-                  <span className="text-slate-400 dark:text-white/40">{tr("No location", "Локация не указана")}</span>
+                    <span className="text-muted-foreground">{tr("No location", "Локация не указана")}</span>
                 )}
+                </div>
               </div>
-
               {event.description ? (
-                <div className="lg:col-span-2">
-                  <Separator className="mb-4" />
-                  <p className="whitespace-pre-wrap leading-relaxed text-slate-800 dark:text-white/80">{event.description}</p>
+                <div className="mt-4 rounded-xl bg-muted/50 p-3 text-sm leading-relaxed text-foreground">
+                  <p className="whitespace-pre-wrap">{event.description}</p>
                 </div>
               ) : null}
-            </CardContent>
-          </Card>
+            </div>
+            <div className="rounded-2xl border border-border/70 bg-background/70 p-4">
+              <div className="mb-3 flex items-center gap-1.5 text-xs font-semibold uppercase text-muted-foreground">
+                <CalendarDays className="h-4 w-4" />
+                {tr("Reminders", "Напоминания")}
+              </div>
+              <ReminderList eventId={eventId} />
+            </div>
+          </aside>
 
-          <Card className="overflow-hidden rounded-3xl border-slate-200/80 bg-white/85 shadow-[0_18px_55px_rgba(15,23,42,0.08)] backdrop-blur-sm dark:border-white/10 dark:bg-black/30">
-            <CardHeader className="border-b border-slate-200/70 pb-3 dark:border-white/10">
-              <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                <CardTitle className="flex items-center gap-2 text-sm text-slate-950 dark:text-white">
-                  <Route className="h-4 w-4" />
-                  {tr("Route to event", "Маршрут к событию")}
-                </CardTitle>
-                <div className="flex flex-wrap gap-1.5">
-                  {routeModes.map((item) => (
+          <main className="rounded-2xl border border-border/70 bg-background/70 p-3">
+            <div className="mb-3 flex flex-col gap-3 px-1 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                <Route className="h-4 w-4" />
+                {tr("Route to event", "Маршрут к событию")}
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {availableRouteModes.map((item) => (
                     <Button
                       key={item}
                       type="button"
@@ -340,50 +342,56 @@ export default function EventDetailPage() {
                     >
                       {modeLabel(item, tr)}
                     </Button>
-                  ))}
-                </div>
+                ))}
               </div>
-            </CardHeader>
-            <CardContent className="p-3">
-              {!routeReady ? (
-                <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-5 text-sm text-slate-500 dark:border-white/10 dark:bg-white/[0.02] dark:text-white/55">
+            </div>
+
+            {!routeReady ? (
+              <div className="rounded-2xl border border-border bg-muted/40 p-5 text-sm text-muted-foreground">
                   {tr(
                     "Set your home location in profile and add a location to the event to build the route automatically.",
                     "Укажите место проживания в профиле и локацию события, чтобы маршрут строился автоматически.",
                   )}
                 </div>
               ) : routeLoading && !preview ? (
-                <div className="flex h-64 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50/80 text-slate-400 dark:border-white/10 dark:bg-white/[0.02] dark:text-white/45">
+              <div className="flex h-[480px] items-center justify-center rounded-2xl border border-border bg-muted/40 text-muted-foreground">
                   <Loader2 className="h-5 w-5 animate-spin" />
                 </div>
               ) : routeError ? (
-                <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-700 dark:border-red-400/20 dark:bg-red-500/5 dark:text-red-200">
+              <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-700 dark:border-red-400/20 dark:bg-red-500/5 dark:text-red-200">
                   {routeError}
                 </div>
               ) : preview ? (
+              <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_260px]">
+                <RoutePreviewMap
+                  fromPoint={preview.from_point}
+                  toPoint={preview.to_point}
+                  geometryLatLon={preview.geometry_latlon}
+                  geometry={preview.geometry}
+                  provider={mapProvider}
+                  className="h-[480px]"
+                />
                 <div className="space-y-3">
-                  <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-3 dark:border-white/10 dark:bg-white/[0.02]">
+                  <div className="rounded-2xl border border-border bg-card p-4">
+                    <div className="mb-3 flex flex-wrap items-center gap-2">
                     <Badge variant="outline" className="rounded-full">{modeLabel(preview.mode, tr)}</Badge>
-                    <div className="flex items-center gap-1.5 text-sm text-slate-700 dark:text-white/75">
-                      <Clock className="h-4 w-4 text-slate-400 dark:text-white/45" />
+                      {routeLoading ? <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /> : null}
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div className="rounded-xl bg-muted/50 p-3">
+                        <Clock className="mb-2 h-4 w-4 text-muted-foreground" />
                       {formatDuration(preview.duration_sec, tr)}
                     </div>
-                    <div className="flex items-center gap-1.5 text-sm text-slate-700 dark:text-white/75">
-                      <Ruler className="h-4 w-4 text-slate-400 dark:text-white/45" />
+                      <div className="rounded-xl bg-muted/50 p-3">
+                        <Ruler className="mb-2 h-4 w-4 text-muted-foreground" />
                       {formatDistance(preview.distance_m)}
                     </div>
-                    {routeLoading ? <Loader2 className="ml-auto h-4 w-4 animate-spin text-slate-400" /> : null}
                   </div>
-                  <RoutePreviewMap
-                    fromPoint={preview.from_point}
-                    toPoint={preview.to_point}
-                    geometryLatLon={preview.geometry_latlon}
-                    geometry={preview.geometry}
-                    provider={mapProvider}
-                  />
+                  </div>
                   {recommendations.length > 0 ? (
-                    <div className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-3">
-                      {recommendations.slice(0, 3).map((item, index) => (
+                    <div className="space-y-2">
+                      <div className="px-1 text-xs font-semibold uppercase text-muted-foreground">{tr("Options", "Варианты")}</div>
+                      {recommendations.filter((item) => availableRouteModes.includes(item.mode)).slice(0, 4).map((item, index) => (
                         <button
                           key={`${item.mode}-${index}`}
                           type="button"
@@ -407,23 +415,11 @@ export default function EventDetailPage() {
                     </div>
                   ) : null}
                 </div>
+              </div>
               ) : null}
-            </CardContent>
-          </Card>
+          </main>
         </div>
-
-        <Card className="h-fit rounded-3xl border-slate-200/80 bg-white/85 shadow-[0_18px_55px_rgba(15,23,42,0.08)] backdrop-blur-sm dark:border-white/10 dark:bg-black/30 xl:sticky xl:top-6">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-1.5 text-sm text-slate-950 dark:text-white">
-              <CalendarDays className="h-4 w-4" />
-              {tr("Reminders", "Напоминания")}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ReminderList eventId={eventId} />
-          </CardContent>
-        </Card>
-      </div>
+      </section>
 
       <EventEditorModal open={editorOpen} onOpenChange={setEditorOpen} event={event} onSaved={() => mutate()} />
     </div>

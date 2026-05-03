@@ -16,15 +16,17 @@ import {
 } from "@/lib/leaflet-map"
 import { drawRoute } from "@/lib/route-draw"
 import { normalizeLatLonLineGeometry, normalizeLineGeometry, normalizePoint, type RoutePoint } from "@/lib/route-geometry"
+import { cn } from "@/lib/utils"
 
 interface LeafletRoutePreviewMapProps {
   fromPoint: RoutePoint
   toPoint: RoutePoint
   geometryLatLon?: unknown
   geometry?: unknown
+  className?: string
 }
 
-export function LeafletRoutePreviewMap({ fromPoint, toPoint, geometryLatLon, geometry }: LeafletRoutePreviewMapProps) {
+export function LeafletRoutePreviewMap({ fromPoint, toPoint, geometryLatLon, geometry, className }: LeafletRoutePreviewMapProps) {
   const { tr } = useI18n()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -169,8 +171,8 @@ export function LeafletRoutePreviewMap({ fromPoint, toPoint, geometryLatLon, geo
   }, [safeFrom.lat, safeFrom.lon, safeTo.lat, safeTo.lon, lineCoords])
 
   return (
-    <div className="relative rounded-lg border bg-card">
-      <div ref={setContainerEl} className="h-[320px] w-full rounded-lg" />
+    <div className="relative overflow-hidden rounded-2xl border bg-card">
+      <div ref={setContainerEl} className={cn("h-[320px] w-full rounded-2xl", className)} />
 
       {loading && (
         <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/70">

@@ -6,6 +6,7 @@ import { useI18n } from "@/lib/i18n"
 import { mapLogError, mapLogInfo, mapLogWarn, waitForContainerSize } from "@/lib/leaflet-map"
 import { drawRoute } from "@/lib/route-draw"
 import { normalizeLatLonLineGeometry, normalizeLineGeometry, normalizePoint, type RoutePoint } from "@/lib/route-geometry"
+import { cn } from "@/lib/utils"
 import {
   calcYandexBounds,
   fitYandexViewport,
@@ -20,9 +21,10 @@ interface YandexRoutePreviewMapProps {
   toPoint: RoutePoint
   geometryLatLon?: unknown
   geometry?: unknown
+  className?: string
 }
 
-export function YandexRoutePreviewMap({ fromPoint, toPoint, geometryLatLon, geometry }: YandexRoutePreviewMapProps) {
+export function YandexRoutePreviewMap({ fromPoint, toPoint, geometryLatLon, geometry, className }: YandexRoutePreviewMapProps) {
   const { tr } = useI18n()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -192,8 +194,8 @@ export function YandexRoutePreviewMap({ fromPoint, toPoint, geometryLatLon, geom
   }, [safeFrom.lat, safeFrom.lon, safeTo.lat, safeTo.lon, lineCoords])
 
   return (
-    <div className="relative rounded-lg border bg-card">
-      <div ref={setContainerEl} className="h-[320px] w-full rounded-lg" />
+    <div className="relative overflow-hidden rounded-2xl border bg-card">
+      <div ref={setContainerEl} className={cn("h-[320px] w-full rounded-2xl", className)} />
 
       {loading && (
         <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/70">

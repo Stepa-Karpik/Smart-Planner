@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { changePassword, updateProfile, useProfile } from "@/lib/hooks"
+import { hasMetroCity } from "@/lib/route-modes"
 import type { MapProvider, RouteMode } from "@/lib/types"
 import { useI18n } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
@@ -28,11 +29,6 @@ const metroOption = {
   labelEn: "Metro",
   labelRu: "Метро",
   icon: Train,
-}
-
-function hasMetroCity(location: string) {
-  const normalized = location.toLowerCase()
-  return /москв|moscow|санкт[-\s]?петербург|петербург|spb|saint[-\s]?petersburg|st\.?\s?petersburg|новосибирск|novosibirsk/.test(normalized)
 }
 
 export default function ProfilePage() {

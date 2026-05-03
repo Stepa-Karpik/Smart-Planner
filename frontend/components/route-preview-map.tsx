@@ -15,13 +15,14 @@ interface RoutePreviewMapProps {
   geometryLatLon?: unknown
   geometry?: unknown
   provider?: MapProvider
+  className?: string
 }
 
-export function RoutePreviewMap({ fromPoint, toPoint, geometryLatLon, geometry, provider = "leaflet" }: RoutePreviewMapProps) {
+export function RoutePreviewMap({ fromPoint, toPoint, geometryLatLon, geometry, provider = "leaflet", className }: RoutePreviewMapProps) {
   if (provider === "yandex") {
-    return <YandexRoutePreviewMap fromPoint={fromPoint} toPoint={toPoint} geometryLatLon={geometryLatLon} geometry={geometry} />
+    return <YandexRoutePreviewMap fromPoint={fromPoint} toPoint={toPoint} geometryLatLon={geometryLatLon} geometry={geometry} className={className} />
   }
 
-  return <LeafletRoutePreviewMap fromPoint={fromPoint} toPoint={toPoint} geometryLatLon={geometryLatLon} geometry={geometry} />
+  return <LeafletRoutePreviewMap fromPoint={fromPoint} toPoint={toPoint} geometryLatLon={geometryLatLon} geometry={geometry} className={className} />
 }
 
