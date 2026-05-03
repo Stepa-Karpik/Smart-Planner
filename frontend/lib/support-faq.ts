@@ -6,104 +6,166 @@ export type SupportFaqItem = {
   answerRu: string
 }
 
-export const SUPPORT_FAQ_ITEMS: SupportFaqItem[] = [
+export type SupportFaqCategory = {
+  id: string
+  titleEn: string
+  titleRu: string
+  descriptionEn: string
+  descriptionRu: string
+  items: SupportFaqItem[]
+}
+
+export const SUPPORT_FAQ_CATEGORIES: SupportFaqCategory[] = [
   {
-    id: "feed-filters",
-    questionEn: "Why don't I see notifications in the feed?",
-    questionRu: "Почему я не вижу уведомления в ленте?",
-    answerEn:
-      "Open the Feed page and check the filter buttons on the right. Notifications, updates and reminders can be toggled independently.",
-    answerRu:
-      "Откройте страницу «Лента» и проверьте кнопки фильтров справа. Уведомления, обновления и напоминания можно включать и выключать независимо.",
+    id: "assistant",
+    titleEn: "Assistant",
+    titleRu: "Ассистент",
+    descriptionEn: "Planner mode, companion mode, chat names and voice input.",
+    descriptionRu: "Режимы, названия чатов, голосовой ввод и работа с расписанием.",
+    items: [
+      {
+        id: "assistant-mode",
+        questionEn: "What is the difference between Planner and Companion?",
+        questionRu: "Чем отличаются «Планировщик» и «Помощник»?",
+        answerEn: "Planner works with schedules, events, routes and optimization. Companion is better for regular questions and free-form chat.",
+        answerRu: "«Планировщик» работает с расписанием, событиями, маршрутами и оптимизацией. «Помощник» лучше для обычных вопросов и свободного диалога.",
+      },
+      {
+        id: "assistant-title",
+        questionEn: "How are chat names created?",
+        questionRu: "Как создаются названия чатов?",
+        answerEn: "A new chat gets a short title from the first user message. Later messages do not rename the chat.",
+        answerRu: "Новый чат получает короткое название по первому сообщению пользователя. Следующие сообщения название не меняют.",
+      },
+      {
+        id: "assistant-voice",
+        questionEn: "Voice input does not work. What should I check?",
+        questionRu: "Не работает голосовой ввод. Что проверить?",
+        answerEn: "Allow microphone access in the browser and reload the page. Some browsers do not support realtime speech recognition.",
+        answerRu: "Разрешите доступ к микрофону в браузере и перезагрузите страницу. Некоторые браузеры не поддерживают realtime-распознавание.",
+      },
+    ],
   },
   {
-    id: "browser-translate",
-    questionEn: "Why can the page break when browser auto-translation is enabled?",
-    questionRu: "Почему страница может ломаться при включённом автопереводе браузера?",
-    answerEn:
-      "Some browsers modify page markup during auto-translation, which may break React rendering. Disable auto-translation for this site and reload.",
-    answerRu:
-      "Некоторые браузеры изменяют разметку страницы при автопереводе, из-за чего может ломаться рендер React. Отключите автоперевод для сайта и перезагрузите страницу.",
+    id: "tickets",
+    titleEn: "Tickets",
+    titleRu: "Тикеты",
+    descriptionEn: "Support chats, attachments and response status.",
+    descriptionRu: "Чаты поддержки, вложения и статусы ответов.",
+    items: [
+      {
+        id: "ticket-create",
+        questionEn: "What should I include in a support ticket?",
+        questionRu: "Что писать в тикете поддержки?",
+        answerEn: "Add a short title, the expected result, what happened instead, and screenshots or logs when possible.",
+        answerRu: "Укажите короткое название, ожидаемый результат, что произошло фактически, и по возможности приложите скриншоты или логи.",
+      },
+      {
+        id: "ticket-attachments",
+        questionEn: "What files can I attach?",
+        questionRu: "Какие файлы можно прикрепить?",
+        answerEn: "Up to 3 files, each up to 3 MB. Images, PDF, text, logs, JSON and ZIP files are supported.",
+        answerRu: "До 3 файлов, каждый до 3 МБ. Поддерживаются изображения, PDF, текстовые файлы, логи, JSON и ZIP.",
+      },
+      {
+        id: "ticket-response-time",
+        questionEn: "How do I know support replied?",
+        questionRu: "Как понять, что поддержка ответила?",
+        answerEn: "The ticket chat will show a new message, and the Feed page will show a support notification.",
+        answerRu: "В чате тикета появится новое сообщение, а в «Ленте» появится уведомление поддержки.",
+      },
+    ],
   },
   {
-    id: "telegram-2fa",
-    questionEn: "How do I fix Telegram / 2FA issues?",
-    questionRu: "Как исправить проблемы с Telegram / 2FA?",
-    answerEn:
-      "Open Integrations, verify Telegram connection status, then disable and re-enable Telegram 2FA if needed. If the flow is stuck, create a ticket with screenshots.",
-    answerRu:
-      "Откройте «Интеграции», проверьте статус подключения Telegram, затем при необходимости отключите и включите Telegram 2FA заново. Если процесс завис — создайте тикет со скриншотами.",
+    id: "integrations",
+    titleEn: "Integrations",
+    titleRu: "Интеграции",
+    descriptionEn: "Telegram, maps and connected services.",
+    descriptionRu: "Telegram, карты и подключенные сервисы.",
+    items: [
+      {
+        id: "telegram-link",
+        questionEn: "Telegram is not linked. What should I do?",
+        questionRu: "Telegram не привязан. Что делать?",
+        answerEn: "Open Integrations, start the linking flow again, and confirm the code in Telegram before it expires.",
+        answerRu: "Откройте «Интеграции», запустите привязку заново и подтвердите код в Telegram до истечения срока.",
+      },
+      {
+        id: "map-provider",
+        questionEn: "How do I change the map provider?",
+        questionRu: "Как сменить провайдера карт?",
+        answerEn: "Open Integrations and select the map provider. Route previews and event maps will use that setting.",
+        answerRu: "Откройте «Интеграции» и выберите провайдера карт. Предпросмотр маршрутов и карты событий будут использовать эту настройку.",
+      },
+    ],
   },
   {
-    id: "route-preview",
-    questionEn: "Route preview is empty or incorrect. What should I check?",
-    questionRu: "Предпросмотр маршрута пустой или неверный. Что проверить?",
-    answerEn:
-      "Check the event address, date/time and map provider settings in Integrations. Also confirm that the route endpoints are entered correctly.",
-    answerRu:
-      "Проверьте адрес события, дату/время и настройки карт в «Интеграциях». Также убедитесь, что точки маршрута указаны корректно.",
+    id: "events",
+    titleEn: "Events",
+    titleRu: "События",
+    descriptionEn: "Creation, routes, reminders and conflicts.",
+    descriptionRu: "Создание, маршруты, напоминания и конфликты.",
+    items: [
+      {
+        id: "event-route",
+        questionEn: "Where did route building move?",
+        questionRu: "Куда перенесли построение маршрута?",
+        answerEn: "Routes are built inside the event page. The default mode comes from Profile, and you can switch it inside the event.",
+        answerRu: "Маршрут строится внутри страницы события. Способ по умолчанию берется из профиля, но его можно сменить прямо в событии.",
+      },
+      {
+        id: "event-reminders",
+        questionEn: "How do reminders work?",
+        questionRu: "Как работают напоминания?",
+        answerEn: "Open an event and add reminders in the reminders block. Notifications will be sent according to the configured time.",
+        answerRu: "Откройте событие и добавьте напоминания в блоке напоминаний. Уведомления уйдут по настроенному времени.",
+      },
+    ],
   },
   {
-    id: "calendar-sync",
-    questionEn: "Why are some events missing after synchronization?",
-    questionRu: "Почему после синхронизации не видно часть событий?",
-    answerEn:
-      "Refresh the page, check the selected calendar source, and verify the date range. Some events can be filtered out by current view settings.",
-    answerRu:
-      "Обновите страницу, проверьте выбранный источник календаря и диапазон дат. Часть событий может быть скрыта текущими фильтрами отображения.",
+    id: "gantt",
+    titleEn: "Gantt charts",
+    titleRu: "Диаграммы ганта",
+    descriptionEn: "Timeline view and schedule density.",
+    descriptionRu: "Временная шкала и плотность расписания.",
+    items: [
+      {
+        id: "gantt-purpose",
+        questionEn: "What is the Gantt chart for?",
+        questionRu: "Для чего нужна диаграмма Ганта?",
+        answerEn: "It shows events as a timeline, making overlaps, long blocks and busy days easier to scan.",
+        answerRu: "Она показывает события на временной шкале, чтобы быстрее видеть пересечения, длинные блоки и загруженные дни.",
+      },
+      {
+        id: "gantt-missing",
+        questionEn: "Why is an event missing from the chart?",
+        questionRu: "Почему события нет на диаграмме?",
+        answerEn: "Check the selected date range, event status and current filters on the events page.",
+        answerRu: "Проверьте выбранный диапазон дат, статус события и текущие фильтры на странице событий.",
+      },
+    ],
   },
   {
-    id: "assistant-mode",
-    questionEn: "What is the difference between Planner and Companion modes?",
-    questionRu: "Чем отличаются режимы «Планировщик» и «Помощник»?",
-    answerEn:
-      "Planner focuses on schedules, tasks and optimization. Companion is more universal and better for free-form questions and discussions.",
-    answerRu:
-      "«Планировщик» сфокусирован на расписании, задачах и оптимизации. «Помощник» более универсален и лучше подходит для свободных вопросов и обсуждений.",
-  },
-  {
-    id: "assistant-voice",
-    questionEn: "Voice input does not work. How can I fix it?",
-    questionRu: "Не работает голосовой ввод. Как исправить?",
-    answerEn:
-      "Allow microphone access in your browser, reload the page, and try again. Some browsers may not support realtime speech recognition.",
-    answerRu:
-      "Разрешите доступ к микрофону в браузере, перезагрузите страницу и попробуйте снова. Некоторые браузеры не поддерживают realtime-распознавание речи.",
-  },
-  {
-    id: "ticket-attachments",
-    questionEn: "What files can I attach to a support ticket?",
-    questionRu: "Какие файлы можно прикрепить к тикету поддержки?",
-    answerEn:
-      "You can attach up to 3 files, each up to 3 MB. Images, PDF, text, logs, JSON and ZIP files are supported.",
-    answerRu:
-      "Можно прикрепить до 3 файлов, каждый до 3 МБ. Поддерживаются изображения, PDF, текстовые файлы, логи, JSON и ZIP.",
-  },
-  {
-    id: "ticket-response-time",
-    questionEn: "How do I know that support replied to my ticket?",
-    questionRu: "Как понять, что поддержка ответила на мой тикет?",
-    answerEn:
-      "You will see a new message inside the ticket chat and a support notification in the Feed page with the updated status.",
-    answerRu:
-      "Вы увидите новое сообщение в чате тикета и уведомление в «Ленте» с обновлённым статусом обращения.",
-  },
-  {
-    id: "theme-issues",
-    questionEn: "The theme looks wrong after switching. What should I do?",
-    questionRu: "После смены темы интерфейс выглядит некорректно. Что делать?",
-    answerEn:
-      "Try a hard refresh (Ctrl+F5). If the problem remains, create a ticket and attach a screenshot of the page.",
-    answerRu:
-      "Сделайте жёсткое обновление страницы (Ctrl+F5). Если проблема останется — создайте тикет и приложите скриншот страницы.",
-  },
-  {
-    id: "admin-access",
-    questionEn: "Why can't I open the admin panel?",
-    questionRu: "Почему я не могу открыть админ-панель?",
-    answerEn:
-      "The admin panel is protected by backend checks. Access is available only to users with an admin role configured in the system.",
-    answerRu:
-      "Админ-панель защищена backend-проверками. Доступ есть только у пользователей с ролью администратора, настроенной в системе.",
+    id: "login",
+    titleEn: "2FA and login",
+    titleRu: "2FA и вход",
+    descriptionEn: "Authenticator, Telegram approval and account access.",
+    descriptionRu: "Аутентификатор, подтверждение в Telegram и доступ к аккаунту.",
+    items: [
+      {
+        id: "twofa-switch",
+        questionEn: "Can I keep several 2FA methods linked?",
+        questionRu: "Можно ли держать несколько методов 2FA привязанными?",
+        answerEn: "Yes. Only one method is active at a time, but linked methods can remain stored until you unlink them.",
+        answerRu: "Да. Одновременно активен только один способ, но привязанные методы могут храниться, пока вы их не отвяжете.",
+      },
+      {
+        id: "login-problems",
+        questionEn: "I cannot sign in. What should I check first?",
+        questionRu: "Не получается войти. Что проверить сначала?",
+        answerEn: "Check the password, active 2FA method and browser time. If Telegram approval is used, confirm the request before it expires.",
+        answerRu: "Проверьте пароль, активный метод 2FA и время в браузере. Если используется Telegram, подтвердите запрос до истечения срока.",
+      },
+    ],
   },
 ]
