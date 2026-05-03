@@ -69,6 +69,8 @@
         condition: service_healthy
     ports:
       - "127.0.0.1:8000:8000"
+    volumes:
+      - support_storage:/app/storage/support
     command: ["sh", "scripts/entrypoint-api.sh"]
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8000/healthz || exit 1"]
@@ -140,3 +142,4 @@
 
 volumes:
   postgres_data:
+  support_storage:

@@ -49,7 +49,6 @@ const baseNavItems = [
   { title: "Feed", href: "/feed", icon: Bell },
   { title: "Routes", href: "/routes", icon: MapPin },
   { title: "Feasibility", href: "/feasibility", icon: AlertTriangle },
-  { title: "Profile", href: "/profile", icon: User },
   { title: "Integrations", href: "/settings/integrations", icon: Settings },
 ]
 
@@ -180,13 +179,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </SidebarMenuItem>
             <SidebarMenuItem>
               <SidebarMenuButton
+                asChild
+                isActive={pathname === "/profile"}
                 tooltip={tr("Account", "Аккаунт")}
-                className={cn("pointer-events-none rounded-xl", isDark ? "text-white/65" : "text-slate-500")}
+                className={cn(
+                  "rounded-xl transition-colors",
+                  isDark
+                    ? "text-white/65 hover:bg-white/10 hover:text-white data-[active=true]:bg-white/[0.12] data-[active=true]:text-white"
+                    : "text-slate-600 hover:bg-black/5 hover:text-slate-900 data-[active=true]:bg-black/[0.06] data-[active=true]:text-slate-900",
+                )}
               >
-                <User className="h-4 w-4" />
-                <span className="truncate text-xs">
-                  {profile?.display_name || user?.display_name || profile?.username || user?.username || user?.email || tr("Account", "Аккаунт")}
-                </span>
+                <Link href="/profile">
+                  <User className="h-4 w-4" />
+                  <span className="truncate text-xs">
+                    {profile?.display_name || user?.display_name || profile?.username || user?.username || user?.email || tr("Account", "Аккаунт")}
+                  </span>
+                </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
@@ -229,10 +237,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               {activeNav?.title === "Feed" && tr("Feed", "Лента")}
               {activeNav?.title === "Routes" && tr("Routes", "Маршруты")}
               {activeNav?.title === "Feasibility" && tr("Feasibility", "Успеваемость")}
-              {activeNav?.title === "Profile" && tr("Profile", "Профиль")}
               {activeNav?.title === "Integrations" && tr("Integrations", "Интеграции")}
               {activeNav?.title === "Admin" && tr("Admin Panel", "Админ панель")}
-              {!activeNav && (pathname.startsWith("/support") ? tr("Support", "Поддержка") : "Smart Planner")}
+              {!activeNav && pathname.startsWith("/profile") && tr("Profile", "Профиль")}
+              {!activeNav && pathname.startsWith("/support") && tr("Support", "Поддержка")}
+              {!activeNav && !pathname.startsWith("/profile") && !pathname.startsWith("/support") && "Smart Planner"}
             </p>
             <p className={cn("truncate text-xs", isDark ? "text-white/45" : "text-slate-500")}>
               {tr("Focus mode dashboard", "Фокусный режим дашборда")}

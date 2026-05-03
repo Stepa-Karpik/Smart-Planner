@@ -13,8 +13,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { changePassword, updateProfile, useProfile } from "@/lib/hooks"
 import type { MapProvider, RouteMode } from "@/lib/types"
 import { useI18n } from "@/lib/i18n"
+import { cn } from "@/lib/utils"
 
 type LocationSource = "manual_text" | "geocoded" | "map_pick"
+
+const routeModeOptions: Array<{ value: RouteMode; labelEn: string; labelRu: string }> = [
+  { value: "walking", labelEn: "Walking", labelRu: "Пешком" },
+  { value: "public_transport", labelEn: "Public transport", labelRu: "Общественный транспорт" },
+  { value: "driving", labelEn: "Driving", labelRu: "Авто" },
+  { value: "bicycle", labelEn: "Bicycle / scooter", labelRu: "Велосипед / самокат" },
+]
 
 export default function ProfilePage() {
   const { tr } = useI18n()
@@ -33,6 +41,7 @@ export default function ProfilePage() {
   const [currentPassword, setCurrentPassword] = useState("")
   const [newPassword, setNewPassword] = useState("")
   const [changingPassword, setChangingPassword] = useState(false)
+  const selectedRouteMode = routeModeOptions.find((option) => option.value === defaultMode) ?? routeModeOptions[1]
 
   useEffect(() => {
     if (!profile) return
@@ -119,15 +128,33 @@ export default function ProfilePage() {
 
               <div className="flex flex-col gap-2">
                 <Label>{tr("Default transport mode", "Режим передвижения по умолчанию")}</Label>
+                <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+                  {routeModeOptions.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => setDefaultMode(option.value)}
+                      className={cn(
+                        "rounded-xl border px-3 py-2 text-left text-sm transition",
+                        defaultMode === option.value
+                          ? "border-slate-950 bg-slate-950 text-white dark:border-white dark:bg-white dark:text-black"
+                          : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-950 dark:border-white/10 dark:bg-white/5 dark:text-white/65 dark:hover:bg-white/10 dark:hover:text-white",
+                      )}
+                    >
+                      {tr(option.labelEn, option.labelRu)}
+                    </button>
+                  ))}
+                </div>
                 <Select value={defaultMode} onValueChange={(value) => setDefaultMode(value as RouteMode)}>
                   <SelectTrigger className="w-full sm:w-72">
-                    <SelectValue />
+                    <SelectValue placeholder={tr(selectedRouteMode.labelEn, selectedRouteMode.labelRu)} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="walking">{tr("Walking", "Пешком")}</SelectItem>
-                    <SelectItem value="public_transport">{tr("Public transport", "Общественный транспорт")}</SelectItem>
-                    <SelectItem value="driving">{tr("Driving", "Авто")}</SelectItem>
-                    <SelectItem value="bicycle">{tr("Bicycle / scooter", "Велосипед / самокат")}</SelectItem>
+                    {routeModeOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {tr(option.labelEn, option.labelRu)}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

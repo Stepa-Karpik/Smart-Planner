@@ -1,7 +1,8 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { Download, FileImage, Loader2, Paperclip } from "lucide-react"
+import { Download, FileImage, Loader2, RotateCcw, ZoomIn, ZoomOut } from "lucide-react"
+import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { apiRequestBlob } from "@/lib/api-client"
 import { type Locale } from "@/lib/i18n"
 import type { SupportTicketMessage } from "@/lib/types"
@@ -14,17 +15,6 @@ function formatDateTime(value: string, locale: Locale) {
     hour: "2-digit",
     minute: "2-digit",
   }).format(new Date(value))
-}
-
-function messageRoleLabel(locale: Locale, role: SupportTicketMessage["author_role"]) {
-  if (locale === "ru") {
-    if (role === "user") return "Пользователь"
-    if (role === "admin") return "Поддержка"
-    return "Система"
-  }
-  if (role === "user") return "User"
-  if (role === "admin") return "Support"
-  return "System"
 }
 
 function localizeSystemBody(locale: Locale, body: string) {
@@ -67,6 +57,8 @@ function AttachmentPreview({
   locale: Locale
 }) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [previewOpen, setPreviewOpen] = useState(false)
+  const [zoom, setZoom] = useState(1)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const adminScope = scope === "admin"
@@ -103,6 +95,10 @@ function AttachmentPreview({
     }
   }, [isImage, path, locale])
 
+  useEffect(() => {
+    if (previewOpen) setZoom(1)
+  }, [previewOpen])
+
   async function handleDownload() {
     try {
       setLoading(true)
@@ -122,60 +118,96 @@ function AttachmentPreview({
 
   if (isImage) {
     return (
-      <div className={cn("overflow-hidden rounded-xl border", adminScope ? "border-slate-200 bg-white/80 dark:border-white/10 dark:bg-white/[0.03]" : "border-white/10 bg-white/[0.03]")}>
-        <div className={cn("relative aspect-[16/10] w-full overflow-hidden", adminScope ? "bg-slate-100 dark:bg-black/20" : "bg-black/20")}>
-          {previewUrl ? (
-            <img src={previewUrl} alt={attachment.original_name} className="h-full w-full object-cover transition duration-300 hover:scale-[1.015]" />
-          ) : (
-            <div className={cn("flex h-full w-full items-center justify-center", adminScope ? "text-slate-400 dark:text-white/45" : "text-white/45")}>
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileImage className="h-5 w-5" />}
-            </div>
-          )}
-        </div>
-        <div className="flex items-center justify-between gap-2 px-3 py-2">
-          <div className="min-w-0">
-            <p className={cn("truncate text-xs", adminScope ? "text-slate-700 dark:text-white/80" : "text-white/80")}>{attachment.original_name}</p>
-            <p className={cn("text-[11px]", adminScope ? "text-slate-500 dark:text-white/45" : "text-white/45")}>{formatBytes(attachment.size_bytes)}</p>
-          </div>
-          <button
-            type="button"
-            onClick={handleDownload}
-            className={cn(
-              "inline-flex h-8 items-center gap-1 rounded-lg border px-2 text-xs transition",
-              adminScope
-                ? "border-slate-200 bg-white/80 text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:text-white/80 dark:hover:bg-white/10"
-                : "border-white/10 bg-white/5 text-white/80 hover:bg-white/10",
+      <>
+        <button
+          type="button"
+          className="block w-fit max-w-full overflow-hidden rounded-xl border border-slate-200 bg-slate-100 text-left dark:border-white/10 dark:bg-black/20"
+          onClick={() => previewUrl && setPreviewOpen(true)}
+        >
+          <div className="relative max-h-[24rem] max-w-[min(30rem,72vw)] overflow-hidden">
+            {previewUrl ? (
+              <img src={previewUrl} alt={attachment.original_name} className="block max-h-[24rem] max-w-[min(30rem,72vw)] object-contain transition duration-300 hover:scale-[1.01]" />
+            ) : (
+              <div className="flex h-40 w-64 max-w-full items-center justify-center text-slate-400 dark:text-white/45">
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileImage className="h-5 w-5" />}
+              </div>
             )}
-          >
-            {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
-            {locale === "ru" ? "Файл" : "File"}
-          </button>
-        </div>
-        {error ? <p className="px-3 pb-2 text-[11px] text-red-300">{error}</p> : null}
-      </div>
+          </div>
+        </button>
+        <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+          <DialogContent className="grid h-[min(88svh,760px)] w-[min(96vw,1120px)] max-w-none grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-2xl border-slate-200 bg-white p-3 text-slate-950 dark:border-white/10 dark:bg-[#0b0f17] dark:text-white">
+            <div className="flex items-center justify-end gap-1.5 pr-9">
+              <button
+                type="button"
+                onClick={() => setZoom((value) => Math.max(0.5, Number((value - 0.25).toFixed(2))))}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:bg-slate-100 hover:text-slate-950 dark:border-white/10 dark:bg-black/60 dark:text-white/80 dark:hover:bg-white/10 dark:hover:text-white"
+                title={locale === "ru" ? "Уменьшить" : "Zoom out"}
+              >
+                <ZoomOut className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setZoom(1)}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:bg-slate-100 hover:text-slate-950 dark:border-white/10 dark:bg-black/60 dark:text-white/80 dark:hover:bg-white/10 dark:hover:text-white"
+                title={locale === "ru" ? "Сбросить масштаб" : "Reset zoom"}
+              >
+                <RotateCcw className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setZoom((value) => Math.min(4, Number((value + 0.25).toFixed(2))))}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:bg-slate-100 hover:text-slate-950 dark:border-white/10 dark:bg-black/60 dark:text-white/80 dark:hover:bg-white/10 dark:hover:text-white"
+                title={locale === "ru" ? "Увеличить" : "Zoom in"}
+              >
+                <ZoomIn className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={handleDownload}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:bg-slate-100 hover:text-slate-950 dark:border-white/10 dark:bg-black/60 dark:text-white/80 dark:hover:bg-white/10 dark:hover:text-white"
+                title={locale === "ru" ? "Скачать" : "Download"}
+              >
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+              </button>
+            </div>
+            <div className="min-h-0 overflow-auto rounded-xl bg-slate-100 dark:bg-black/30">
+              <div className="flex min-h-full min-w-full items-center justify-center p-4">
+                {previewUrl ? (
+                  <img
+                    src={previewUrl}
+                    alt={attachment.original_name}
+                    className="block object-contain transition-[width] duration-150"
+                    style={{
+                      width: `${zoom * 100}%`,
+                      maxWidth: zoom === 1 ? "100%" : "none",
+                      maxHeight: zoom === 1 ? "100%" : "none",
+                    }}
+                  />
+                ) : null}
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+        {error ? <p className="px-1 pt-1 text-[11px] text-red-600 dark:text-red-300">{error}</p> : null}
+      </>
     )
   }
 
   return (
-    <div className={cn("flex items-center justify-between gap-2 rounded-xl border px-3 py-2", adminScope ? "border-slate-200 bg-white/80 dark:border-white/10 dark:bg-white/[0.03]" : "border-white/10 bg-white/[0.03]")}>
+    <div className="flex items-center justify-between gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 dark:border-white/10 dark:bg-white/[0.03]">
       <div className="min-w-0">
-        <p className={cn("truncate text-xs", adminScope ? "text-slate-700 dark:text-white/80" : "text-white/80")}>{attachment.original_name}</p>
-        <p className={cn("text-[11px]", adminScope ? "text-slate-500 dark:text-white/45" : "text-white/45")}>{formatBytes(attachment.size_bytes)}</p>
+        <p className="truncate text-xs text-slate-700 dark:text-white/80">{attachment.original_name}</p>
+        <p className="text-[11px] text-slate-400 dark:text-white/45">{formatBytes(attachment.size_bytes)}</p>
       </div>
       <button
         type="button"
         onClick={handleDownload}
-        className={cn(
-          "inline-flex h-8 items-center gap-1 rounded-lg border px-2 text-xs transition",
-          adminScope
-            ? "border-slate-200 bg-white/80 text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:text-white/80 dark:hover:bg-white/10"
-            : "border-white/10 bg-white/5 text-white/80 hover:bg-white/10",
-        )}
+        className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 transition hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:text-white/80 dark:hover:bg-white/10"
+        title={locale === "ru" ? "Скачать" : "Download"}
       >
         {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
-        {locale === "ru" ? "Скачать" : "Download"}
       </button>
-      {error ? <p className="text-[11px] text-red-300">{error}</p> : null}
+      {error ? <p className="text-[11px] text-red-600 dark:text-red-300">{error}</p> : null}
     </div>
   )
 }
@@ -203,6 +235,9 @@ export function TicketChatMessage({
         <div className={cn("max-w-[90%] rounded-full border px-3 py-1.5 text-center text-xs", adminScope ? "border-slate-200 bg-white/80 text-slate-600 dark:border-white/10 dark:bg-white/[0.03] dark:text-white/60" : "border-white/10 bg-white/[0.03] text-white/60")}>
           {localizeSystemBody(locale, message.body)}
           <span className={cn("ml-2", adminScope ? "text-slate-400 dark:text-white/35" : "text-white/35")}>{formatDateTime(message.created_at, locale)}</span>
+        <div className="max-w-[90%] rounded-full border border-slate-200 bg-white px-3 py-1.5 text-center text-xs text-slate-500 dark:border-white/10 dark:bg-white/[0.03] dark:text-white/60">
+          {localizeSystemBody(locale, message.body)}
+          <span className="ml-2 text-slate-400 dark:text-white/35">{formatDateTime(message.created_at, locale)}</span>
         </div>
       </div>
     )
@@ -212,38 +247,17 @@ export function TicketChatMessage({
     <div className={cn("flex", isOwn ? "justify-end" : "justify-start")}>
       <div
         className={cn(
-          "max-w-[94%] rounded-2xl border px-3 py-2.5 shadow-[0_10px_30px_rgba(0,0,0,0.15)]",
-          adminScope
-            ? isOwn
-              ? "border-blue-500/25 bg-blue-500/10 dark:border-blue-400/20"
-              : "border-slate-200 bg-white/80 dark:border-white/10 dark:bg-white/[0.03]"
-            : isOwn ? "border-blue-400/20 bg-blue-500/10" : "border-white/10 bg-white/[0.03]",
+          "w-fit max-w-[min(42rem,94%)] rounded-2xl border px-3 py-2.5 shadow-[0_10px_30px_rgba(15,23,42,0.08)] dark:shadow-[0_10px_30px_rgba(0,0,0,0.15)]",
+          isOwn
+            ? "border-sky-200 bg-sky-50 text-slate-950 dark:border-blue-400/20 dark:bg-blue-500/10 dark:text-white"
+            : "border-slate-200 bg-white text-slate-950 dark:border-white/10 dark:bg-white/[0.03] dark:text-white",
         )}
       >
-        <div className="mb-1.5 flex flex-wrap items-center gap-2">
-          <span
-            className={cn(
-              "rounded-full px-2 py-0.5 text-[10px]",
-              adminScope
-                ? isOwn
-                  ? "bg-blue-500/15 text-blue-700 dark:bg-blue-400/20 dark:text-blue-200"
-                  : "bg-slate-100 text-slate-600 dark:bg-white/10 dark:text-white/70"
-                : isOwn ? "bg-blue-400/20 text-blue-200" : "bg-white/10 text-white/70",
-            )}
-          >
-            {messageRoleLabel(locale, message.author_role)}
-          </span>
-          <span className={cn("text-[11px]", adminScope ? "text-slate-400 dark:text-white/35" : "text-white/35")}>{formatDateTime(message.created_at, locale)}</span>
-        </div>
-        <p className={cn("whitespace-pre-line break-words text-sm leading-relaxed", adminScope ? "text-slate-700 dark:text-white/80" : "text-white/80")}>{message.body}</p>
+        {message.body.trim() ? <p className="whitespace-pre-line break-words text-sm leading-relaxed text-slate-800 dark:text-white/80">{message.body}</p> : null}
 
         {message.attachments.length > 0 ? (
-          <div className="mt-2.5 space-y-2">
-            <div className={cn("flex items-center gap-1.5 text-[11px]", adminScope ? "text-slate-500 dark:text-white/50" : "text-white/50")}>
-              <Paperclip className="h-3 w-3" />
-              {locale === "ru" ? "Вложения" : "Attachments"}
-            </div>
-            <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+          <div className={cn("space-y-2", message.body.trim() && "mt-2.5")}>
+            <div className="flex max-w-full flex-wrap gap-2">
               {message.attachments.map((attachment, index) => (
                 <AttachmentPreview
                   key={`${message.id}-${attachment.stored_name}-${index}`}
@@ -257,6 +271,9 @@ export function TicketChatMessage({
             </div>
           </div>
         ) : null}
+        <div className="mt-1.5 flex justify-end">
+          <span className="text-[11px] text-slate-400 dark:text-white/35">{formatDateTime(message.created_at, locale)}</span>
+        </div>
       </div>
     </div>
   )

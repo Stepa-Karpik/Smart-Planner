@@ -146,13 +146,13 @@ async def create_support_ticket(
 async def reply_my_support_ticket(
     ticket_id: UUID,
     request: Request,
-    message: str = Form(...),
+    message: str = Form(""),
     files: list[UploadFile] = File(default=[]),
     current_user=Depends(get_current_user),
     session: AsyncSession = Depends(get_db_session),
 ):
     message = message.strip()
-    if not message:
+    if not message and not files:
         raise ValidationAppError("Message is required")
     if len(files) > MAX_TICKET_ATTACHMENTS:
         raise ValidationAppError("You can attach up to 3 files", details={"max_files": MAX_TICKET_ATTACHMENTS})
