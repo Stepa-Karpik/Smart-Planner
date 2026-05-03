@@ -16,19 +16,17 @@ import { cn } from "@/lib/utils"
 
 type LocationSource = "manual_text" | "geocoded" | "map_pick"
 
-const baseRouteModeOptions: Array<{ value: RouteMode; labelEn: string; labelRu: string; hintEn: string; hintRu: string; icon: LucideIcon }> = [
-  { value: "walking", labelEn: "Walking", labelRu: "Пешком", hintEn: "Short routes", hintRu: "Короткие маршруты", icon: Footprints },
-  { value: "public_transport", labelEn: "Public transport", labelRu: "Транспорт", hintEn: "Bus, tram, metro", hintRu: "Автобус, трамвай, метро", icon: Bus },
-  { value: "driving", labelEn: "Driving", labelRu: "Авто", hintEn: "By car", hintRu: "На машине", icon: Car },
-  { value: "bicycle", labelEn: "Bicycle / scooter", labelRu: "Вело / самокат", hintEn: "Personal mobility", hintRu: "Личный транспорт", icon: Bike },
+const baseRouteModeOptions: Array<{ value: RouteMode; labelEn: string; labelRu: string; icon: LucideIcon }> = [
+  { value: "walking", labelEn: "Walking", labelRu: "Пешком", icon: Footprints },
+  { value: "public_transport", labelEn: "Transport", labelRu: "Транспорт", icon: Bus },
+  { value: "driving", labelEn: "Driving", labelRu: "Авто", icon: Car },
+  { value: "bicycle", labelEn: "Bicycle", labelRu: "Вело", icon: Bike },
 ]
 
 const metroOption = {
   value: "metro" as RouteMode,
   labelEn: "Metro",
   labelRu: "Метро",
-  hintEn: "Moscow, SPb, Novosibirsk",
-  hintRu: "Москва, СПб, Новосибирск",
   icon: Train,
 }
 
@@ -109,17 +107,13 @@ export default function ProfilePage() {
     const previousMode = defaultMode
     setDefaultMode(nextMode)
     setSavingRouteMode(nextMode)
-    const response = await updateProfile(
-      nextMode === "metro"
-        ? {
-            default_route_mode: nextMode,
-            home_location_text: homeLocationText || null,
-            home_location_lat: homeLocationLat,
-            home_location_lon: homeLocationLon,
-            home_location_source: homeLocationSource,
-          }
-        : { default_route_mode: nextMode },
-    )
+    const response = await updateProfile({
+      default_route_mode: nextMode,
+      home_location_text: homeLocationText || null,
+      home_location_lat: homeLocationLat,
+      home_location_lon: homeLocationLon,
+      home_location_source: homeLocationSource,
+    })
     setSavingRouteMode(null)
 
     if (response.error) {
@@ -182,7 +176,7 @@ export default function ProfilePage() {
 
               <div className="flex flex-col gap-2">
                 <Label>{tr("Default transport mode", "Режим передвижения по умолчанию")}</Label>
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-5">
                   {routeModeOptions.map((option) => {
                     const Icon = option.icon
                     const active = defaultMode === option.value
@@ -193,7 +187,7 @@ export default function ProfilePage() {
                         onClick={() => void handleRouteModeSelect(option.value)}
                         disabled={Boolean(savingRouteMode)}
                         className={cn(
-                          "group relative overflow-hidden rounded-2xl border px-3 py-3 text-left transition disabled:cursor-not-allowed disabled:opacity-70",
+                          "group relative flex h-14 items-center gap-2 rounded-xl border px-3 text-left transition disabled:cursor-not-allowed disabled:opacity-70",
                           active
                             ? "border-slate-950 bg-slate-950 text-white shadow-[0_14px_35px_rgba(15,23,42,0.18)] dark:border-white dark:bg-white dark:text-black dark:shadow-none"
                             : "border-slate-200 bg-white/85 text-slate-600 shadow-sm hover:border-slate-300 hover:bg-white hover:text-slate-950 dark:border-white/10 dark:bg-white/[0.04] dark:text-white/65 dark:shadow-none dark:hover:bg-white/10 dark:hover:text-white",
@@ -201,7 +195,7 @@ export default function ProfilePage() {
                       >
                         <div
                           className={cn(
-                            "mb-3 flex h-9 w-9 items-center justify-center rounded-xl border transition",
+                            "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border transition",
                             active
                               ? "border-white/15 bg-white/12 text-white dark:border-black/10 dark:bg-black/5 dark:text-black"
                               : "border-slate-200 bg-slate-50 text-slate-500 group-hover:text-slate-900 dark:border-white/10 dark:bg-white/5 dark:text-white/60 dark:group-hover:text-white",
@@ -209,11 +203,8 @@ export default function ProfilePage() {
                         >
                           {savingRouteMode === option.value ? <Loader2 className="h-4 w-4 animate-spin" /> : <Icon className="h-4 w-4" />}
                         </div>
-                        <p className="text-sm font-semibold">{tr(option.labelEn, option.labelRu)}</p>
-                        <p className={cn("mt-0.5 text-xs", active ? "text-white/65 dark:text-black/55" : "text-slate-400 dark:text-white/35")}>
-                          {tr(option.hintEn, option.hintRu)}
-                        </p>
-                        {active ? <span className="absolute right-3 top-3 h-2 w-2 rounded-full bg-emerald-400 dark:bg-emerald-500" /> : null}
+                        <p className="min-w-0 truncate text-sm font-semibold">{tr(option.labelEn, option.labelRu)}</p>
+                        {active ? <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-emerald-400 dark:bg-emerald-500" /> : null}
                       </button>
                     )
                   })}

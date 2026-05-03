@@ -47,6 +47,7 @@ def _serialize_ticket(ticket, include_messages: bool = False) -> dict:
         "id": str(ticket.id),
         "public_number": int(ticket.public_number),
         "user_id": str(ticket.user_id),
+        "user_username": getattr(getattr(ticket, "user", None), "username", None),
         "topic": ticket.topic,
         "subtopic": ticket.subtopic,
         "subject": ticket.subject,

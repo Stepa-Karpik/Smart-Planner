@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.enums import SupportTicketStatus
-from app.models import SupportTicket, SupportTicketMessage
+from app.models import SupportTicket, SupportTicketMessage, User
 
 
 class SupportTicketRepository:
@@ -16,9 +16,9 @@ class SupportTicketRepository:
         self.session = session
 
     async def get_ticket_by_id(self, ticket_id: UUID, *, with_messages: bool = False) -> SupportTicket | None:
-        stmt = select(SupportTicket).where(SupportTicket.id == ticket_id)
+        stmt = select(SupportTicket).where(SupportTicket.id == ticket_id).options(selectinload(SupportTicket.user))
         if with_messages:
-            stmt = stmt.options(selectinload(SupportTicket.messages))
+            stmt = stmt.options(selectinload(SupportTicket.messages), selectinload(SupportTicket.user))
         return await self.session.scalar(stmt)
 
     async def get_ticket_for_user(self, ticket_id: UUID, user_id: UUID, *, with_messages: bool = False) -> SupportTicket | None:
@@ -46,10 +46,18 @@ class SupportTicketRepository:
         limit: int = 100,
         offset: int = 0,
     ) -> list[SupportTicket]:
-        stmt = select(SupportTicket).order_by(SupportTicket.updated_at.desc(), SupportTicket.created_at.desc()).limit(limit).offset(offset)
+        stmt = select(SupportTicket).options(selectinload(SupportTicket.user)).order_by(SupportTicket.updated_at.desc(), SupportTicket.created_at.desc()).limit(limit).offset(offset)
         if q:
             pattern = f"%{q.strip().lower()}%"
-            stmt = stmt.where(or_(func.lower(SupportTicket.subject).like(pattern), func.lower(SupportTicket.topic).like(pattern), func.lower(SupportTicket.subtopic).like(pattern)))
+            stmt = stmt.join(User, SupportTicket.user_id == User.id).where(
+                or_(
+                    func.lower(SupportTicket.subject).like(pattern),
+                    func.lower(SupportTicket.topic).like(pattern),
+                    func.lower(SupportTicket.subtopic).like(pattern),
+                    func.lower(User.username).like(pattern),
+                    func.lower(User.email).like(pattern),
+                )
+            )
         if status:
             stmt = stmt.where(SupportTicket.status == status)
         result = await self.session.scalars(stmt)
@@ -60,7 +68,16 @@ class SupportTicketRepository:
         conditions = []
         if q:
             pattern = f"%{q.strip().lower()}%"
-            conditions.append(or_(func.lower(SupportTicket.subject).like(pattern), func.lower(SupportTicket.topic).like(pattern), func.lower(SupportTicket.subtopic).like(pattern)))
+            stmt = stmt.join(User, SupportTicket.user_id == User.id)
+            conditions.append(
+                or_(
+                    func.lower(SupportTicket.subject).like(pattern),
+                    func.lower(SupportTicket.topic).like(pattern),
+                    func.lower(SupportTicket.subtopic).like(pattern),
+                    func.lower(User.username).like(pattern),
+                    func.lower(User.email).like(pattern),
+                )
+            )
         if status:
             conditions.append(SupportTicket.status == status)
         if conditions:

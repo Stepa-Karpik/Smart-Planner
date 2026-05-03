@@ -155,6 +155,7 @@ export interface SupportTicket {
   id: string
   public_number: number
   user_id: string
+  user_username?: string | null
   topic: string
   subtopic: string
   subject: string

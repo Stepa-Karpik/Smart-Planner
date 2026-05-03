@@ -121,7 +121,7 @@ export default function AdminTicketsPage() {
               <Input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder={tr("Search by subject, topic or subtopic", "Поиск по теме, категории или подкатегории")}
+                placeholder={tr("Search by user, subject or topic", "Поиск по пользователю, теме или категории")}
                 className="h-11 rounded-xl border-slate-200 bg-white/80 pl-10 text-slate-800 placeholder:text-slate-400 dark:border-white/15 dark:bg-white/5 dark:text-white dark:placeholder:text-white/30"
               />
             </div>
@@ -191,7 +191,7 @@ export default function AdminTicketsPage() {
                           {supportTopicLabel(locale, ticket.topic)} · {supportSubtopicLabel(locale, ticket.topic, ticket.subtopic)}
                         </p>
                         <p className="mt-2 line-clamp-1 text-[11px] text-slate-400 dark:text-white/35">
-                          {tr("User ID", "ID пользователя")}: {ticket.user_id}
+                          {ticket.user_username ? `@${ticket.user_username}` : `${tr("User ID", "ID пользователя")}: ${ticket.user_id}`}
                         </p>
                       </div>
                     </div>

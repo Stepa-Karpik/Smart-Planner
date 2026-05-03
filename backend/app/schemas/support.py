@@ -30,6 +30,7 @@ class SupportTicketRead(BaseModel):
     id: str
     public_number: int
     user_id: str
+    user_username: str | None = None
     topic: str
     subtopic: str
     subject: str
@@ -53,4 +54,3 @@ class AdminSupportTicketReplyCreate(BaseModel):
         if not value:
             raise ValueError("message must not be empty")
         return value
-
