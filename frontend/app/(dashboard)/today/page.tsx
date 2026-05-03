@@ -67,7 +67,7 @@ export default function TodayPage() {
 
       <div className="relative flex flex-col gap-4 rounded-2xl border border-slate-200/80 bg-white/80 p-5 text-slate-950 shadow-[0_18px_50px_rgba(15,23,42,0.10)] backdrop-blur-xl dark:border-white/10 dark:bg-black/30 dark:text-white dark:shadow-[0_18px_50px_rgba(0,0,0,0.25)] sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">{tr("Today", "Послезавтра")}</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">{tr("Today", "Сегодня")}</h1>
           <p className="mt-1 text-sm text-slate-500 dark:text-white/55">{todayLabel}</p>
         </div>
         <div className="flex items-center gap-2">
