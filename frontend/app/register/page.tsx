@@ -32,6 +32,14 @@ export default function RegisterPage() {
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
     setLoading(true)
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d])[^\s]{8,}$/
+    const validate = passwordRegex.test(password)
+    if (!validate) {
+      toast.error(tr("Password is too easy ", "Пароль должен содеражть хотя бы одну заглавную букву, цифру, спецсимвол и быть не менее 8 символов"))
+      setLoading(false)
+      return
+    } 
+    
     const { success, error } = await signUp(email, username, password)
     setLoading(false)
 
