@@ -109,7 +109,6 @@ export default function RegisterPage() {
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 required
-                minLength={8}
                 autoComplete="new-password"
                 className={`${authInputClassName} pr-10`}
               />
