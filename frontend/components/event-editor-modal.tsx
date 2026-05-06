@@ -1,7 +1,7 @@
 ﻿"use client"
 
 import { useEffect, useState } from "react"
-import { Loader2, Plus } from "lucide-react"
+import { Check, Loader2, Pencil, Plus, Trash2, X } from "lucide-react"
 import { toast } from "sonner"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
-import { createCalendar, createEvent, updateEvent, useCalendars, useProfile } from "@/lib/hooks"
+import { createCalendar, createEvent, deleteCalendar, updateCalendar, updateEvent, useCalendars, useProfile } from "@/lib/hooks"
 import type { CalendarEvent, EventCreate, EventUpdate } from "@/lib/types"
 import { LocationInput } from "@/components/location-input"
 import { useI18n } from "@/lib/i18n"
@@ -52,9 +52,15 @@ export function EventEditorModal({ open, onOpenChange, event, onSaved }: EventEd
   const [calendarCreateOpen, setCalendarCreateOpen] = useState(false)
   const [newCalendarTitle, setNewCalendarTitle] = useState("")
   const [newCalendarColor, setNewCalendarColor] = useState("#2563eb")
+  const [calendarEditOpen, setCalendarEditOpen] = useState(false)
+  const [calendarEditTitle, setCalendarEditTitle] = useState("")
+  const [calendarEditColor, setCalendarEditColor] = useState("#2563eb")
 
   const [loading, setLoading] = useState(false)
   const [creatingCalendar, setCreatingCalendar] = useState(false)
+  const [calendarActionLoading, setCalendarActionLoading] = useState(false)
+
+  const selectedCalendar = calendars?.find((calendar) => calendar.id === calendarId)
 
   useEffect(() => {
     if (!open) return
@@ -90,6 +96,16 @@ export function EventEditorModal({ open, onOpenChange, event, onSaved }: EventEd
     }
   }, [open, event, calendars, profile?.timezone])
 
+  useEffect(() => {
+    if (!selectedCalendar) {
+      setCalendarEditTitle("")
+      setCalendarEditColor("#2563eb")
+      return
+    }
+    setCalendarEditTitle(selectedCalendar.title)
+    setCalendarEditColor(selectedCalendar.color)
+  }, [selectedCalendar?.id, selectedCalendar?.title, selectedCalendar?.color])
+
   async function handleCreateCalendar() {
     if (!newCalendarTitle.trim()) {
       toast.error(tr("Calendar title is required", "Введите название календаря"))
@@ -110,6 +126,50 @@ export function EventEditorModal({ open, onOpenChange, event, onSaved }: EventEd
     setNewCalendarTitle("")
     setCalendarCreateOpen(false)
     toast.success(tr("Calendar created", "Календарь создан"))
+  }
+
+  async function handleUpdateCalendar() {
+    if (!selectedCalendar) return
+    if (!calendarEditTitle.trim()) {
+      toast.error(tr("Calendar title is required", "Введите название календаря"))
+      return
+    }
+
+    setCalendarActionLoading(true)
+    const response = await updateCalendar(selectedCalendar.id, {
+      title: calendarEditTitle.trim(),
+      color: calendarEditColor,
+    })
+    setCalendarActionLoading(false)
+
+    if (response.error) {
+      toast.error(response.error.message)
+      return
+    }
+
+    await mutateCalendars()
+    setCalendarEditOpen(false)
+    toast.success(tr("Calendar updated", "Календарь обновлён"))
+  }
+
+  async function handleDeleteCalendar() {
+    if (!selectedCalendar || selectedCalendar.is_default) return
+    if (!window.confirm(tr("Delete calendar and its events?", "Удалить календарь и его события?"))) return
+
+    setCalendarActionLoading(true)
+    const response = await deleteCalendar(selectedCalendar.id)
+    setCalendarActionLoading(false)
+
+    if (response.error) {
+      toast.error(response.error.message)
+      return
+    }
+
+    await mutateCalendars()
+    const fallbackCalendar = calendars?.find((calendar) => calendar.id !== selectedCalendar.id)
+    setCalendarId(fallbackCalendar?.id || "")
+    setCalendarEditOpen(false)
+    toast.success(tr("Calendar deleted", "Календарь удалён"))
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -216,10 +276,16 @@ export function EventEditorModal({ open, onOpenChange, event, onSaved }: EventEd
             <div className="flex flex-col gap-2">
               <div className="flex items-center justify-between gap-2">
                 <Label htmlFor="event-calendar">{tr("Calendar", "Календарь")}</Label>
-                <Button type="button" variant="ghost" size="sm" className="h-7 px-2" onClick={() => setCalendarCreateOpen((v) => !v)}>
-                  <Plus className="mr-1 h-3.5 w-3.5" />
-                  {tr("Add", "Добавить")}
-                </Button>
+                <div className="flex items-center gap-1">
+                  {selectedCalendar ? (
+                    <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => setCalendarEditOpen((v) => !v)}>
+                      {calendarEditOpen ? <X className="h-3.5 w-3.5" /> : <Pencil className="h-3.5 w-3.5" />}
+                    </Button>
+                  ) : null}
+                  <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => setCalendarCreateOpen((v) => !v)}>
+                    <Plus className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
               </div>
               <Select value={calendarId} onValueChange={setCalendarId}>
                 <SelectTrigger id="event-calendar">
@@ -233,6 +299,38 @@ export function EventEditorModal({ open, onOpenChange, event, onSaved }: EventEd
                   ))}
                 </SelectContent>
               </Select>
+              {calendarEditOpen && selectedCalendar && (
+                <div className="rounded-md border bg-muted/30 p-2.5">
+                  <div className="flex items-end gap-2">
+                    <Input
+                      value={calendarEditTitle}
+                      onChange={(event) => setCalendarEditTitle(event.target.value)}
+                      placeholder={tr("Calendar title", "Название календаря")}
+                    />
+                    <Input
+                      type="color"
+                      value={calendarEditColor}
+                      onChange={(event) => setCalendarEditColor(event.target.value)}
+                      className="h-10 w-12 p-1"
+                    />
+                    <Button type="button" size="icon" className="h-10 w-10" onClick={handleUpdateCalendar} disabled={calendarActionLoading}>
+                      {calendarActionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                    </Button>
+                    {!selectedCalendar.is_default && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className="h-10 w-10 text-destructive hover:text-destructive"
+                        onClick={handleDeleteCalendar}
+                        disabled={calendarActionLoading}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              )}
               {calendarCreateOpen && (
                 <div className="rounded-md border bg-muted/30 p-2.5">
                   <div className="flex items-end gap-2">

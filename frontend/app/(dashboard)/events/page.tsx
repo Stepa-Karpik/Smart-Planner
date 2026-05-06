@@ -11,10 +11,11 @@ import { EventCard } from "@/components/event-card"
 import { EventEditorModal } from "@/components/event-editor-modal"
 import { EventCalendarView } from "@/components/event-calendar-view"
 import { EventGantt } from "@/components/event-gantt"
-import { fetchRoutePreview, useCalendars, useEvents, useProfile } from "@/lib/hooks"
-import type { EventStatus } from "@/lib/types"
+import { fetchRoutePreview, updateEvent, useCalendars, useEvents, useProfile } from "@/lib/hooks"
+import type { CalendarEvent, EventStatus } from "@/lib/types"
 import { useI18n } from "@/lib/i18n"
-import { dayKeyInTimezone, fromDateValueToUtcIso } from "@/lib/timezone"
+import { dayKeyInTimezone, fromDateTimeLocalValueToUtcIso, fromDateValueToUtcIso, toDateTimeLocalValue } from "@/lib/timezone"
+import { toast } from "sonner"
 
 type ViewMode = "list" | "calendar" | "gantt"
 
@@ -41,7 +42,7 @@ export default function EventsPage() {
   })
   const [toDate, setToDate] = useState(() => {
     const end = new Date(today)
-    end.setDate(end.getDate() + 30)
+    end.setMonth(end.getMonth() + 6)
     return formatDateForInput(end)
   })
   const [calendarMonth, setCalendarMonth] = useState(new Date(today.getFullYear(), today.getMonth(), 1))
@@ -57,7 +58,7 @@ export default function EventsPage() {
         q: search || undefined,
         status: statusFilter !== "all" ? statusFilter : undefined,
         calendar_id: calendarFilter !== "all" ? calendarFilter : undefined,
-        limit: 200,
+        limit: 500,
         offset: 0,
       }
     },
@@ -65,6 +66,30 @@ export default function EventsPage() {
   )
 
   const { data: events, isLoading, mutate } = useEvents(query)
+
+  async function handleCalendarMove(event: CalendarEvent, day: Date) {
+    const localStart = toDateTimeLocalValue(event.start_at, profile?.timezone)
+    if (!localStart) return
+
+    const targetDay = formatDateForInput(day)
+    const startTime = localStart.slice(11, 16)
+    const nextStartIso = fromDateTimeLocalValueToUtcIso(`${targetDay}T${startTime}`, profile?.timezone)
+    if (!nextStartIso) return
+
+    const durationMs = new Date(event.end_at).getTime() - new Date(event.start_at).getTime()
+    const nextEndIso = new Date(new Date(nextStartIso).getTime() + Math.max(durationMs, 60_000)).toISOString()
+
+    const response = await updateEvent(event.id, {
+      start_at: nextStartIso,
+      end_at: nextEndIso,
+    })
+    if (response.error) {
+      toast.error(response.error.message)
+      return
+    }
+    toast.success(tr("Event moved", "Событие перенесено"))
+    mutate()
+  }
 
   useEffect(() => {
     if (!events || events.length < 2) {
@@ -216,10 +241,16 @@ export default function EventsPage() {
           )}
 
           {viewMode === "calendar" && (
-            <EventCalendarView events={events} month={calendarMonth} onMonthChange={setCalendarMonth} />
+            <EventCalendarView
+              events={events}
+              calendars={calendars || []}
+              month={calendarMonth}
+              onMonthChange={setCalendarMonth}
+              onEventMove={handleCalendarMove}
+            />
           )}
 
-          {viewMode === "gantt" && <EventGantt events={events} travelMinutes={travelMinutes} />}
+          {viewMode === "gantt" && <EventGantt events={events} calendars={calendars || []} travelMinutes={travelMinutes} />}
         </>
       )}
 
