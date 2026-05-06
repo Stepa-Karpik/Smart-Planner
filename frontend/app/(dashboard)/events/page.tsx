@@ -1,7 +1,7 @@
 ﻿"use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { Calendar as CalendarIcon, List, Plus, Search, TableProperties } from "lucide-react"
+import { Calendar as CalendarIcon, List, Plus, Search, Settings2, TableProperties } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -11,6 +11,7 @@ import { EventCard } from "@/components/event-card"
 import { EventEditorModal } from "@/components/event-editor-modal"
 import { EventCalendarView } from "@/components/event-calendar-view"
 import { EventGantt } from "@/components/event-gantt"
+import { CalendarManagerDialog } from "@/components/calendar-manager-dialog"
 import { fetchRoutePreview, updateEvent, useCalendars, useEvents, useProfile } from "@/lib/hooks"
 import type { CalendarEvent, EventStatus } from "@/lib/types"
 import { useI18n } from "@/lib/i18n"
@@ -81,6 +82,7 @@ export default function EventsPage() {
   const { data: calendars } = useCalendars()
 
   const [editorOpen, setEditorOpen] = useState(false)
+  const [calendarManagerOpen, setCalendarManagerOpen] = useState(false)
   const [viewMode, setViewMode] = useState<ViewMode>("list")
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState<EventStatus | "all">("all")
@@ -159,13 +161,14 @@ export default function EventsPage() {
     const sorted = [...events]
       .filter((item) => item.status !== "canceled")
       .sort((a, b) => (a.start_at < b.start_at ? -1 : 1))
+    const movableEvents = sorted.filter((item) => !eventSpansMultipleDays(item, profile?.timezone))
 
     const compute = async () => {
       const nextMap: TravelDetails = {}
 
-      for (let i = 0; i < sorted.length; i++) {
-        const curr = sorted[i]
-        const prev = i > 0 ? sorted[i - 1] : undefined
+      for (let i = 0; i < movableEvents.length; i++) {
+        const curr = movableEvents[i]
+        const prev = i > 0 ? movableEvents[i - 1] : undefined
         const toValue = eventPointValue(curr)
         if (!toValue) continue
 
@@ -212,10 +215,16 @@ export default function EventsPage() {
             {tr("List, calendar and gantt views with travel overlays.", "Список, календарь и диаграмма Ганта с учётом времени в пути.")}
           </p>
         </div>
-        <Button size="sm" onClick={() => setEditorOpen(true)}>
-          <Plus className="mr-1.5 h-4 w-4" />
-          {tr("Event", "Событие")}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" onClick={() => setCalendarManagerOpen(true)}>
+            <Settings2 className="mr-1.5 h-4 w-4" />
+            {tr("Calendars", "Календари")}
+          </Button>
+          <Button size="sm" onClick={() => setEditorOpen(true)}>
+            <Plus className="mr-1.5 h-4 w-4" />
+            {tr("Event", "Событие")}
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-5">
@@ -311,6 +320,7 @@ export default function EventsPage() {
       )}
 
       <EventEditorModal open={editorOpen} onOpenChange={setEditorOpen} onSaved={() => mutate()} />
+      <CalendarManagerDialog open={calendarManagerOpen} onOpenChange={setCalendarManagerOpen} />
     </div>
   )
 }

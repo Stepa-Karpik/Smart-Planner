@@ -183,17 +183,20 @@ export interface Calendar {
   id: string
   title: string
   color: string
+  color_dark: string
   is_default: boolean
 }
 
 export interface CalendarCreate {
   title: string
   color?: string
+  color_dark?: string
 }
 
 export interface CalendarUpdate {
   title?: string
   color?: string
+  color_dark?: string
 }
 
 export interface CalendarEvent {

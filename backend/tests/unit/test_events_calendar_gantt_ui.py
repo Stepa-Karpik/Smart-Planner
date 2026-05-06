@@ -6,6 +6,7 @@ EVENTS_PAGE = ROOT / "frontend" / "app" / "(dashboard)" / "events" / "page.tsx"
 CALENDAR_VIEW = ROOT / "frontend" / "components" / "event-calendar-view.tsx"
 GANTT_VIEW = ROOT / "frontend" / "components" / "event-gantt.tsx"
 EDITOR_MODAL = ROOT / "frontend" / "components" / "event-editor-modal.tsx"
+CALENDAR_MANAGER = ROOT / "frontend" / "components" / "calendar-manager-dialog.tsx"
 
 
 def read(path: Path) -> str:
@@ -49,9 +50,10 @@ def test_events_page_travel_uses_previous_event_or_active_long_event():
 
 
 def test_event_editor_has_calendar_management_actions():
-    source = read(EDITOR_MODAL)
+    editor = read(EDITOR_MODAL)
+    manager = read(CALENDAR_MANAGER)
 
-    assert "handleUpdateCalendar" in source
-    assert "handleDeleteCalendar" in source
-    assert "updateCalendar" in source
-    assert "deleteCalendar" in source
+    assert "handleUpdateCalendar" not in editor
+    assert "handleDeleteCalendar" not in editor
+    assert "handleUpdateCalendar" in manager
+    assert "handleDeleteCalendar" in manager

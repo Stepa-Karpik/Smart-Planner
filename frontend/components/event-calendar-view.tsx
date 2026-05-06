@@ -1,7 +1,8 @@
 "use client"
 
 import Link from "next/link"
-import { useMemo, useRef } from "react"
+import { useMemo, useRef, useState } from "react"
+import { useTheme } from "next-themes"
 import {
   addMonths,
   eachDayOfInterval,
@@ -17,10 +18,10 @@ import { ChevronLeft, ChevronRight } from "lucide-react"
 import { useProfile } from "@/lib/hooks"
 import { useI18n } from "@/lib/i18n"
 import { dayKeyInTimezone } from "@/lib/timezone"
-import type { CalendarEvent } from "@/lib/types"
-import type { Calendar } from "@/lib/types"
+import type { Calendar, CalendarEvent } from "@/lib/types"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { calendarColorForTheme, getEventTemporalStatus, readableTextForColor, translucentColor } from "@/lib/calendar-colors"
 
 interface EventCalendarViewProps {
   events: CalendarEvent[]
@@ -40,19 +41,14 @@ function eventsForDay(events: CalendarEvent[], day: Date, timezone?: string | nu
   })
 }
 
-function readableTextColor(hex?: string) {
-  if (!hex || !/^#[0-9a-fA-F]{6}$/.test(hex)) return "#ffffff"
-  const r = Number.parseInt(hex.slice(1, 3), 16)
-  const g = Number.parseInt(hex.slice(3, 5), 16)
-  const b = Number.parseInt(hex.slice(5, 7), 16)
-  return r * 0.299 + g * 0.587 + b * 0.114 > 170 ? "#0f172a" : "#ffffff"
-}
-
 export function EventCalendarView({ events, calendars, month, onMonthChange, onEventMove }: EventCalendarViewProps) {
   const { tr } = useI18n()
+  const { resolvedTheme } = useTheme()
   const { data: profile } = useProfile()
   const monthSwitchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const calendarById = useMemo(() => new Map(calendars.map((calendar) => [calendar.id, calendar])), [calendars])
+  const [draggedEventId, setDraggedEventId] = useState<string | null>(null)
+  const [hoverDayKey, setHoverDayKey] = useState<string | null>(null)
 
   const monthStart = startOfMonth(month)
   const monthEnd = endOfMonth(month)
@@ -75,14 +71,26 @@ export function EventCalendarView({ events, calendars, month, onMonthChange, onE
     }, 1500)
   }
 
-  function handleDrop(day: Date, dragEvent: React.DragEvent<HTMLDivElement>) {
+  function previewEventsForDay(dayEvents: CalendarEvent[], day: Date) {
+    if (!draggedEventId || !hoverDayKey) return dayEvents
+    const dayKey = format(day, "yyyy-MM-dd")
+    const draggedEvent = events.find((item) => item.id === draggedEventId)
+    const withoutDragged = dayEvents.filter((item) => item.id !== draggedEventId)
+    if (!draggedEvent || dayKey !== hoverDayKey) return withoutDragged
+    return [...withoutDragged, draggedEvent].sort((a, b) => (a.start_at < b.start_at ? -1 : 1))
+  }
+
+  function handleDrop(dragEvent: React.DragEvent<HTMLDivElement>) {
     dragEvent.preventDefault()
     clearMonthSwitchTimer()
+    const dayKey = dragEvent.currentTarget.dataset.calendarDay
     const eventId = dragEvent.dataTransfer.getData("text/plain")
     const event = events.find((item) => item.id === eventId)
-    if (event) {
-      onEventMove?.(event, day)
+    if (event && dayKey) {
+      onEventMove?.(event, new Date(`${dayKey}T12:00:00`))
     }
+    setDraggedEventId(null)
+    setHoverDayKey(null)
   }
 
   return (
@@ -131,17 +139,28 @@ export function EventCalendarView({ events, calendars, month, onMonthChange, onE
           return (
             <div
               key={day.toISOString()}
+              data-calendar-day={format(day, "yyyy-MM-dd")}
               className={cn(
-                "min-h-[120px] rounded-xl border p-2 transition-colors",
+                "min-h-[128px] rounded-xl border p-2 transition-colors",
                 inCurrentMonth ? "bg-card/85" : "bg-muted/25 text-muted-foreground",
+                hoverDayKey === format(day, "yyyy-MM-dd") && "ring-2 ring-accent/45",
               )}
-              onDragOver={(event) => event.preventDefault()}
-              onDrop={(event) => handleDrop(day, event)}
+              onDragOver={(dragEvent) => {
+                dragEvent.preventDefault()
+                setHoverDayKey(dragEvent.currentTarget.dataset.calendarDay || null)
+              }}
+              onDragLeave={(dragEvent) => {
+                if (!dragEvent.currentTarget.contains(dragEvent.relatedTarget as Node | null)) setHoverDayKey(null)
+              }}
+              onDrop={handleDrop}
             >
               <div className="mb-1 text-xs font-medium">{format(day, "d")}</div>
               <div className="flex flex-col gap-1">
-                {dayEvents.slice(0, 3).map((event) => {
-                  const calendarColor = calendarById.get(event.calendar_id)?.color || "#2563eb"
+                {previewEventsForDay(dayEvents, day).slice(0, 4).map((event) => {
+                  const calendar = calendarById.get(event.calendar_id)
+                  const calendarColor = calendarColorForTheme(calendar, resolvedTheme)
+                  const temporalStatus = getEventTemporalStatus(event)
+                  const isPreview = draggedEventId === event.id && hoverDayKey === format(day, "yyyy-MM-dd")
                   return (
                     <Link
                       key={event.id}
@@ -150,22 +169,31 @@ export function EventCalendarView({ events, calendars, month, onMonthChange, onE
                       onDragStart={(dragEvent) => {
                         dragEvent.dataTransfer.effectAllowed = "move"
                         dragEvent.dataTransfer.setData("text/plain", event.id)
+                        setDraggedEventId(event.id)
                       }}
-                      onDragEnd={clearMonthSwitchTimer}
-                      className="truncate rounded-lg px-1.5 py-1 text-[11px] font-medium shadow-sm transition hover:opacity-90"
+                      onDragEnd={() => {
+                        clearMonthSwitchTimer()
+                        setDraggedEventId(null)
+                        setHoverDayKey(null)
+                      }}
+                      className={cn(
+                        "truncate rounded-lg px-1.5 py-1 text-[11px] font-semibold shadow-sm transition hover:opacity-90",
+                        isPreview && "scale-[1.02] outline outline-2 outline-offset-1 outline-accent/50",
+                        temporalStatus === "past" && "opacity-60",
+                      )}
                       style={{
-                        backgroundColor: `${calendarColor}22`,
+                        backgroundColor: translucentColor(calendarColor, temporalStatus === "in_progress" ? "38" : "22"),
                         borderLeft: `3px solid ${calendarColor}`,
-                        color: readableTextColor(calendarColor) === "#ffffff" ? calendarColor : "#0f172a",
+                        color: readableTextForColor(calendarColor) === "#ffffff" ? calendarColor : "#0f172a",
                       }}
                     >
                       {event.title}
                     </Link>
                   )
                 })}
-                {dayEvents.length > 3 && (
+                {previewEventsForDay(dayEvents, day).length > 4 && (
                   <div className="text-[11px] text-muted-foreground">
-                    +{dayEvents.length - 3} {tr("more", "ещё")}
+                    +{previewEventsForDay(dayEvents, day).length - 4} {tr("more", "ещё")}
                   </div>
                 )}
               </div>

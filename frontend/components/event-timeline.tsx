@@ -4,7 +4,8 @@ import { cn } from "@/lib/utils"
 import type { CalendarEvent } from "@/lib/types"
 import { useProfile } from "@/lib/hooks"
 import { useI18n } from "@/lib/i18n"
-import { formatTimeInTimezone, getZonedDateParts } from "@/lib/timezone"
+import { dayKeyInTimezone, formatTimeInTimezone, fromDateValueToUtcIso, getZonedDateParts } from "@/lib/timezone"
+import { getEventTemporalStatus } from "@/lib/calendar-colors"
 
 const HOUR_HEIGHT = 60 // px per hour
 const START_HOUR = 7
@@ -28,6 +29,26 @@ function getDuration(startIso: string, endIso: string) {
   return Math.max(HOUR_HEIGHT * 0.5, diffHours * HOUR_HEIGHT)
 }
 
+function splitEventForTimelineDay(event: CalendarEvent, dayKey: string, timezone?: string | null) {
+  const dayStart = fromDateValueToUtcIso(dayKey, timezone)
+  const dayEnd = fromDateValueToUtcIso(dayKey, timezone, { endOfDay: true })
+  if (!dayStart || !dayEnd) return null
+
+  const startMs = Math.max(new Date(event.start_at).getTime(), new Date(dayStart).getTime())
+  const endMs = Math.min(new Date(event.end_at).getTime(), new Date(dayEnd).getTime())
+  if (endMs <= startMs) return null
+
+  const startDay = dayKeyInTimezone(event.start_at, timezone)
+  const endDay = dayKeyInTimezone(event.end_at, timezone)
+  const isLongEvent = Boolean(startDay && endDay && startDay !== endDay)
+  return {
+    ...event,
+    start_at: new Date(startMs).toISOString(),
+    end_at: new Date(endMs).toISOString(),
+    isLongEvent,
+  }
+}
+
 const eventColors = [
   "bg-accent/15 border-accent/30 text-accent",
   "bg-emerald-500/15 border-emerald-500/30 text-emerald-700 dark:text-emerald-400",
@@ -48,7 +69,13 @@ export function EventTimeline({ events }: { events: CalendarEvent[] }) {
   const showNow = nowHours >= START_HOUR && nowHours <= END_HOUR
   const nowTop = (nowHours - START_HOUR) * HOUR_HEIGHT
 
-  const timedEvents = events.filter((e) => !e.all_day && e.status !== "canceled")
+  const todayKey = dayKeyInTimezone(new Date().toISOString(), timezone)
+  const timedEvents = todayKey
+    ? events
+        .filter((e) => !e.all_day && e.status !== "canceled")
+        .map((event) => splitEventForTimelineDay(event, todayKey, timezone))
+        .filter((event): event is CalendarEvent & { isLongEvent: boolean } => Boolean(event))
+    : []
 
   return (
     <div className="relative" style={{ height: totalHeight }}>
@@ -80,7 +107,8 @@ export function EventTimeline({ events }: { events: CalendarEvent[] }) {
       {timedEvents.map((event, i) => {
         const top = getPosition(event.start_at, timezone)
         const height = getDuration(event.start_at, event.end_at)
-        const colorClass = eventColors[i % eventColors.length]
+        const colorClass = event.isLongEvent ? "bg-slate-500/10 border-slate-400/40 text-slate-700 dark:text-white/70" : eventColors[i % eventColors.length]
+        const temporalStatus = getEventTemporalStatus(event)
 
         return (
           <a
@@ -88,12 +116,14 @@ export function EventTimeline({ events }: { events: CalendarEvent[] }) {
             href={`/events/${event.id}`}
             className={cn(
               "absolute left-12 right-2 rounded-md border px-2.5 py-1.5 text-xs transition-opacity hover:opacity-80 overflow-hidden",
-              colorClass
+              colorClass,
+              event.isLongEvent && "border-dashed",
+              temporalStatus === "past" && "opacity-60",
             )}
-            style={{ top, height, minHeight: 28 }}
+            style={{ top, height: event.isLongEvent ? Math.max(height, 18) : height, minHeight: event.isLongEvent ? 18 : 28 }}
           >
-            <p className="font-medium truncate">{event.title}</p>
-            {height > 36 && (
+            <p className={cn("font-medium truncate", event.isLongEvent && "text-[10px]")}>{event.title}</p>
+            {height > 36 && !event.isLongEvent && (
               <p className="opacity-70 text-[10px]">
                 {formatTime(event.start_at, timezone, locale)} - {formatTime(event.end_at, timezone, locale)}
               </p>

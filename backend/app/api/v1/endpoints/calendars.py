@@ -31,7 +31,7 @@ async def create_calendar(
     current_user=Depends(get_current_user),
     session: AsyncSession = Depends(get_db_session),
 ):
-    item = await CalendarService(session).create_calendar(current_user.id, payload.title, payload.color)
+    item = await CalendarService(session).create_calendar(current_user.id, payload.title, payload.color, payload.color_dark)
     return success_response(data=CalendarRead.model_validate(item).model_dump(), request=request)
 
 
@@ -48,6 +48,7 @@ async def update_calendar(
         calendar_id,
         payload.title,
         payload.color,
+        payload.color_dark,
     )
     return success_response(data=CalendarRead.model_validate(item).model_dump(), request=request)
 

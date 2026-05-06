@@ -9,6 +9,7 @@ import { Clock } from "lucide-react"
 import { useI18n } from "@/lib/i18n"
 import { useProfile } from "@/lib/hooks"
 import { formatTimeInTimezone } from "@/lib/timezone"
+import { eventStatusLabel, getEventTemporalStatus } from "@/lib/calendar-colors"
 
 function formatTime(iso: string, timezone?: string | null, locale?: string | null) {
   return formatTimeInTimezone(iso, timezone, locale)
@@ -23,6 +24,8 @@ const priorityColors: Record<string, string> = {
 
 const statusColors: Record<string, string> = {
   planned: "bg-accent/10 text-accent border-accent/20",
+  in_progress: "bg-sky-500/10 text-sky-700 border-sky-500/25 dark:text-sky-300",
+  past: "bg-slate-500/10 text-slate-500 border-slate-500/20",
   done: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
   canceled: "bg-muted text-muted-foreground border-border line-through",
 }
@@ -41,6 +44,7 @@ export function EventCard({ event }: { event: CalendarEvent }) {
   const { tr, locale } = useI18n()
   const { data: profile } = useProfile()
   const mapLink = locationMapLink(event)
+  const temporalStatus = getEventTemporalStatus(event)
 
   return (
     <div className={cn("group flex flex-col gap-2 rounded-lg border bg-card p-3", event.status === "canceled" && "opacity-60")}>
@@ -50,8 +54,8 @@ export function EventCard({ event }: { event: CalendarEvent }) {
             {event.title}
           </h3>
         </Link>
-        <Badge variant="outline" className={cn("shrink-0 text-[10px] px-1.5 py-0", statusColors[event.status])}>
-          {event.status === "planned" ? tr("planned", "запланировано") : event.status === "done" ? tr("done", "выполнено") : tr("canceled", "отменено")}
+        <Badge variant="outline" className={cn("shrink-0 text-[10px] px-1.5 py-0", statusColors[temporalStatus])}>
+          {eventStatusLabel(temporalStatus, tr)}
         </Badge>
       </div>
 

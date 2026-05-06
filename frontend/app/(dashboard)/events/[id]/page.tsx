@@ -28,9 +28,12 @@ import { cn } from "@/lib/utils"
 import { useI18n } from "@/lib/i18n"
 import { dayKeyInTimezone, formatDateTimeInTimezone, fromDateValueToUtcIso } from "@/lib/timezone"
 import type { CalendarEvent, MapProvider, RouteMode, RoutePreview, RouteRecommendation } from "@/lib/types"
+import { eventStatusLabel, getEventTemporalStatus } from "@/lib/calendar-colors"
 
 const statusColors: Record<string, string> = {
   planned: "bg-accent/10 text-accent border-accent/20",
+  in_progress: "bg-sky-500/10 text-sky-700 border-sky-500/25 dark:text-sky-300",
+  past: "bg-slate-500/10 text-slate-500 border-slate-500/20",
   done: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
   canceled: "bg-muted text-muted-foreground border-border",
 }
@@ -299,6 +302,7 @@ export default function EventDetailPage() {
   }
 
   const mapUrl = buildMapUrl(event.location_text, event.location_lat, event.location_lon)
+  const temporalStatus = getEventTemporalStatus(event)
 
   return (
     <div className="mx-auto flex max-w-[1500px] flex-col gap-4 p-4 md:p-6">
@@ -315,8 +319,8 @@ export default function EventDetailPage() {
               {event.title}
             </h1>
             <div className="mt-3 flex flex-wrap items-center gap-2">
-              <Badge variant="outline" className={cn("rounded-full text-xs", statusColors[event.status])}>
-                {event.status === "planned" ? tr("planned", "запланировано") : event.status === "done" ? tr("done", "выполнено") : tr("canceled", "отменено")}
+              <Badge variant="outline" className={cn("rounded-full text-xs", statusColors[temporalStatus])}>
+                {eventStatusLabel(temporalStatus, tr)}
               </Badge>
               <Badge variant="outline" className={cn("rounded-full text-xs", priorityColors[String(event.priority)] || priorityColors["0"])}>
                 {tr("Priority", "Приоритет")}: {event.priority}

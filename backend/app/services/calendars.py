@@ -16,12 +16,12 @@ class CalendarService:
     async def list_calendars(self, user_id: UUID):
         return await self.calendars.list_by_user(user_id)
 
-    async def create_calendar(self, user_id: UUID, title: str, color: str):
-        calendar = await self.calendars.create(user_id=user_id, title=title, color=color)
+    async def create_calendar(self, user_id: UUID, title: str, color: str, color_dark: str = "#60a5fa"):
+        calendar = await self.calendars.create(user_id=user_id, title=title, color=color, color_dark=color_dark)
         await self.session.commit()
         return calendar
 
-    async def update_calendar(self, user_id: UUID, calendar_id: UUID, title: str | None, color: str | None):
+    async def update_calendar(self, user_id: UUID, calendar_id: UUID, title: str | None, color: str | None, color_dark: str | None):
         calendar = await self.calendars.get_user_calendar(user_id, calendar_id)
         if calendar is None:
             raise NotFoundError("Calendar not found")
@@ -29,6 +29,8 @@ class CalendarService:
             calendar.title = title
         if color is not None:
             calendar.color = color
+        if color_dark is not None:
+            calendar.color_dark = color_dark
         await self.session.commit()
         await self.session.refresh(calendar)
         return calendar

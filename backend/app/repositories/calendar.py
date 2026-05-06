@@ -27,8 +27,8 @@ class CalendarRepository:
         stmt = select(Calendar).where(Calendar.user_id == user_id, Calendar.is_default.is_(True))
         return await self.session.scalar(stmt)
 
-    async def create(self, user_id: UUID, title: str, color: str = "#2563eb", is_default: bool = False) -> Calendar:
-        calendar = Calendar(id=uuid.uuid4(), user_id=user_id, title=title, color=color, is_default=is_default)
+    async def create(self, user_id: UUID, title: str, color: str = "#2563eb", color_dark: str = "#60a5fa", is_default: bool = False) -> Calendar:
+        calendar = Calendar(id=uuid.uuid4(), user_id=user_id, title=title, color=color, color_dark=color_dark, is_default=is_default)
         self.session.add(calendar)
         await self.session.flush()
         return calendar
