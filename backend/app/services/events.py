@@ -94,6 +94,7 @@ class EventService:
             all_day=payload.all_day,
             status=payload.status,
             priority=payload.priority,
+            route_origin_home=payload.route_origin_home,
         )
         await self.events.create(event)
         await self.session.commit()
@@ -131,6 +132,7 @@ class EventService:
             "all_day",
             "status",
             "priority",
+            "route_origin_home",
         ]:
             value = getattr(payload, field, None)
             if value is not None:

@@ -176,8 +176,8 @@ export async function deleteCalendar(id: string) {
   return res
 }
 
-export function useEvents(query: EventsQuery) {
-  return useSWR<CalendarEvent[]>(eventsKey(query), fetcher)
+export function useEvents(query: EventsQuery | null) {
+  return useSWR<CalendarEvent[]>(query ? eventsKey(query) : null, fetcher)
 }
 
 export function useEvent(id: string | undefined) {

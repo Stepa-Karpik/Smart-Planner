@@ -43,6 +43,7 @@ class Event(Base, TimestampMixin):
         nullable=False,
     )
     priority: Mapped[int] = mapped_column(SmallInteger, default=0, nullable=False)
+    route_origin_home: Mapped[bool] = mapped_column(default=False, nullable=False)
 
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 

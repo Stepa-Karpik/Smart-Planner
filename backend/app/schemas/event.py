@@ -22,6 +22,7 @@ class EventCreate(BaseModel):
     all_day: bool = False
     status: EventStatus = EventStatus.PLANNED
     priority: int = Field(default=0, ge=0, le=3)
+    route_origin_home: bool = False
 
     @model_validator(mode="after")
     def validate_times(self):
@@ -45,6 +46,7 @@ class EventUpdate(BaseModel):
     all_day: bool | None = None
     status: EventStatus | None = None
     priority: int | None = Field(default=None, ge=0, le=3)
+    route_origin_home: bool | None = None
 
     @model_validator(mode="after")
     def validate_partial_times(self):
@@ -67,6 +69,7 @@ class EventRead(BaseReadModel):
     all_day: bool
     status: EventStatus
     priority: int
+    route_origin_home: bool
     created_at: datetime
     updated_at: datetime
     deleted_at: datetime | None

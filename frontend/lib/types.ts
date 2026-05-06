@@ -210,6 +210,7 @@ export interface CalendarEvent {
   all_day: boolean
   status: EventStatus
   priority: EventPriority
+  route_origin_home: boolean
   deleted_at?: string | null
 }
 
@@ -226,6 +227,7 @@ export interface EventCreate {
   all_day?: boolean
   status?: EventStatus
   priority?: EventPriority
+  route_origin_home?: boolean
 }
 
 export interface EventUpdate {
@@ -241,6 +243,7 @@ export interface EventUpdate {
   status?: EventStatus
   priority?: EventPriority
   calendar_id?: string
+  route_origin_home?: boolean
 }
 
 export interface EventsQuery {

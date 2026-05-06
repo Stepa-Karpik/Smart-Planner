@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { useParams, useRouter } from "next/navigation"
-import { ArrowLeft, CalendarDays, Check, Clock, Loader2, MapPin, Pencil, Route, Ruler, Trash2, X } from "lucide-react"
+import { ArrowLeft, CalendarDays, Check, Clock, Home, Loader2, MapPin, Pencil, Route, Ruler, Trash2, X } from "lucide-react"
 import { toast } from "sonner"
 import { EventEditorModal } from "@/components/event-editor-modal"
 import { ReminderList } from "@/components/reminder-list"
@@ -22,12 +22,12 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import { deleteEvent, fetchRoutePreview, fetchRouteRecommendations, updateEvent, useEvent, useProfile } from "@/lib/hooks"
+import { deleteEvent, fetchRoutePreview, fetchRouteRecommendations, updateEvent, useEvent, useEvents, useProfile } from "@/lib/hooks"
 import { routeModesForLocation } from "@/lib/route-modes"
 import { cn } from "@/lib/utils"
 import { useI18n } from "@/lib/i18n"
-import { formatDateTimeInTimezone } from "@/lib/timezone"
-import type { MapProvider, RouteMode, RoutePreview, RouteRecommendation } from "@/lib/types"
+import { dayKeyInTimezone, formatDateTimeInTimezone, fromDateValueToUtcIso } from "@/lib/timezone"
+import type { CalendarEvent, MapProvider, RouteMode, RoutePreview, RouteRecommendation } from "@/lib/types"
 
 const statusColors: Record<string, string> = {
   planned: "bg-accent/10 text-accent border-accent/20",
@@ -83,6 +83,58 @@ function pointQuery(lat?: number | null, lon?: number | null, fallback?: string 
   return fallback?.trim() || ""
 }
 
+function eventPointValue(event: CalendarEvent) {
+  return pointQuery(event.location_lat, event.location_lon, event.location_text)
+}
+
+function eventSpansMultipleDays(event: CalendarEvent, timezone?: string | null) {
+  const startDay = dayKeyInTimezone(event.start_at, timezone)
+  const endDay = dayKeyInTimezone(event.end_at, timezone)
+  return Boolean(startDay && endDay && startDay !== endDay)
+}
+
+function findActiveLongEvent(events: CalendarEvent[], target: CalendarEvent, timezone?: string | null) {
+  const targetStart = new Date(target.start_at).getTime()
+  return events.find((event) => {
+    if (event.id === target.id || event.status === "canceled" || !eventSpansMultipleDays(event, timezone)) return false
+    return new Date(event.start_at).getTime() <= targetStart && new Date(event.end_at).getTime() >= targetStart && Boolean(eventPointValue(event))
+  })
+}
+
+function findPreviousSameDayEvent(events: CalendarEvent[], target: CalendarEvent, timezone?: string | null) {
+  const targetDay = dayKeyInTimezone(target.start_at, timezone)
+  const targetStart = new Date(target.start_at).getTime()
+  return [...events]
+    .filter((event) => {
+      if (event.id === target.id || event.status === "canceled" || eventSpansMultipleDays(event, timezone)) return false
+      return dayKeyInTimezone(event.start_at, timezone) === targetDay && new Date(event.start_at).getTime() < targetStart && Boolean(eventPointValue(event))
+    })
+    .sort((a, b) => (a.start_at < b.start_at ? 1 : -1))[0]
+}
+
+function findRouteSourceForEvent(params: {
+  events: CalendarEvent[]
+  event: CalendarEvent
+  homeValue: string
+  timezone?: string | null
+  preferHome: boolean
+  tr: (en: string, ru: string) => string
+}) {
+  const { events, event, homeValue, timezone, preferHome, tr } = params
+  const activeLongEvent = findActiveLongEvent(events, event, timezone)
+  if (preferHome) {
+    if (activeLongEvent) return { title: activeLongEvent.title, value: eventPointValue(activeLongEvent), kind: "event" as const }
+    if (homeValue) return { title: tr("Home", "Дом"), value: homeValue, kind: "home" as const }
+    return null
+  }
+
+  const previous = findPreviousSameDayEvent(events, event, timezone)
+  if (previous) return { title: previous.title, value: eventPointValue(previous), kind: "event" as const }
+  if (activeLongEvent) return { title: activeLongEvent.title, value: eventPointValue(activeLongEvent), kind: "event" as const }
+  if (homeValue) return { title: tr("Home", "Дом"), value: homeValue, kind: "home" as const }
+  return null
+}
+
 export default function EventDetailPage() {
   const { tr, locale } = useI18n()
   const params = useParams()
@@ -103,16 +155,42 @@ export default function EventDetailPage() {
     if (profile?.default_route_mode) setMode(profile.default_route_mode)
   }, [profile?.default_route_mode])
 
-  const fromValue = useMemo(
+  const eventDay = event ? dayKeyInTimezone(event.start_at, profile?.timezone) : null
+  const relatedEventsQuery = useMemo(() => {
+    if (!eventDay) return null
+    const fromIso = fromDateValueToUtcIso(eventDay, profile?.timezone)
+    const toIso = fromDateValueToUtcIso(eventDay, profile?.timezone, { endOfDay: true })
+    if (!fromIso || !toIso) return null
+    return { from: fromIso, to: toIso, limit: 500, offset: 0 }
+  }, [eventDay, profile?.timezone])
+  const { data: relatedEvents } = useEvents(relatedEventsQuery)
+
+  const homeValue = useMemo(
     () => pointQuery(profile?.home_location_lat, profile?.home_location_lon, profile?.home_location_text),
     [profile?.home_location_lat, profile?.home_location_lon, profile?.home_location_text],
   )
+  const routeSource = useMemo(() => {
+    if (!event) return null
+    return findRouteSourceForEvent({
+      events: relatedEvents || [],
+      event,
+      homeValue,
+      timezone: profile?.timezone,
+      preferHome: event.route_origin_home,
+      tr,
+    })
+  }, [event, homeValue, profile?.timezone, relatedEvents, tr])
+  const fromValue = routeSource?.value || ""
   const toValue = useMemo(
     () => pointQuery(event?.location_lat, event?.location_lon, event?.location_text),
     [event?.location_lat, event?.location_lon, event?.location_text],
   )
   const availableRouteModes = useMemo(() => routeModesForLocation(profile?.home_location_text), [profile?.home_location_text])
   const routeReady = Boolean(fromValue && toValue && event)
+  const nowMs = Date.now()
+  const eventActiveNow = event ? new Date(event.start_at).getTime() <= nowMs && new Date(event.end_at).getTime() >= nowMs : false
+  const hasEarlierSameDayEvent = event ? Boolean(findPreviousSameDayEvent(relatedEvents || [], event, profile?.timezone)) : false
+  const canUseHomeRouteOrigin = Boolean(event && routeReady && !event.route_origin_home && !eventActiveNow && !hasEarlierSameDayEvent)
 
   useEffect(() => {
     if (!availableRouteModes.includes(mode)) {
@@ -185,6 +263,16 @@ export default function EventDetailPage() {
     }
     toast.success(tr("Event deleted", "Событие удалено"))
     router.push("/events")
+  }
+
+  async function handleUseHomeRouteOrigin() {
+    const response = await updateEvent(eventId, { route_origin_home: true })
+    if (response.error) {
+      toast.error(response.error.message)
+      return
+    }
+    toast.success(tr("Route source updated", "Источник маршрута обновлён"))
+    mutate()
   }
 
   if (isLoading) {
@@ -329,8 +417,19 @@ export default function EventDetailPage() {
               <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
                 <Route className="h-4 w-4" />
                 {tr("Route to event", "Маршрут к событию")}
+                {routeSource ? (
+                  <Badge variant="outline" className="ml-1 rounded-full text-[11px] font-normal text-muted-foreground">
+                    {tr("from", "от")}: {routeSource.title}
+                  </Badge>
+                ) : null}
               </div>
               <div className="flex flex-wrap gap-1.5">
+                {canUseHomeRouteOrigin ? (
+                  <Button type="button" size="sm" variant="outline" className="h-8 rounded-xl px-3 text-xs" onClick={handleUseHomeRouteOrigin}>
+                    <Home className="mr-1.5 h-3.5 w-3.5" />
+                    {tr("I'm home", "Я дома")}
+                  </Button>
+                ) : null}
                 {availableRouteModes.map((item) => (
                     <Button
                       key={item}
