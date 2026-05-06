@@ -9,7 +9,7 @@ import { dayKeyInTimezone, formatTimeInTimezone, getZonedDateParts, resolveUserT
 interface EventGanttProps {
   events: CalendarEvent[]
   calendars: Calendar[]
-  travelMinutes: Record<string, number>
+  travelDetails: Record<string, { minutes: number; sourceTitle: string; sourceKind: "home" | "event" }>
 }
 
 const PX_PER_MINUTE = 1.1
@@ -99,7 +99,7 @@ function colorForCalendar(calendars: Calendar[], calendarId: string) {
   return calendars.find((calendar) => calendar.id === calendarId)?.color || "#2563eb"
 }
 
-export function EventGantt({ events, calendars, travelMinutes }: EventGanttProps) {
+export function EventGantt({ events, calendars, travelDetails }: EventGanttProps) {
   const { tr, locale } = useI18n()
   const { data: profile } = useProfile()
   const timezone = profile?.timezone
@@ -144,7 +144,8 @@ export function EventGantt({ events, calendars, travelMinutes }: EventGanttProps
                   const width = Math.max((segment.endMinute - segment.startMinute) * PX_PER_MINUTE, 8)
                   const calendarColor = colorForCalendar(calendars, event.calendar_id)
 
-                  const travel = travelMinutes[event.id] || 0
+                  const travelInfo = travelDetails[event.id]
+                  const travel = travelInfo?.minutes || 0
                   const travelWidth = travel * PX_PER_MINUTE
                   const travelLeft = clamp(left - travelWidth, 0, CHART_WIDTH - 1)
                   const travelLabelLeft = clamp(travelLeft + travelWidth / 2 - 18, 0, CHART_WIDTH - 36)
@@ -175,7 +176,7 @@ export function EventGantt({ events, calendars, travelMinutes }: EventGanttProps
                             <div
                               className="absolute top-[7px] h-[4px] rounded-full bg-amber-400/90 shadow-[0_0_16px_rgba(251,191,36,0.35)]"
                               style={{ left: `${travelLeft}px`, width: `${travelWidth}px` }}
-                              title={`${tr("Travel", "Путь")}: ${travel} ${tr("min", "мин")}`}
+                              title={`${tr("Travel", "Путь")}: ${travel} ${tr("min", "мин")} · ${travelInfo?.sourceTitle || ""}`}
                             />
                             <div
                               className="absolute top-[0px] rounded bg-amber-100/90 px-1 text-[9px] text-amber-800"

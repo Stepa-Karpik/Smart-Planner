@@ -38,6 +38,16 @@ def test_gantt_splits_long_events_by_day_and_uses_calendar_colors():
     assert "linear-gradient" in source
 
 
+def test_events_page_travel_uses_previous_event_or_active_long_event():
+    source = read(EVENTS_PAGE)
+
+    assert "findTravelSourceForEvent" in source
+    assert "findActiveLongEvent" in source
+    assert "source.kind === \"event\"" in source
+    assert "source.kind === \"home\"" in source
+    assert "travelDetails" in source
+
+
 def test_event_editor_has_calendar_management_actions():
     source = read(EDITOR_MODAL)
 
