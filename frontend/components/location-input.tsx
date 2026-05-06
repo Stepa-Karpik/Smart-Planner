@@ -9,6 +9,62 @@ import type { LocationSuggestion, MapProvider } from "@/lib/types"
 import { useI18n } from "@/lib/i18n"
 
 type LocationSource = "manual_text" | "geocoded" | "map_pick"
+const LOCATION_CACHE_TTL_MS = 1000 * 60 * 60 * 24 * 30
+const LOCATION_CACHE_STORAGE_KEY = "sp_location_suggest_cache_v1"
+const LOCATION_CACHE_MAX_ITEMS = 80
+
+type LocationCacheEntry = {
+  expiresAt: number
+  suggestions: LocationSuggestion[]
+}
+
+const locationSuggestionMemoryCache = new Map<string, LocationCacheEntry>()
+const locationSuggestionInFlight = new Map<string, Promise<LocationSuggestion[]>>()
+
+function normalizeLocationQuery(value: string) {
+  return value.trim().toLowerCase().replace(/\s+/g, " ")
+}
+
+function locationCacheKey(query: string, limit: number) {
+  return `${normalizeLocationQuery(query)}:${limit}`
+}
+
+function readStoredLocationCache(): Record<string, LocationCacheEntry> {
+  if (typeof window === "undefined") return {}
+  try {
+    const raw = window.localStorage.getItem(LOCATION_CACHE_STORAGE_KEY)
+    return raw ? JSON.parse(raw) : {}
+  } catch {
+    return {}
+  }
+}
+
+function writeStoredLocationCache(cache: Record<string, LocationCacheEntry>) {
+  if (typeof window === "undefined") return
+  const entries = Object.entries(cache)
+    .filter(([, value]) => value.expiresAt > Date.now())
+    .sort((a, b) => b[1].expiresAt - a[1].expiresAt)
+    .slice(0, LOCATION_CACHE_MAX_ITEMS)
+  window.localStorage.setItem(LOCATION_CACHE_STORAGE_KEY, JSON.stringify(Object.fromEntries(entries)))
+}
+
+function getCachedLocationSuggestions(key: string): LocationSuggestion[] | null {
+  const memory = locationSuggestionMemoryCache.get(key)
+  if (memory && memory.expiresAt > Date.now()) return memory.suggestions
+
+  const stored = readStoredLocationCache()[key]
+  if (!stored || stored.expiresAt <= Date.now()) return null
+  locationSuggestionMemoryCache.set(key, stored)
+  return stored.suggestions
+}
+
+function setCachedLocationSuggestions(key: string, suggestions: LocationSuggestion[]) {
+  const entry = { expiresAt: Date.now() + LOCATION_CACHE_TTL_MS, suggestions }
+  locationSuggestionMemoryCache.set(key, entry)
+  const stored = readStoredLocationCache()
+  stored[key] = entry
+  writeStoredLocationCache(stored)
+}
 
 interface LocationInputChange {
   text: string
@@ -47,17 +103,32 @@ export function LocationInput({ id, value, lat, lon, placeholder, mapProvider, o
     }
 
     const timer = setTimeout(async () => {
+      const key = locationCacheKey(query, 8)
+      const cached = getCachedLocationSuggestions(key)
+      if (cached) {
+        setSuggestions(cached)
+        setLoading(false)
+        return
+      }
+
       setLoading(true)
       try {
-        const response = await fetchLocationSuggestions(query, 8, controller.signal)
+        let request = locationSuggestionInFlight.get(key)
+        if (!request) {
+          request = fetchLocationSuggestions(query, 8, controller.signal).then((response) => response.data || [])
+          locationSuggestionInFlight.set(key, request)
+        }
+        const nextSuggestions = await request
         if (!controller.signal.aborted) {
-          setSuggestions(response.data || [])
+          setCachedLocationSuggestions(key, nextSuggestions)
+          setSuggestions(nextSuggestions)
         }
       } catch {
         if (!controller.signal.aborted) {
           setSuggestions([])
         }
       } finally {
+        locationSuggestionInFlight.delete(key)
         if (!controller.signal.aborted) {
           setLoading(false)
         }

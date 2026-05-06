@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+import json
 import re
 
 from fastapi import APIRouter, Depends, Query, Request
@@ -77,6 +78,12 @@ def _suggestion_key(item) -> tuple[float, float]:
     return round(item.lat, 5), round(item.lon, 5)
 
 
+def _suggest_cache_key(q: str, limit: int, home_location_text: str | None) -> str:
+    home = (home_location_text or "").strip().lower()
+    normalized = re.sub(r"\s+", " ", q.strip().lower())
+    return f"location_suggest:merged:{home}:{normalized}:{limit}"
+
+
 @router.get("/locations/suggest")
 async def location_suggest(
     request: Request,
@@ -86,7 +93,13 @@ async def location_suggest(
     redis: Redis = Depends(get_redis_client),
 ):
     service = GeocodingService(redis)
-    variants = _query_variants(q, getattr(current_user, "home_location_text", None))
+    home_location_text = getattr(current_user, "home_location_text", None)
+    cache_key = _suggest_cache_key(q, limit, home_location_text)
+    cached = await redis.get(cache_key)
+    if cached:
+        return success_response(data=json.loads(cached), request=request)
+
+    variants = _query_variants(q, home_location_text)
     merged = []
     seen: set[tuple[float, float]] = set()
     for variant in variants:
@@ -111,6 +124,7 @@ async def location_suggest(
         ).model_dump()
         for item in merged
     ]
+    await redis.setex(cache_key, service.settings.geocode_cache_ttl_sec, json.dumps(data, ensure_ascii=False))
     return success_response(data=data, request=request)
 
 

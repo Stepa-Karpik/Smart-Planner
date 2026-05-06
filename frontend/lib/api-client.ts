@@ -20,10 +20,25 @@ import type {
 } from "./types"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000"
+const GET_CACHE_TTL_MS = 20_000
+const GET_STALE_TTL_MS = 120_000
 
 let accessToken: string | null = null
 
+type CachedResponse = {
+  expiresAt: number
+  staleAt: number
+  value: ApiEnvelope<unknown>
+}
+
+const responseCache = new Map<string, CachedResponse>()
+const inFlightGetRequests = new Map<string, Promise<ApiEnvelope<unknown>>>()
+
 export function setAccessToken(token: string | null) {
+  if (accessToken !== token) {
+    responseCache.clear()
+    inFlightGetRequests.clear()
+  }
   accessToken = token
 }
 
@@ -70,47 +85,101 @@ async function refreshAccessToken(): Promise<boolean> {
 
 export async function apiRequest<T>(path: string, options: RequestInit = {}): Promise<ApiEnvelope<T>> {
   const url = `${API_BASE}${path}`
-  const headers: Record<string, string> = {
+  const requestHeaders: Record<string, string> = {
     ...(options.headers as Record<string, string>),
   }
+  const forceRefresh = requestHeaders["x-sp-cache-refresh"] === "1"
+  const method = (options.method || "GET").toUpperCase()
+  const useGetCache = method === "GET" && !options.body && !options.signal && !forceRefresh
+  const cacheKey = useGetCache ? `${accessToken || "anon"}:${url}` : ""
+  const cacheWriteKey = method === "GET" && !options.body && !options.signal ? `${accessToken || "anon"}:${url}` : ""
 
-  if (!(options.body instanceof FormData)) {
-    headers["Content-Type"] = headers["Content-Type"] || "application/json"
+  if (useGetCache) {
+    const cached = responseCache.get(cacheKey)
+    const now = Date.now()
+    if (cached && cached.expiresAt > now) {
+      return cached.value as ApiEnvelope<T>
+    }
+    if (cached && cached.staleAt > now) {
+      if (!inFlightGetRequests.has(cacheKey)) {
+        const refresh = apiRequest<T>(path, { ...options, headers: { ...(options.headers as Record<string, string>), "x-sp-cache-refresh": "1" } })
+        inFlightGetRequests.set(cacheKey, refresh as Promise<ApiEnvelope<unknown>>)
+        refresh.finally(() => inFlightGetRequests.delete(cacheKey))
+      }
+      return cached.value as ApiEnvelope<T>
+    }
+    const inFlight = inFlightGetRequests.get(cacheKey)
+    if (inFlight) {
+      return inFlight as Promise<ApiEnvelope<T>>
+    }
   }
 
-  if (accessToken) {
-    headers["Authorization"] = `Bearer ${accessToken}`
-  }
+  const runRequest = async (): Promise<ApiEnvelope<T>> => {
+    const headers: Record<string, string> = {
+      ...requestHeaders,
+    }
+    delete headers["x-sp-cache-refresh"]
 
-  let res = await fetch(url, { ...options, headers })
+    if (!(options.body instanceof FormData)) {
+      headers["Content-Type"] = headers["Content-Type"] || "application/json"
+    }
 
-  if (res.status === 401 && getRefreshToken()) {
-    const refreshed = await refreshAccessToken()
-    if (refreshed) {
+    if (accessToken) {
       headers["Authorization"] = `Bearer ${accessToken}`
-      res = await fetch(url, { ...options, headers })
     }
+
+    let res = await fetch(url, { ...options, headers })
+
+    if (res.status === 401 && getRefreshToken()) {
+      const refreshed = await refreshAccessToken()
+      if (refreshed) {
+        headers["Authorization"] = `Bearer ${accessToken}`
+        res = await fetch(url, { ...options, headers })
+      }
+    }
+
+    let envelope: ApiEnvelope<T>
+    if (!res.ok) {
+      try {
+        const body = await res.json()
+        if (body.error) return body as ApiEnvelope<T>
+      } catch {
+        // ignore parsing errors
+      }
+
+      envelope = {
+        data: null,
+        meta: {},
+        error: {
+          code: "HTTP_ERROR",
+          message: `Request failed with status ${res.status}`,
+        },
+      }
+    } else {
+      envelope = await res.json()
+    }
+
+    if (method !== "GET" && !envelope.error) {
+      responseCache.clear()
+      inFlightGetRequests.clear()
+    }
+    if (cacheWriteKey && !envelope.error) {
+      responseCache.set(cacheWriteKey, {
+        expiresAt: Date.now() + GET_CACHE_TTL_MS,
+        staleAt: Date.now() + GET_STALE_TTL_MS,
+        value: envelope as ApiEnvelope<unknown>,
+      })
+    }
+    return envelope
   }
 
-  if (!res.ok) {
-    try {
-      const body = await res.json()
-      if (body.error) return body as ApiEnvelope<T>
-    } catch {
-      // ignore parsing errors
-    }
-
-    return {
-      data: null,
-      meta: {},
-      error: {
-        code: "HTTP_ERROR",
-        message: `Request failed with status ${res.status}`,
-      },
-    }
+  if (useGetCache) {
+    const request = runRequest().finally(() => inFlightGetRequests.delete(cacheKey))
+    inFlightGetRequests.set(cacheKey, request as Promise<ApiEnvelope<unknown>>)
+    return request
   }
 
-  return res.json()
+  return runRequest()
 }
 
 export async function apiRequestBlob(path: string, options: RequestInit = {}): Promise<Blob> {
@@ -184,6 +253,8 @@ export async function logout() {
 export function clearTokens() {
   setAccessToken(null)
   setRefreshToken(null)
+  responseCache.clear()
+  inFlightGetRequests.clear()
 }
 
 export function hasRefreshToken(): boolean {

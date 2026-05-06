@@ -58,8 +58,8 @@ class Settings(BaseSettings):
     ai_context_summary_max_chars: int = 1200
     default_user_timezone: str = "Europe/Moscow"
 
-    routes_cache_ttl_sec: int = 900
-    geocode_cache_ttl_sec: int = 1800
+    routes_cache_ttl_sec: int = 3600
+    geocode_cache_ttl_sec: int = 2592000
     route_request_timeout_sec: int = 8
     route_retry_attempts: int = 3
     route_retry_backoff_sec: float = 0.5
