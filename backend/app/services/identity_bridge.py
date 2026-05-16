@@ -29,14 +29,14 @@ class IdentityBridge:
     def internal_browser_sessions_url(self) -> str:
         return f"{self.base_url.rstrip('/')}/api/v1/internal/browser-sessions"
 
-    async def mint_browser_session(self, subject_id: str) -> MintedBrowserSession | None:
+    async def mint_browser_session(self, subject_id: str, email: str | None = None) -> MintedBrowserSession | None:
         if not self.base_url or not self.internal_api_key:
             return None
         try:
             async with httpx.AsyncClient(timeout=self.timeout_seconds) as client:
                 response = await client.post(
                     self.internal_browser_sessions_url,
-                    json={"subject_id": subject_id},
+                    json={"subject_id": subject_id, "email": email},
                     headers={"x-internal-key": self.internal_api_key},
                 )
                 response.raise_for_status()

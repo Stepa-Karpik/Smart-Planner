@@ -24,12 +24,12 @@ from app.services.twofa import TwoFactorAuthService
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
 
-async def _set_shared_identity_cookie(response: Response, user_id: str) -> None:
+async def _set_shared_identity_cookie(response: Response, user_id: str, email: str) -> None:
     settings = get_settings()
     session = await IdentityBridge(
         base_url=settings.identity_base_url,
         internal_api_key=settings.identity_internal_api_key,
-    ).mint_browser_session(user_id)
+    ).mint_browser_session(user_id, email)
     if session is None:
         return
     response.set_cookie(
@@ -51,7 +51,7 @@ async def register(payload: RegisterRequest, request: Request, response: Respons
         username=payload.username,
         password=payload.password,
     )
-    await _set_shared_identity_cookie(response, str(user.id))
+    await _set_shared_identity_cookie(response, str(user.id), user.email)
     data = AuthResponse(
         user_id=str(user.id),
         email=user.email,
@@ -85,7 +85,7 @@ async def login(
 
     access_token, refresh_token = await auth_service.issue_tokens(user.id)
     await session.commit()
-    await _set_shared_identity_cookie(response, str(user.id))
+    await _set_shared_identity_cookie(response, str(user.id), user.email)
     data = AuthResponse(
         user_id=str(user.id),
         email=user.email,
@@ -140,7 +140,7 @@ async def verify_login_totp(
         raise NotFoundError("User not found")
     access_token, refresh_token = await auth.issue_tokens(user.id)
     await session.commit()
-    await _set_shared_identity_cookie(response, str(user.id))
+    await _set_shared_identity_cookie(response, str(user.id), user.email)
     data = AuthResponse(
         user_id=str(user.id),
         email=user.email,
@@ -214,7 +214,7 @@ async def complete_login_telegram_confirmation(
         raise NotFoundError("User not found")
     access_token, refresh_token = await auth.issue_tokens(user.id)
     await session.commit()
-    await _set_shared_identity_cookie(response, str(user.id))
+    await _set_shared_identity_cookie(response, str(user.id), user.email)
     data = AuthResponse(
         user_id=str(user.id),
         email=user.email,
