@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Request, status
+from fastapi import APIRouter, Depends, Request, Response, status
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -16,20 +16,42 @@ from app.schemas.twofa import (
     LoginTwoFATelegramSessionRequest,
     LoginTwoFATotpVerifyRequest,
 )
+from app.core.config import get_settings
 from app.services.auth import AuthService
+from app.services.identity_bridge import IdentityBridge
 from app.services.twofa import TwoFactorAuthService
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
 
+async def _set_shared_identity_cookie(response: Response, user_id: str) -> None:
+    settings = get_settings()
+    session = await IdentityBridge(
+        base_url=settings.identity_base_url,
+        internal_api_key=settings.identity_internal_api_key,
+    ).mint_browser_session(user_id)
+    if session is None:
+        return
+    response.set_cookie(
+        settings.identity_cookie_name,
+        session.session_id,
+        httponly=True,
+        secure=settings.identity_cookie_secure,
+        samesite="lax",
+        domain=settings.identity_cookie_domain or None,
+        path="/",
+    )
+
+
 @router.post("/register", status_code=status.HTTP_201_CREATED)
-async def register(payload: RegisterRequest, request: Request, session: AsyncSession = Depends(get_db_session)):
+async def register(payload: RegisterRequest, request: Request, response: Response, session: AsyncSession = Depends(get_db_session)):
     service = AuthService(session)
     user, access_token, refresh_token = await service.register(
         email=payload.email,
         username=payload.username,
         password=payload.password,
     )
+    await _set_shared_identity_cookie(response, str(user.id))
     data = AuthResponse(
         user_id=str(user.id),
         email=user.email,
@@ -46,6 +68,7 @@ async def register(payload: RegisterRequest, request: Request, session: AsyncSes
 async def login(
     payload: LoginRequest,
     request: Request,
+    response: Response,
     session: AsyncSession = Depends(get_db_session),
     redis: Redis = Depends(get_redis_client),
 ):
@@ -62,6 +85,7 @@ async def login(
 
     access_token, refresh_token = await auth_service.issue_tokens(user.id)
     await session.commit()
+    await _set_shared_identity_cookie(response, str(user.id))
     data = AuthResponse(
         user_id=str(user.id),
         email=user.email,
@@ -92,9 +116,11 @@ async def refresh(payload: RefreshRequest, request: Request, session: AsyncSessi
 
 
 @router.post("/logout")
-async def logout(payload: LogoutRequest, request: Request, session: AsyncSession = Depends(get_db_session)):
+async def logout(payload: LogoutRequest, request: Request, response: Response, session: AsyncSession = Depends(get_db_session)):
     service = AuthService(session)
     await service.logout(payload.refresh_token)
+    settings = get_settings()
+    response.delete_cookie(settings.identity_cookie_name, domain=settings.identity_cookie_domain or None, path="/")
     return success_response(data={"ok": True}, request=request)
 
 
@@ -102,6 +128,7 @@ async def logout(payload: LogoutRequest, request: Request, session: AsyncSession
 async def verify_login_totp(
     payload: LoginTwoFATotpVerifyRequest,
     request: Request,
+    response: Response,
     session: AsyncSession = Depends(get_db_session),
     redis: Redis = Depends(get_redis_client),
 ):
@@ -113,6 +140,7 @@ async def verify_login_totp(
         raise NotFoundError("User not found")
     access_token, refresh_token = await auth.issue_tokens(user.id)
     await session.commit()
+    await _set_shared_identity_cookie(response, str(user.id))
     data = AuthResponse(
         user_id=str(user.id),
         email=user.email,
@@ -174,6 +202,7 @@ async def get_login_twofa_session_status(
 async def complete_login_telegram_confirmation(
     payload: LoginTwoFATelegramSessionRequest,
     request: Request,
+    response: Response,
     session: AsyncSession = Depends(get_db_session),
     redis: Redis = Depends(get_redis_client),
 ):
@@ -185,6 +214,7 @@ async def complete_login_telegram_confirmation(
         raise NotFoundError("User not found")
     access_token, refresh_token = await auth.issue_tokens(user.id)
     await session.commit()
+    await _set_shared_identity_cookie(response, str(user.id))
     data = AuthResponse(
         user_id=str(user.id),
         email=user.email,

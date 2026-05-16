@@ -23,6 +23,10 @@ class CalendarRepository:
         stmt = select(Calendar).where(Calendar.id == calendar_id, Calendar.user_id == user_id)
         return await self.session.scalar(stmt)
 
+    async def get_by_title(self, user_id: UUID, title: str) -> Calendar | None:
+        stmt = select(Calendar).where(Calendar.user_id == user_id, Calendar.title == title)
+        return await self.session.scalar(stmt)
+
     async def get_default(self, user_id: UUID) -> Calendar | None:
         stmt = select(Calendar).where(Calendar.user_id == user_id, Calendar.is_default.is_(True))
         return await self.session.scalar(stmt)

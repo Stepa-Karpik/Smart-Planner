@@ -25,6 +25,12 @@ class Settings(BaseSettings):
     telegram_bot_username: str = ""
 
     app_base_url: str = "http://localhost:3000"
+    identity_base_url: str = ""
+    identity_internal_api_key: str = ""
+    identity_cookie_name: str = "ecosystem_session"
+    identity_cookie_domain: str = ""
+    identity_cookie_secure: bool = False
+    planner_internal_api_key: str = ""
     frontend_origins: list[str] = Field(default_factory=list)
     admin_usernames: list[str] = Field(default_factory=list)
 
