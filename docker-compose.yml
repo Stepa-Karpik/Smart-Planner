@@ -69,6 +69,10 @@
         condition: service_healthy
     ports:
       - "127.0.0.1:8000:8000"
+    networks:
+      default:
+      ecosystem:
+        aliases: [planner-api]
     volumes:
       - support_storage:/app/storage/support
     command: ["sh", "scripts/entrypoint-api.sh"]
@@ -143,3 +147,7 @@
 volumes:
   postgres_data:
   support_storage:
+
+networks:
+  ecosystem:
+    external: true
