@@ -11,7 +11,8 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      router.replace("/login")
+      const returnTo = encodeURIComponent(window.location.href)
+      window.location.href = `https://auth.nerior.ru/login?return_to=${returnTo}`
     }
   }, [isAuthenticated, isLoading, router])
 
