@@ -1,12 +1,11 @@
-"use client"
+import { headers } from "next/headers"
+import { redirect } from "next/navigation"
 
-import { useEffect } from "react"
+export default async function LoginPage() {
+  const requestHeaders = await headers()
+  const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host") ?? "planner.nerior.ru"
+  const proto = requestHeaders.get("x-forwarded-proto") ?? "https"
+  const returnTo = encodeURIComponent(`${proto}://${host}/today`)
 
-export default function LoginPage() {
-  useEffect(() => {
-    const returnTo = encodeURIComponent(`${window.location.origin}/today`)
-    window.location.replace(`https://auth.nerior.ru/login?return_to=${returnTo}`)
-  }, [])
-
-  return <main className="flex min-h-svh items-center justify-center text-sm text-muted-foreground">Переходим к общему входу…</main>
+  redirect(`https://auth.nerior.ru/login?return_to=${returnTo}`)
 }
