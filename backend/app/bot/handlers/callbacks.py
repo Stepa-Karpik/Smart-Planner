@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from datetime import datetime, timezone
 from uuid import UUID
@@ -13,6 +13,7 @@ from app.core.enums import EventStatus
 from app.schemas.event import EventUpdate
 from app.services.events import EventService
 from app.services.telegram import TelegramIntegrationService
+from app.services.identity_twofa_client import IdentityTwoFAClient
 from app.services.twofa import TwoFactorAuthService
 from app.services.user_timezone import UserTimezoneService
 from app.repositories.user import UserRepository
@@ -72,9 +73,9 @@ async def twofa_actions(callback: CallbackQuery) -> None:
     async with session:
         service = TwoFactorAuthService(session, redis)
         if scope == "login":
-            result = await service.confirm_login_telegram_from_callback(
+            result = await IdentityTwoFAClient().telegram_callback(
                 chat_id=callback.message.chat.id,
-                twofa_session_id=entity_id,
+                twofa_session_id=str(entity_id),
                 decision=decision,
             )
         elif scope == "set":
