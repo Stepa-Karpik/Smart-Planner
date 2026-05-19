@@ -62,28 +62,12 @@ async def twofa_actions(callback: CallbackQuery) -> None:
         await callback.answer("Некорректное действие", show_alert=True)
         return
 
-    if scope == "login":
+    if scope in {"login", "set"}:
         result = await IdentityTwoFAClient().telegram_callback(
             chat_id=callback.message.chat.id,
             twofa_session_id=raw_id,
             decision=decision,
         )
-    elif scope == "set":
-        try:
-            entity_id = _uuid_from_hex(raw_id)
-        except Exception:
-            await callback.answer("Некорректный идентификатор", show_alert=True)
-            return
-
-        session = await new_session()
-        redis = await redis_client()
-        async with session:
-            service = TwoFactorAuthService(session, redis)
-            result = await service.confirm_telegram_method_change_from_callback(
-                chat_id=callback.message.chat.id,
-                pending_id=entity_id,
-                decision=decision,
-            )
     else:
         await callback.answer("Некорректное действие", show_alert=True)
         return
