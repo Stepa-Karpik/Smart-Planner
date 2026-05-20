@@ -5,6 +5,10 @@ on:
     branches:
       - main
 
+concurrency:
+  group: smart-planner-deploy
+  cancel-in-progress: false
+
 jobs:
   deploy:
     name: Deploy to VPS
@@ -30,6 +34,8 @@ jobs:
             cd /opt/smart_planner
             git pull origin main
             docker network inspect ecosystem >/dev/null 2>&1 || docker network create ecosystem
-            docker compose up -d --build
+            docker compose rm -fsv migrator || true
+            docker compose up -d --build --remove-orphans
+            docker compose rm -fsv migrator || true
             docker image prune -f
           "
