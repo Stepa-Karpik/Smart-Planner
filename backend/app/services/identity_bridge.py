@@ -10,6 +10,15 @@ class MintedBrowserSession:
 
 
 @dataclass(frozen=True, slots=True)
+class ExchangedBrowserSession:
+    subject_id: str
+    access_token: str | None = None
+    email: str | None = None
+    username: str | None = None
+    display_name: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
 class IdentityBridge:
     """Compatibility bridge from planner's legacy auth to shared identity.
 
@@ -28,6 +37,17 @@ class IdentityBridge:
     @property
     def internal_browser_sessions_url(self) -> str:
         return f"{self.base_url.rstrip('/')}/api/v1/internal/browser-sessions"
+
+    async def exchange_browser_session(self, session_id: str) -> ExchangedBrowserSession | None:
+        if not self.base_url or not session_id:
+            return None
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout_seconds) as client:
+                response = await client.post(self.exchange_url, cookies={"ecosystem_session": session_id})
+                response.raise_for_status()
+            return ExchangedBrowserSession(**response.json())
+        except httpx.HTTPError:
+            return None
 
     async def mint_browser_session(self, subject_id: str, email: str | None = None) -> MintedBrowserSession | None:
         if not self.base_url or not self.internal_api_key:

@@ -223,6 +223,20 @@ export async function login(loginValue: string, password: string) {
   return envelope
 }
 
+export async function exchangeSharedSession() {
+  const envelope = await apiRequest<AuthPayload>("/api/v1/auth/sso/exchange", {
+    method: "POST",
+    credentials: "include",
+  })
+
+  if (envelope.data?.tokens) {
+    setAccessToken(envelope.data.tokens.access_token)
+    setRefreshToken(envelope.data.tokens.refresh_token)
+  }
+
+  return envelope
+}
+
 export async function register(email: string, username: string, password: string) {
   const envelope = await apiRequest<AuthPayload>("/api/v1/auth/register", {
     method: "POST",

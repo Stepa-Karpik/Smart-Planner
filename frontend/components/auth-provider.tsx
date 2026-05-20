@@ -10,6 +10,7 @@ import {
   hasRefreshToken,
   apiRequest,
   clearTokens,
+  exchangeSharedSession,
 } from "@/lib/api-client"
 import type { AuthPayload } from "@/lib/types"
 
@@ -22,6 +23,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshAuth = useCallback(async () => {
     if (!hasRefreshToken()) {
+      try {
+        const ssoRes = await exchangeSharedSession()
+        if (ssoRes.data?.tokens && ssoRes.data.user_id && ssoRes.data.email && ssoRes.data.username) {
+          setState({
+            isAuthenticated: true,
+            isLoading: false,
+            user: {
+              id: ssoRes.data.user_id,
+              email: ssoRes.data.email,
+              username: ssoRes.data.username,
+              display_name: ssoRes.data.display_name ?? null,
+              role: ssoRes.data.role,
+              default_route_mode: ssoRes.data.default_route_mode,
+            },
+          })
+          return
+        }
+      } catch {
+        // No active ecosystem session; fall through to anonymous state.
+      }
       setState({ isAuthenticated: false, isLoading: false, user: null })
       return
     }

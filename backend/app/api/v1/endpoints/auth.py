@@ -99,6 +99,39 @@ async def login(
     return success_response(data=data.model_dump(), request=request)
 
 
+@router.post("/sso/exchange")
+async def exchange_shared_session(request: Request, session: AsyncSession = Depends(get_db_session)):
+    settings = get_settings()
+    browser_session_id = request.cookies.get(settings.identity_cookie_name)
+    exchanged = await IdentityBridge(base_url=settings.identity_base_url).exchange_browser_session(browser_session_id or "")
+    if exchanged is None:
+        raise ValidationAppError("Shared session is not active")
+
+    try:
+        user_uuid = UUID(exchanged.subject_id)
+    except (ValueError, TypeError) as exc:
+        raise ValidationAppError("Shared session subject is invalid") from exc
+
+    auth_service = AuthService(session)
+    user = await auth_service.users.get_by_id(user_uuid)
+    if user is None or not user.is_active:
+        raise NotFoundError("User not found")
+
+    access_token, refresh_token = await auth_service.issue_tokens(user.id)
+    await session.commit()
+    data = AuthResponse(
+        user_id=str(user.id),
+        email=user.email,
+        username=user.username,
+        display_name=user.display_name,
+        default_route_mode=user.default_route_mode,
+        role=get_effective_user_role(user),
+        tokens=TokenPair(access_token=access_token, refresh_token=refresh_token),
+        requires_twofa=False,
+    )
+    return success_response(data=data.model_dump(), request=request)
+
+
 @router.post("/refresh")
 async def refresh(payload: RefreshRequest, request: Request, session: AsyncSession = Depends(get_db_session)):
     service = AuthService(session)

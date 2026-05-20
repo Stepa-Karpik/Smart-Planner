@@ -19,3 +19,6 @@ frontend/.next/
 frontend/out/
 backend/.venv/
 backend/.pytest_cache/
+
+# TypeScript incremental build cache
+*.tsbuildinfo
