@@ -7,6 +7,7 @@ from app.models.assistant import (
     UserProfileMemory,
 )
 from app.models.ai import AIMessage, AISession, AITaskIngestionJob
+from app.models.api_metric import ApiRequestMetric
 from app.models.calendar import Calendar
 from app.models.event import Event
 from app.models.feed_item import FeedItem
@@ -33,6 +34,7 @@ __all__ = [
     "AISession",
     "AIMessage",
     "AITaskIngestionJob",
+    "ApiRequestMetric",
     "UserProfileMemory",
     "ConversationSummary",
     "SemanticMemoryItem",

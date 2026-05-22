@@ -12,7 +12,7 @@ from app.core.enums import FeedItemType, UserRole
 from app.core.exceptions import ConflictError, NotFoundError, ValidationAppError
 from app.core.responses import success_response
 from app.core.security import hash_password
-from app.models import FeedItem, SupportTicket, User, UserSubscription
+from app.models import ApiRequestMetric, FeedItem, SupportTicket, User, UserSubscription
 from app.repositories.feed_item import FeedItemRepository
 from app.repositories.user import UserRepository
 from app.schemas.admin import AdminOverviewRead, AdminSubscriptionRead, AdminSubscriptionUpdate, AdminUserRead, AdminUserUpdate
@@ -258,6 +258,15 @@ async def admin_overview(
         select(func.date_trunc("day", User.created_at).label("day"), func.count()).group_by("day").order_by("day").limit(30)
     )).all()
 
+    metric_filters = [] if normalized_service == "all" else [ApiRequestMetric.service == normalized_service]
+    api_rows = (await session.execute(
+        select(func.date_trunc("day", ApiRequestMetric.created_at).label("day"), func.count())
+        .where(*metric_filters)
+        .group_by("day")
+        .order_by("day")
+        .limit(30)
+    )).all()
+
     return success_response(data=AdminOverviewRead(
         service=normalized_service,
         users_total=users_total,
@@ -268,7 +277,7 @@ async def admin_overview(
         active_subscriptions=active_subscriptions,
         subscription_distribution=distribution,
         new_users=[{"date": str(day.date()), "count": int(count)} for day, count in new_users_rows],
-        api_requests=[],
+        api_requests=[{"date": str(day.date()), "count": int(count)} for day, count in api_rows],
     ).model_dump(), request=request)
 
 

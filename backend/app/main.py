@@ -12,7 +12,7 @@ from app.api.v1.router import api_router
 from app.core.config import get_settings
 from app.core.exceptions import AppError
 from app.core.logging import configure_logging
-from app.core.middleware import RequestIDMiddleware
+from app.core.middleware import ApiMetricsMiddleware, RequestIDMiddleware
 from app.core.responses import error_response, success_response
 from app.integrations.redis import close_redis
 
@@ -59,6 +59,7 @@ app = FastAPI(
     ],
 )
 
+app.add_middleware(ApiMetricsMiddleware)
 app.add_middleware(RequestIDMiddleware)
 app.add_middleware(
     CORSMiddleware,

@@ -47,11 +47,11 @@ class AdminFeedItemCreate(BaseModel):
 
     @field_validator("service")
     @classmethod
-    def normalize_service_optional(cls, value: str | None) -> str | None:
+    def normalize_service_optional(cls, value: str | None) -> str:
         if value is None:
-            return None
+            return "planner"
         normalized = value.strip().lower()
-        return normalized or None
+        return normalized or "planner"
 
     @field_validator("target_username")
     @classmethod
