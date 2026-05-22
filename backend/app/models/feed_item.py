@@ -16,6 +16,7 @@ class FeedItem(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     __table_args__ = (
         Index("ix_feed_items_created_at", "created_at"),
         Index("ix_feed_items_type", "type"),
+        Index("ix_feed_items_service", "service"),
         Index("ix_feed_items_target_username", "target_username"),
     )
 
@@ -23,6 +24,7 @@ class FeedItem(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     body: Mapped[str] = mapped_column(String(4000), nullable=False)
     meta_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    service: Mapped[str] = mapped_column(String(40), nullable=False, default="planner", server_default="planner")
     target_username: Mapped[str | None] = mapped_column(String(64), nullable=True)
     created_by_user_id: Mapped[UUIDType | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     # Optional backdating / manual scheduling for admin-managed announcements.

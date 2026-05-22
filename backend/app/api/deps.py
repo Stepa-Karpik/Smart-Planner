@@ -61,6 +61,8 @@ def get_effective_user_role(user) -> str:
         return UserRole.ADMIN.value
     if stored_value == UserRole.ADMIN.value:
         return UserRole.ADMIN.value
+    if stored_value == UserRole.SUPPORT.value:
+        return UserRole.SUPPORT.value
     return UserRole.USER.value
 
 

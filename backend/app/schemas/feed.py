@@ -14,6 +14,7 @@ class FeedItemRead(BaseModel):
     title: str
     body: str
     meta: dict[str, Any] | None = None
+    service: str = "planner"
     target_username: str | None = None
     published_at: datetime
     created_at: datetime
@@ -32,6 +33,7 @@ class AdminFeedItemCreate(BaseModel):
     title: str = Field(min_length=1, max_length=255)
     body: str = Field(min_length=1, max_length=4000)
     meta: dict[str, Any] | None = None
+    service: str = Field(default="planner", max_length=40)
     target_username: str | None = Field(default=None, max_length=64)
     published_at: datetime | None = None
 
@@ -42,6 +44,14 @@ class AdminFeedItemCreate(BaseModel):
         if not value:
             raise ValueError("must not be empty")
         return value
+
+    @field_validator("service")
+    @classmethod
+    def normalize_service_optional(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip().lower()
+        return normalized or None
 
     @field_validator("target_username")
     @classmethod
@@ -57,6 +67,7 @@ class AdminFeedItemUpdate(BaseModel):
     title: str | None = Field(default=None, min_length=1, max_length=255)
     body: str | None = Field(default=None, min_length=1, max_length=4000)
     meta: dict[str, Any] | None = None
+    service: str | None = Field(default=None, max_length=40)
     target_username: str | None = Field(default=None, max_length=64)
     published_at: datetime | None = None
 
@@ -69,6 +80,14 @@ class AdminFeedItemUpdate(BaseModel):
         if not normalized:
             raise ValueError("must not be empty")
         return normalized
+
+    @field_validator("service")
+    @classmethod
+    def normalize_service(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip().lower()
+        return normalized or "planner"
 
     @field_validator("target_username")
     @classmethod

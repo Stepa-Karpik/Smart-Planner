@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, File, Form, Query, Request, UploadFile
 from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -14,7 +14,7 @@ from app.models import User
 from app.core.responses import success_response
 from app.repositories.support_ticket import SupportTicketRepository
 from app.schemas.support import AdminSupportTicketReplyCreate
-from app.services.support import publish_ticket_feed_event, resolve_support_attachment_path
+from app.services.support import MAX_TICKET_ATTACHMENTS, persist_ticket_attachments, publish_ticket_feed_event, resolve_support_attachment_path
 
 router = APIRouter(prefix="/admin/tickets", tags=["Admin Tickets"])
 logger = logging.getLogger(__name__)
@@ -48,6 +48,8 @@ def _serialize_ticket(ticket, include_messages: bool = False) -> dict:
         "public_number": int(ticket.public_number),
         "user_id": str(ticket.user_id),
         "user_username": getattr(getattr(ticket, "user", None), "username", None),
+        "user_display_name": getattr(getattr(ticket, "user", None), "display_name", None),
+        "service": getattr(ticket, "service", "planner"),
         "topic": ticket.topic,
         "subtopic": ticket.subtopic,
         "subject": ticket.subject,
@@ -68,12 +70,13 @@ async def admin_list_support_tickets(
     session: AsyncSession = Depends(get_db_session),
     q: str | None = Query(default=None),
     status: SupportTicketStatus | None = Query(default=None),
+    service: str | None = Query(default=None),
     limit: int = Query(default=100, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
 ):
     repo = SupportTicketRepository(session)
-    items = await repo.list_tickets_all(q=q, status=status, limit=limit, offset=offset)
-    total = await repo.count_tickets_all(q=q, status=status)
+    items = await repo.list_tickets_all(q=q, status=status, service=service, limit=limit, offset=offset)
+    total = await repo.count_tickets_all(q=q, status=status, service=service)
     data = [_serialize_ticket(item) for item in items]
     return success_response(data=data, request=request, pagination={"total": total, "limit": limit, "offset": offset})
 
@@ -132,6 +135,42 @@ async def admin_reply_support_ticket(
                 extra={"ticket_id": str(ticket.id), "message_id": str(message.id), "admin_user_id": str(admin_user.id)},
             )
 
+    ticket = await repo.get_ticket_by_id(ticket_id, with_messages=True)
+    return success_response(data=_serialize_ticket(ticket, include_messages=True), request=request)
+
+
+@router.post("/{ticket_id}/reply-with-files")
+async def admin_reply_support_ticket_with_files(
+    ticket_id: UUID,
+    request: Request,
+    message: str = Form(""),
+    files: list[UploadFile] = File(default=[]),
+    admin_user=Depends(get_current_admin_user),
+    session: AsyncSession = Depends(get_db_session),
+):
+    message = message.strip()
+    if not message and not files:
+        raise ValidationAppError("Message is required")
+    if len(files) > MAX_TICKET_ATTACHMENTS:
+        raise ValidationAppError("You can attach up to 3 files", details={"max_files": MAX_TICKET_ATTACHMENTS})
+
+    repo = SupportTicketRepository(session)
+    ticket = await repo.get_ticket_by_id(ticket_id, with_messages=True)
+    if ticket is None:
+        raise NotFoundError("Support ticket not found")
+    if ticket.status == SupportTicketStatus.CLOSED:
+        raise ValidationAppError("Ticket is closed")
+
+    reply = await repo.add_message(ticket, author_user_id=admin_user.id, author_role="admin", body=message, attachments=None)
+    if files:
+        try:
+            attachments = await persist_ticket_attachments(files, ticket_id=str(ticket.id), message_id=str(reply.id))
+        except ValueError as exc:
+            raise ValidationAppError(str(exc))
+        reply.attachments_json = attachments
+        await session.flush()
+
+    await session.commit()
     ticket = await repo.get_ticket_by_id(ticket_id, with_messages=True)
     return success_response(data=_serialize_ticket(ticket, include_messages=True), request=request)
 

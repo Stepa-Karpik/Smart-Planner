@@ -18,6 +18,7 @@ class SupportTicket(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     __table_args__ = (
         Index("ix_support_tickets_user_id", "user_id"),
         Index("ix_support_tickets_status", "status"),
+        Index("ix_support_tickets_service", "service"),
         Index("ix_support_tickets_public_number", "public_number", unique=True),
     )
 
@@ -26,6 +27,7 @@ class SupportTicket(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     topic: Mapped[str] = mapped_column(String(80), nullable=False)
     subtopic: Mapped[str] = mapped_column(String(120), nullable=False)
     subject: Mapped[str] = mapped_column(String(200), nullable=False)
+    service: Mapped[str] = mapped_column(String(40), nullable=False, default="planner", server_default="planner")
     status: Mapped[SupportTicketStatus] = mapped_column(
         db_enum(SupportTicketStatus, "support_ticket_status"),
         nullable=False,

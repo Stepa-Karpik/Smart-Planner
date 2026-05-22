@@ -43,6 +43,7 @@ class SupportTicketRepository:
         *,
         q: str | None = None,
         status: SupportTicketStatus | None = None,
+        service: str | None = None,
         limit: int = 100,
         offset: int = 0,
     ) -> list[SupportTicket]:
@@ -60,10 +61,12 @@ class SupportTicketRepository:
             )
         if status:
             stmt = stmt.where(SupportTicket.status == status)
+        if service and service.strip().lower() != "all":
+            stmt = stmt.where(SupportTicket.service == service.strip().lower())
         result = await self.session.scalars(stmt)
         return list(result.all())
 
-    async def count_tickets_all(self, *, q: str | None = None, status: SupportTicketStatus | None = None) -> int:
+    async def count_tickets_all(self, *, q: str | None = None, status: SupportTicketStatus | None = None, service: str | None = None) -> int:
         stmt = select(func.count()).select_from(SupportTicket)
         conditions = []
         if q:
@@ -80,6 +83,8 @@ class SupportTicketRepository:
             )
         if status:
             conditions.append(SupportTicket.status == status)
+        if service and service.strip().lower() != "all":
+            conditions.append(SupportTicket.service == service.strip().lower())
         if conditions:
             stmt = stmt.where(and_(*conditions))
         value = await self.session.scalar(stmt)
@@ -97,6 +102,7 @@ class SupportTicketRepository:
         subtopic: str,
         subject: str,
         initial_message: str,
+        service: str = "planner",
         attachments: list[dict] | None = None,
     ) -> tuple[SupportTicket, SupportTicketMessage]:
         ticket = SupportTicket(
@@ -105,6 +111,7 @@ class SupportTicketRepository:
             topic=topic.strip(),
             subtopic=subtopic.strip(),
             subject=subject.strip(),
+            service=(service or "planner").strip().lower(),
             status=SupportTicketStatus.OPEN,
         )
         self.session.add(ticket)

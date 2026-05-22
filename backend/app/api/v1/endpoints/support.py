@@ -47,6 +47,7 @@ def _serialize_ticket(ticket, include_messages: bool = False) -> dict:
         "topic": ticket.topic,
         "subtopic": ticket.subtopic,
         "subject": ticket.subject,
+        "service": getattr(ticket, "service", "planner"),
         "status": ticket.status,
         "closed_at": ticket.closed_at,
         "created_at": ticket.created_at,
@@ -92,6 +93,7 @@ async def create_support_ticket(
     subtopic: str = Form(...),
     subject: str = Form(...),
     message: str = Form(...),
+    service: str = Form("planner"),
     files: list[UploadFile] = File(default=[]),
     current_user=Depends(get_current_user),
     session: AsyncSession = Depends(get_db_session),
@@ -113,6 +115,7 @@ async def create_support_ticket(
         subtopic=subtopic,
         subject=subject,
         initial_message=message,
+        service=service,
         attachments=None,
     )
 

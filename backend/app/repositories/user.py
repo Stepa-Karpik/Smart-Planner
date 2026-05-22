@@ -34,7 +34,7 @@ class UserRepository:
         stmt = select(User).order_by(User.created_at.desc()).limit(limit).offset(offset)
         if q:
             pattern = f"%{q.strip().lower()}%"
-            stmt = stmt.where(or_(func.lower(User.email).like(pattern), func.lower(User.username).like(pattern)))
+            stmt = stmt.where(or_(func.lower(User.email).like(pattern), func.lower(User.username).like(pattern), func.lower(User.display_name).like(pattern)))
         result = await self.session.scalars(stmt)
         return list(result.all())
 
@@ -42,7 +42,7 @@ class UserRepository:
         stmt = select(func.count()).select_from(User)
         if q:
             pattern = f"%{q.strip().lower()}%"
-            stmt = stmt.where(or_(func.lower(User.email).like(pattern), func.lower(User.username).like(pattern)))
+            stmt = stmt.where(or_(func.lower(User.email).like(pattern), func.lower(User.username).like(pattern), func.lower(User.display_name).like(pattern)))
         value = await self.session.scalar(stmt)
         return int(value or 0)
 
@@ -94,13 +94,17 @@ class UserRepository:
         user: User,
         *,
         username: str | None = None,
+        email: str | None = None,
         display_name: str | None = None,
         display_name_set: bool = False,
+        email_set: bool = False,
         role: UserRole | None = None,
         is_active: bool | None = None,
     ) -> User:
         if username is not None:
             user.username = username.strip().lower()
+        if email_set and email is not None:
+            user.email = email.strip().lower()
         if display_name_set:
             user.display_name = (str(display_name).strip() or None) if isinstance(display_name, str) else None
         if role is not None:

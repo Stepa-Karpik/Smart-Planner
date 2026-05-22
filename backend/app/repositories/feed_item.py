@@ -42,6 +42,7 @@ class FeedItemRepository:
         q: str | None = None,
         types: list[str] | None = None,
         target_username: str | None = None,
+        service: str | None = None,
         limit: int = 100,
         offset: int = 0,
     ) -> list[FeedItem]:
@@ -51,6 +52,8 @@ class FeedItemRepository:
             stmt = stmt.where(or_(func.lower(FeedItem.title).like(pattern), func.lower(FeedItem.body).like(pattern)))
         if types:
             stmt = stmt.where(FeedItem.type.in_(types))
+        if service and service.strip().lower() != "all":
+            stmt = stmt.where(FeedItem.service == service.strip().lower())
         if target_username is not None:
             normalized_target = target_username.strip().lower()
             if normalized_target:
@@ -60,7 +63,7 @@ class FeedItemRepository:
         result = await self.session.scalars(stmt)
         return list(result.all())
 
-    async def count_all(self, *, q: str | None = None, types: list[str] | None = None, target_username: str | None = None) -> int:
+    async def count_all(self, *, q: str | None = None, types: list[str] | None = None, target_username: str | None = None, service: str | None = None) -> int:
         stmt = select(func.count()).select_from(FeedItem)
         conditions = []
         if q:
@@ -68,6 +71,8 @@ class FeedItemRepository:
             conditions.append(or_(func.lower(FeedItem.title).like(pattern), func.lower(FeedItem.body).like(pattern)))
         if types:
             conditions.append(FeedItem.type.in_(types))
+        if service and service.strip().lower() != "all":
+            conditions.append(FeedItem.service == service.strip().lower())
         if target_username is not None:
             normalized_target = target_username.strip().lower()
             conditions.append(FeedItem.target_username == normalized_target if normalized_target else FeedItem.target_username.is_(None))
@@ -83,6 +88,7 @@ class FeedItemRepository:
         title: str,
         body: str,
         meta_json: dict | None = None,
+        service: str = "planner",
         target_username: str | None,
         created_by_user_id: UUID | None,
         published_at: datetime | None = None,
@@ -92,6 +98,7 @@ class FeedItemRepository:
             title=title,
             body=body,
             meta_json=meta_json,
+            service=(service or "planner").strip().lower(),
             target_username=(target_username.strip().lower() or None) if isinstance(target_username, str) else None,
             created_by_user_id=created_by_user_id,
             published_at=published_at or datetime.now(timezone.utc),
@@ -108,6 +115,7 @@ class FeedItemRepository:
         title: str | None = None,
         body: str | None = None,
         meta_json: dict | None | object = None,
+        service: str | None = None,
         target_username: str | None | object = None,
         published_at: datetime | None = None,
         target_username_set: bool = False,
@@ -121,6 +129,8 @@ class FeedItemRepository:
             item.body = body
         if meta_json_set:
             item.meta_json = meta_json if isinstance(meta_json, dict) else None
+        if service is not None:
+            item.service = service.strip().lower() or "planner"
         if target_username_set:
             item.target_username = (target_username.strip().lower() or None) if isinstance(target_username, str) else None
         if published_at is not None:

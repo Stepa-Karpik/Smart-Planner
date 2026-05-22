@@ -63,3 +63,4 @@ class User(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     feed_items_created = relationship("FeedItem", back_populates="created_by")
     support_tickets = relationship("SupportTicket", back_populates="user", cascade="all,delete-orphan")
     support_ticket_messages_authored = relationship("SupportTicketMessage", back_populates="author_user")
+    subscription = relationship("UserSubscription", back_populates="user", uselist=False, cascade="all,delete-orphan")

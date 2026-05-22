@@ -39,6 +39,7 @@ class MapProvider(str, Enum):
 
 class UserRole(str, Enum):
     USER = "user"
+    SUPPORT = "support"
     ADMIN = "admin"
 
 
