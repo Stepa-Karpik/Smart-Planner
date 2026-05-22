@@ -184,7 +184,7 @@ export function EventCalendarView({ events, calendars, month, onMonthChange, onE
                       style={{
                         backgroundColor: translucentColor(calendarColor, temporalStatus === "in_progress" ? "38" : "22"),
                         borderLeft: `3px solid ${calendarColor}`,
-                        color: readableTextForColor(calendarColor) === "#ffffff" ? calendarColor : "#0f172a",
+                        color: resolvedTheme === "dark" ? calendarColor : (readableTextForColor(calendarColor) === "#ffffff" ? calendarColor : "#0f172a"),
                       }}
                     >
                       {event.title}

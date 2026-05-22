@@ -148,7 +148,7 @@ export default function TodayPage() {
           <div className="lg:col-span-2">
             <h2 className="mb-3 text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-white/45">{tr("Timeline", "Таймлайн")}</h2>
             <ScrollArea className="h-[600px] rounded-2xl border border-slate-200/80 bg-white/70 p-4 shadow-[0_18px_50px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-white/10 dark:bg-black/25 dark:shadow-none">
-              <EventTimeline events={timedEvents} />
+              <EventTimeline events={timedEvents} calendars={calendars || []} />
             </ScrollArea>
           </div>
 

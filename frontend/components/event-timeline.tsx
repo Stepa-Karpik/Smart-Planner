@@ -1,11 +1,12 @@
 "use client"
 
 import { cn } from "@/lib/utils"
-import type { CalendarEvent } from "@/lib/types"
+import type { Calendar, CalendarEvent } from "@/lib/types"
 import { useProfile } from "@/lib/hooks"
+import { useTheme } from "next-themes"
 import { useI18n } from "@/lib/i18n"
 import { dayKeyInTimezone, formatTimeInTimezone, fromDateValueToUtcIso, getZonedDateParts } from "@/lib/timezone"
-import { getEventTemporalStatus } from "@/lib/calendar-colors"
+import { calendarColorForTheme, getEventTemporalStatus, readableTextForColor, translucentColor } from "@/lib/calendar-colors"
 
 const HOUR_HEIGHT = 60 // px per hour
 const START_HOUR = 7
@@ -49,16 +50,11 @@ function splitEventForTimelineDay(event: CalendarEvent, dayKey: string, timezone
   }
 }
 
-const eventColors = [
-  "bg-accent/15 border-accent/30 text-accent",
-  "bg-emerald-500/15 border-emerald-500/30 text-emerald-700 dark:text-emerald-400",
-  "bg-amber-500/15 border-amber-500/30 text-amber-700 dark:text-amber-400",
-  "bg-rose-500/15 border-rose-500/30 text-rose-700 dark:text-rose-400",
-]
-
-export function EventTimeline({ events }: { events: CalendarEvent[] }) {
+export function EventTimeline({ events, calendars = [] }: { events: CalendarEvent[]; calendars?: Calendar[] }) {
   const { data: profile } = useProfile()
   const { locale } = useI18n()
+  const { resolvedTheme } = useTheme()
+  const calendarById = new Map(calendars.map((calendar) => [calendar.id, calendar]))
   const timezone = profile?.timezone
   const hours = Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => START_HOUR + i)
   const totalHeight = hours.length * HOUR_HEIGHT
@@ -104,11 +100,14 @@ export function EventTimeline({ events }: { events: CalendarEvent[] }) {
       )}
 
       {/* Events */}
-      {timedEvents.map((event, i) => {
+      {timedEvents.map((event) => {
         const top = getPosition(event.start_at, timezone)
         const height = getDuration(event.start_at, event.end_at)
-        const colorClass = event.isLongEvent ? "bg-slate-500/10 border-slate-400/40 text-slate-700 dark:text-white/70" : eventColors[i % eventColors.length]
+        const calendar = calendarById.get(event.calendar_id)
+        const calendarColor = calendarColorForTheme(calendar, resolvedTheme)
         const temporalStatus = getEventTemporalStatus(event)
+        const textColor = resolvedTheme === "dark" ? calendarColor : readableTextForColor(calendarColor)
+        const backgroundColor = event.isLongEvent ? translucentColor(calendarColor, resolvedTheme === "dark" ? "18" : "10") : translucentColor(calendarColor, resolvedTheme === "dark" ? "24" : "18")
 
         return (
           <a
@@ -116,11 +115,10 @@ export function EventTimeline({ events }: { events: CalendarEvent[] }) {
             href={`/events/${event.id}`}
             className={cn(
               "absolute left-12 right-2 rounded-md border px-2.5 py-1.5 text-xs transition-opacity hover:opacity-80 overflow-hidden",
-              colorClass,
               event.isLongEvent && "border-dashed",
               temporalStatus === "past" && "opacity-60",
             )}
-            style={{ top, height: event.isLongEvent ? Math.max(height, 18) : height, minHeight: event.isLongEvent ? 18 : 28 }}
+            style={{ top, height: event.isLongEvent ? Math.max(height, 18) : height, minHeight: event.isLongEvent ? 18 : 28, backgroundColor, borderColor: calendarColor, borderLeft: `3px solid ${calendarColor}`, color: textColor }}
           >
             <p className={cn("font-medium truncate", event.isLongEvent && "text-[10px]")}>{event.title}</p>
             {height > 36 && !event.isLongEvent && (
