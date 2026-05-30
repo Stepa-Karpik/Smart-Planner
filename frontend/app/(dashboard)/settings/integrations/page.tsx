@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { CheckCircle2, Loader2, MapPinned } from "lucide-react"
 import { toast } from "sonner"
 import { TelegramLinkCard } from "@/components/telegram-link-card"
@@ -50,9 +50,55 @@ export default function IntegrationsPage() {
   const { data: profile, isLoading } = useProfile()
   const { data: routesConfig } = useRoutesConfig()
   const [savingProvider, setSavingProvider] = useState<MapProvider | null>(null)
+  const [crmRoutesEnabled, setCrmRoutesEnabled] = useState(true)
+  const [crmDeadlineNotificationsEnabled, setCrmDeadlineNotificationsEnabled] = useState(true)
+  const [crmNoticeHours, setCrmNoticeHours] = useState(24)
+  const [savingCrm, setSavingCrm] = useState(false)
 
   const selectedProvider: MapProvider = profile?.map_provider || "leaflet"
   const hasYandexApiKey = Boolean(routesConfig?.api_key?.trim())
+  const crmApiBase = process.env.NEXT_PUBLIC_CRM_API_URL || "https://crm.nerior.ru/api/v1"
+
+  useEffect(() => {
+    let cancelled = false
+    async function loadCrmSettings() {
+      try {
+        const response = await fetch(`${crmApiBase}/integrations/planner/settings`, { credentials: "include" })
+        if (!response.ok) return
+        const payload = await response.json()
+        if (cancelled) return
+        setCrmRoutesEnabled(Boolean(payload.crm_routes_enabled))
+        setCrmDeadlineNotificationsEnabled(Boolean(payload.crm_deadline_notifications_enabled))
+        setCrmNoticeHours(Number(payload.crm_deadline_notice_hours || 24))
+      } catch {
+        // CRM can be disabled locally; planner should remain usable.
+      }
+    }
+    loadCrmSettings()
+    return () => { cancelled = true }
+  }, [crmApiBase])
+
+  async function saveCrmSettings() {
+    setSavingCrm(true)
+    try {
+      const response = await fetch(`${crmApiBase}/integrations/planner/settings`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          crm_routes_enabled: crmRoutesEnabled,
+          crm_deadline_notifications_enabled: crmDeadlineNotificationsEnabled,
+          crm_deadline_notice_hours: crmNoticeHours,
+        }),
+      })
+      if (!response.ok) throw new Error("CRM settings failed")
+      toast.success(tr("CRM settings updated", "Настройки CRM обновлены"))
+    } catch {
+      toast.error(tr("Could not save CRM settings", "Не удалось сохранить настройки CRM"))
+    } finally {
+      setSavingCrm(false)
+    }
+  }
 
   async function selectProvider(provider: MapProvider) {
     if (provider === selectedProvider) return
@@ -172,6 +218,70 @@ export default function IntegrationsPage() {
               })}
             </div>
           )}
+        </CardContent>
+      </Card>
+
+
+
+      <Card className="relative rounded-2xl border-slate-200/80 bg-white/75 shadow-[0_18px_50px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-white/10 dark:bg-black/25 dark:shadow-none">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base text-slate-950 dark:text-white">
+            <CheckCircle2 className="h-4 w-4" />
+            Nerior CRM
+          </CardTitle>
+          <CardDescription className="text-slate-500 dark:text-white/50">
+            {tr("Deadline events and routes for CRM tasks.", "Дедлайны и маршруты для задач CRM.")}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <button
+              type="button"
+              onClick={() => setCrmRoutesEnabled(true)}
+              className={cn("rounded-xl border p-4 text-left text-sm transition", crmRoutesEnabled ? "border-slate-950 bg-slate-950 text-white dark:border-white dark:bg-white dark:text-black" : "border-slate-200 bg-white/70 text-slate-700 dark:border-white/10 dark:bg-white/[0.03] dark:text-white/70")}
+            >
+              {tr("Show routes to CRM tasks", "Отображать маршруты к CRM задачам")}
+            </button>
+            <button
+              type="button"
+              onClick={() => setCrmRoutesEnabled(false)}
+              className={cn("rounded-xl border p-4 text-left text-sm transition", !crmRoutesEnabled ? "border-slate-950 bg-slate-950 text-white dark:border-white dark:bg-white dark:text-black" : "border-slate-200 bg-white/70 text-slate-700 dark:border-white/10 dark:bg-white/[0.03] dark:text-white/70")}
+            >
+              {tr("Do not show routes", "Не отображать маршруты")}
+            </button>
+          </div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <button
+              type="button"
+              onClick={() => setCrmDeadlineNotificationsEnabled(true)}
+              className={cn("rounded-xl border p-4 text-left text-sm transition", crmDeadlineNotificationsEnabled ? "border-slate-950 bg-slate-950 text-white dark:border-white dark:bg-white dark:text-black" : "border-slate-200 bg-white/70 text-slate-700 dark:border-white/10 dark:bg-white/[0.03] dark:text-white/70")}
+            >
+              {tr("Notify before CRM deadlines", "Уведомлять о CRM дедлайнах")}
+            </button>
+            <button
+              type="button"
+              onClick={() => setCrmDeadlineNotificationsEnabled(false)}
+              className={cn("rounded-xl border p-4 text-left text-sm transition", !crmDeadlineNotificationsEnabled ? "border-slate-950 bg-slate-950 text-white dark:border-white dark:bg-white dark:text-black" : "border-slate-200 bg-white/70 text-slate-700 dark:border-white/10 dark:bg-white/[0.03] dark:text-white/70")}
+            >
+              {tr("Do not notify", "Не уведомлять")}
+            </button>
+          </div>
+          {crmDeadlineNotificationsEnabled ? (
+            <label className="block text-sm text-slate-700 dark:text-white/70">
+              {tr("Notify before deadline, hours", "За сколько часов до дедлайна")}
+              <input
+                type="number"
+                min={1}
+                max={720}
+                value={crmNoticeHours}
+                onChange={(event) => setCrmNoticeHours(Number(event.target.value))}
+                className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-slate-950 outline-none dark:border-white/10 dark:bg-black/30 dark:text-white"
+              />
+            </label>
+          ) : null}
+          <Button type="button" onClick={saveCrmSettings} disabled={savingCrm} className="rounded-xl">
+            {savingCrm ? tr("Saving...", "Сохраняю...") : tr("Save CRM settings", "Сохранить CRM настройки")}
+          </Button>
         </CardContent>
       </Card>
 
