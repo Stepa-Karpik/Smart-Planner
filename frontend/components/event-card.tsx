@@ -9,7 +9,7 @@ import { Clock } from "lucide-react"
 import { useI18n } from "@/lib/i18n"
 import { useProfile } from "@/lib/hooks"
 import { formatTimeInTimezone } from "@/lib/timezone"
-import { eventStatusLabel, getEventTemporalStatus } from "@/lib/calendar-colors"
+import { eventStatusLabel, getEventTemporalStatus, isSubscriptionEvent } from "@/lib/calendar-colors"
 
 function formatTime(iso: string, timezone?: string | null, locale?: string | null) {
   return formatTimeInTimezone(iso, timezone, locale)
@@ -55,7 +55,7 @@ export function EventCard({ event }: { event: CalendarEvent }) {
           </h3>
         </Link>
         <Badge variant="outline" className={cn("shrink-0 text-[10px] px-1.5 py-0", statusColors[temporalStatus])}>
-          {eventStatusLabel(temporalStatus, tr)}
+          {isSubscriptionEvent(event) ? tr("Subscription", "Подписка") : eventStatusLabel(temporalStatus, tr)}
         </Badge>
       </div>
 

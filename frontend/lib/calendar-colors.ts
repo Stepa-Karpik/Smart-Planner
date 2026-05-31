@@ -62,6 +62,9 @@ export function travelLabelPlacement(minutes: number, pxPerMinute: number) {
 }
 
 export function getEventTemporalStatus(event: CalendarEvent, now = new Date()): TemporalStatus {
+  if (event.external_source === "subs") {
+    return new Date(event.start_at).getTime() < now.getTime() ? "done" : "planned"
+  }
   if (event.status === "canceled" || event.status === "done") return event.status
   const start = new Date(event.start_at).getTime()
   const end = new Date(event.end_at).getTime()
@@ -77,4 +80,8 @@ export function eventStatusLabel(status: TemporalStatus, tr: (en: string, ru: st
   if (status === "done") return tr("Done", "Выполнено")
   if (status === "canceled") return tr("Canceled", "Отменено")
   return tr("Planned", "Запланировано")
+}
+
+export function isSubscriptionEvent(event: CalendarEvent) {
+  return event.external_source === "subs"
 }

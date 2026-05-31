@@ -11,9 +11,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db_session, get_redis_client
 from app.core.config import get_settings
-from app.core.enums import EventLocationSource, EventStatus, ReminderStatus
+from app.core.enums import EventLocationSource, EventStatus, ReminderStatus, ReminderType
 from app.core.responses import success_response
-from app.models import Calendar, Event
+from app.models import Calendar, Event, Reminder
 from app.repositories.calendar import CalendarRepository
 from app.services.reminders import ReminderService
 
@@ -35,6 +35,7 @@ class SubscriptionEventUpsert(BaseModel):
     location_text: str | None = Field(default=None, max_length=255)
     location_lat: float | None = Field(default=None, ge=-90, le=90)
     location_lon: float | None = Field(default=None, ge=-180, le=180)
+    details_url: str | None = Field(default=None, max_length=500)
 
     @model_validator(mode="after")
     def validate_times(self):
@@ -61,6 +62,17 @@ async def _find_event(session: AsyncSession, owner_subject_id: UUID, external_re
         .order_by(Event.deleted_at.is_not(None), Event.created_at.desc())
     )
     return await session.scalar(stmt)
+
+
+async def _ensure_subscription_reminders(session: AsyncSession, event: Event) -> None:
+    now = datetime.now(timezone.utc)
+    offsets = [5 * 24 * 60, 3 * 24 * 60, 24 * 60, 60]
+    existing = await session.scalars(select(Reminder).where(Reminder.event_id == event.id, Reminder.status != ReminderStatus.CANCELED))
+    existing_offsets = {item.offset_minutes for item in existing.all()}
+    for offset in offsets:
+        scheduled_at = event.start_at - timedelta(minutes=offset)
+        if offset not in existing_offsets and scheduled_at > now:
+            session.add(Reminder(event_id=event.id, type=ReminderType.TELEGRAM, offset_minutes=offset, scheduled_at=scheduled_at, status=ReminderStatus.SCHEDULED))
 
 
 @router.post("/upsert", status_code=status.HTTP_200_OK)
@@ -123,9 +135,32 @@ async def upsert_subscription_event(
         event.priority = payload.priority
         event.deleted_at = None
 
+    await _ensure_subscription_reminders(session, event)
     await session.commit()
     await session.refresh(event)
     return success_response(data={"event_id": str(event.id), "created": created, "calendar_id": str(calendar.id)}, request=request)
+
+
+@router.delete("/by-prefix/{external_ref_prefix:path}")
+async def delete_subscription_events_by_prefix(
+    external_ref_prefix: str,
+    request: Request,
+    x_internal_key: str | None = Header(default=None),
+    session: AsyncSession = Depends(get_db_session),
+):
+    _check_internal_key(x_internal_key)
+    now = datetime.now(timezone.utc)
+    stmt = select(Event).where(Event.external_source == "subs", Event.external_ref.startswith(external_ref_prefix), Event.deleted_at.is_(None), Event.start_at >= now)
+    result = await session.scalars(stmt)
+    events = result.all()
+    for event in events:
+        event.deleted_at = now
+        event.status = EventStatus.CANCELED
+        reminders = await ReminderService(session).reminders.all_by_event(event.id)
+        for reminder in reminders:
+            reminder.status = ReminderStatus.CANCELED
+    await session.commit()
+    return success_response(data={"deleted": len(events)}, request=request)
 
 
 @router.delete("/{external_ref:path}")

@@ -17,6 +17,7 @@ import type { CalendarEvent, EventStatus } from "@/lib/types"
 import { useI18n } from "@/lib/i18n"
 import { dayKeyInTimezone, fromDateTimeLocalValueToUtcIso, fromDateValueToUtcIso, toDateTimeLocalValue } from "@/lib/timezone"
 import { toast } from "sonner"
+import { isSubscriptionEvent } from "@/lib/calendar-colors"
 
 type ViewMode = "list" | "calendar" | "gantt"
 type TravelDetails = Record<string, { minutes: number; sourceTitle: string; sourceKind: "home" | "event" }>
@@ -120,6 +121,10 @@ export default function EventsPage() {
   )
 
   const { data: events, isLoading, mutate } = useEvents(query)
+  const eventsForMode = useMemo(() => {
+    if (!events) return events
+    return viewMode === "calendar" ? events : events.filter((event) => !isSubscriptionEvent(event))
+  }, [events, viewMode])
 
   async function handleCalendarMove(event: CalendarEvent, day: Date) {
     const localStart = toDateTimeLocalValue(event.start_at, profile?.timezone)
@@ -291,7 +296,7 @@ export default function EventsPage() {
             <Skeleton key={index} className="h-16 rounded-lg" />
           ))}
         </div>
-      ) : !events || events.length === 0 ? (
+      ) : !eventsForMode || eventsForMode.length === 0 ? (
         <div className="rounded-lg border bg-card p-8 text-center text-sm text-muted-foreground">
           {tr("No events in selected filters.", "По выбранным фильтрам событий нет.")}
         </div>
@@ -299,7 +304,7 @@ export default function EventsPage() {
         <>
           {viewMode === "list" && (
             <div className="flex flex-col gap-3">
-              {events.map((event) => (
+              {eventsForMode.map((event) => (
                 <EventCard key={event.id} event={event} />
               ))}
             </div>
@@ -307,7 +312,7 @@ export default function EventsPage() {
 
           {viewMode === "calendar" && (
             <EventCalendarView
-              events={events}
+              events={eventsForMode}
               calendars={calendars || []}
               month={calendarMonth}
               onMonthChange={setCalendarMonth}
@@ -315,7 +320,7 @@ export default function EventsPage() {
             />
           )}
 
-          {viewMode === "gantt" && <EventGantt events={events} calendars={calendars || []} travelDetails={travelDetails} />}
+          {viewMode === "gantt" && <EventGantt events={eventsForMode} calendars={calendars || []} travelDetails={travelDetails} />}
         </>
       )}
 

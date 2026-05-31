@@ -214,6 +214,8 @@ export interface CalendarEvent {
   status: EventStatus
   priority: EventPriority
   route_origin_home: boolean
+  external_source?: string | null
+  external_ref?: string | null
   deleted_at?: string | null
 }
 

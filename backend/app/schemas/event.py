@@ -70,6 +70,8 @@ class EventRead(BaseReadModel):
     status: EventStatus
     priority: int
     route_origin_home: bool
+    external_source: str | None = None
+    external_ref: str | None = None
     created_at: datetime
     updated_at: datetime
     deleted_at: datetime | None

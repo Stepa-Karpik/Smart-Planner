@@ -28,7 +28,7 @@ import { cn } from "@/lib/utils"
 import { useI18n } from "@/lib/i18n"
 import { dayKeyInTimezone, formatDateTimeInTimezone, fromDateValueToUtcIso } from "@/lib/timezone"
 import type { CalendarEvent, MapProvider, RouteMode, RoutePreview, RouteRecommendation } from "@/lib/types"
-import { eventStatusLabel, getEventTemporalStatus } from "@/lib/calendar-colors"
+import { eventStatusLabel, getEventTemporalStatus, isSubscriptionEvent } from "@/lib/calendar-colors"
 
 const statusColors: Record<string, string> = {
   planned: "bg-accent/10 text-accent border-accent/20",
@@ -167,6 +167,8 @@ export default function EventDetailPage() {
     return { from: fromIso, to: toIso, limit: 500, offset: 0 }
   }, [eventDay, profile?.timezone])
   const { data: relatedEvents } = useEvents(relatedEventsQuery)
+  const isSubscription = event ? isSubscriptionEvent(event) : false
+  const subscriptionDetailsUrl = isSubscription && event ? `https://subs.nerior.ru/${event.external_ref?.startsWith("subs:group:") ? "groups" : "subscriptions"}` : null
 
   const homeValue = useMemo(
     () => pointQuery(profile?.home_location_lat, profile?.home_location_lon, profile?.home_location_text),
@@ -333,7 +335,7 @@ export default function EventDetailPage() {
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
+          {!isSubscription && <div className="flex flex-wrap items-center gap-2">
             <Button variant="outline" size="sm" className="rounded-xl" onClick={() => setEditorOpen(true)}>
               <Pencil className="mr-1.5 h-3.5 w-3.5" />
               {tr("Edit", "Изменить")}
@@ -369,7 +371,7 @@ export default function EventDetailPage() {
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
-          </div>
+          </div>}
         </div>
 
         <div className="grid gap-4 p-4 xl:grid-cols-[360px_minmax(0,1fr)]">
@@ -390,7 +392,11 @@ export default function EventDetailPage() {
                 </div>
                 <div className="flex items-start gap-3">
                   <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-                {event.location_text ? (
+                {isSubscription ? (
+                    <Button asChild variant="outline" size="sm" className="rounded-xl">
+                      <a href={subscriptionDetailsUrl || "https://subs.nerior.ru"}>{tr("Details", "Подробнее")}</a>
+                    </Button>
+                ) : event.location_text ? (
                   mapUrl ? (
                       <a href={mapUrl} target="_blank" rel="noopener noreferrer" className="break-words text-foreground hover:underline">{event.location_text}</a>
                   ) : (
