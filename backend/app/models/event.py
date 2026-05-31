@@ -18,6 +18,7 @@ class Event(Base, TimestampMixin):
     __table_args__ = (
         CheckConstraint("end_at > start_at", name="ck_events_end_after_start"),
         Index("ix_events_calendar_start", "calendar_id", "start_at"),
+        Index("ix_events_external_ref", "external_source", "external_ref"),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -44,6 +45,8 @@ class Event(Base, TimestampMixin):
     )
     priority: Mapped[int] = mapped_column(SmallInteger, default=0, nullable=False)
     route_origin_home: Mapped[bool] = mapped_column(default=False, nullable=False)
+    external_source: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    external_ref: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
