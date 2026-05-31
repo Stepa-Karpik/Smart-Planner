@@ -322,7 +322,7 @@ export default function EventDetailPage() {
             </h1>
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <Badge variant="outline" className={cn("rounded-full text-xs", statusColors[temporalStatus])}>
-                {eventStatusLabel(temporalStatus, tr)}
+                {isSubscription ? tr("Subscription", "Подписка") : eventStatusLabel(temporalStatus, tr)}
               </Badge>
               <Badge variant="outline" className={cn("rounded-full text-xs", priorityColors[String(event.priority)] || priorityColors["0"])}>
                 {tr("Priority", "Приоритет")}: {event.priority}
